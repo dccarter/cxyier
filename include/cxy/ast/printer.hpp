@@ -112,6 +112,7 @@ protected:
   bool visitIndex(const IndexExpressionNode *node) override;
   bool visitArray(const ArrayExpressionNode *node) override;
   bool visitTuple(const TupleExpressionNode *node) override;
+  bool visitField(const FieldExpressionNode *node) override;
   bool visitStruct(const StructExpressionNode *node) override;
   bool visitMember(const MemberExpressionNode *node) override;
   bool visitMacroCall(const MacroCallExpressionNode *node) override;

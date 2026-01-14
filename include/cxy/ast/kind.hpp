@@ -24,24 +24,25 @@ namespace cxy::ast {
     f(QualifiedPath)            \
                                 \
     /* Expressions */           \
-    f(Unary)                    \
-    f(Binary)                   \
-    f(Ternary)                  \
-    f(Assignment)               \
-    f(Group)                    \
-    f(Stmt)                     \
+    f(UnaryExpr)                \
+    f(BinaryExpr)               \
+    f(TernaryExpr)              \
+    f(AssignmentExpr)           \
+    f(GroupExpr)                \
+    f(StmtExpr)                 \
     f(StringExpr)               \
-    f(Cast)                     \
-    f(Call)                     \
-    f(Index)                    \
-    f(Array)                    \
-    f(Tuple)                    \
-    f(Struct)                   \
-    f(Member)                   \
-    f(MacroCall)                \
-    f(Closure)                  \
-    f(Range)                    \
-    f(Spread)
+    f(CastExpr)                 \
+    f(CallExpr)                 \
+    f(IndexExpr)                \
+    f(ArrayExpr)                \
+    f(TupleExpr)                \
+    f(FieldExpr)                \
+    f(StructExpr)               \
+    f(MemberExpr)               \
+    f(MacroCallExpr)            \
+    f(ClosureExpr)              \
+    f(RangeExpr)                \
+    f(SpreadExpr)
 // clang-format on
 
 // Generate the enum with ast prefix

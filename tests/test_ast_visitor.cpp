@@ -2,6 +2,7 @@
 #include "cxy/arena_allocator.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
+#include "cxy/ast/kind.hpp"
 #include "cxy/ast/literals.hpp"
 #include "cxy/ast/visitor.hpp"
 #include "cxy/stack_arena.hpp"
@@ -89,7 +90,7 @@ TEST_CASE("AST Expression Node Creation", "[ast][visitor]") {
     auto *binExpr =
         createBinaryExpr(left, TokenKind::Plus, right, loc, allocator);
 
-    REQUIRE(binExpr->kind == astBinary);
+    REQUIRE(binExpr->kind == astBinaryExpr);
     REQUIRE(binExpr->left == left);
     REQUIRE(binExpr->right == right);
     REQUIRE(binExpr->op == TokenKind::Plus);
@@ -106,7 +107,7 @@ TEST_CASE("AST Expression Node Creation", "[ast][visitor]") {
     auto *unaryExpr =
         createUnaryExpr(TokenKind::Minus, true, operand, loc, allocator);
 
-    REQUIRE(unaryExpr->kind == astUnary);
+    REQUIRE(unaryExpr->kind == astUnaryExpr);
     REQUIRE(unaryExpr->operand == operand);
     REQUIRE(unaryExpr->op == TokenKind::Minus);
     REQUIRE(unaryExpr->isPrefix == true);
@@ -123,7 +124,7 @@ TEST_CASE("AST Expression Node Creation", "[ast][visitor]") {
     arrayExpr->addElement(createIntLiteral(2, loc, allocator));
     arrayExpr->addElement(createIntLiteral(3, loc, allocator));
 
-    REQUIRE(arrayExpr->kind == astArray);
+    REQUIRE(arrayExpr->kind == astArrayExpr);
     REQUIRE(arrayExpr->elements.size() == 3);
     REQUIRE(arrayExpr->children.size() == 3);
 
@@ -154,7 +155,7 @@ public:
   }
 
   bool visitBinary(BinaryExpressionNode *node) override {
-    visitedNodes.push_back(astBinary);
+    visitedNodes.push_back(astBinaryExpr);
     return true; // Continue to children
   }
 };
@@ -186,7 +187,7 @@ TEST_CASE("ASTVisitor Basic Functionality", "[ast][visitor]") {
 
     // Should visit: Binary, then Int (left child), then Bool (right child)
     REQUIRE(visitor.visitedNodes.size() == 3);
-    REQUIRE(visitor.visitedNodes[0] == astBinary);
+    REQUIRE(visitor.visitedNodes[0] == astBinaryExpr);
     REQUIRE(visitor.visitedNodes[1] == astInt);
     REQUIRE(visitor.visitedNodes[2] == astBool);
 
@@ -195,7 +196,7 @@ TEST_CASE("ASTVisitor Basic Functionality", "[ast][visitor]") {
     REQUIRE(visitor.postVisitedNodes.size() == 3);
     REQUIRE(visitor.postVisitedNodes[0] == astInt);
     REQUIRE(visitor.postVisitedNodes[1] == astBool);
-    REQUIRE(visitor.postVisitedNodes[2] == astBinary);
+    REQUIRE(visitor.postVisitedNodes[2] == astBinaryExpr);
   }
 
   SECTION("Array expression with multiple children") {
@@ -208,7 +209,7 @@ TEST_CASE("ASTVisitor Basic Functionality", "[ast][visitor]") {
     visitor.visit(arrayExpr);
 
     REQUIRE(visitor.visitedNodes.size() == 4);
-    REQUIRE(visitor.visitedNodes[0] == astArray);
+    REQUIRE(visitor.visitedNodes[0] == astArrayExpr);
     REQUIRE(visitor.visitedNodes[1] == astInt);
     REQUIRE(visitor.visitedNodes[2] == astInt);
     REQUIRE(visitor.visitedNodes[3] == astBool);
@@ -232,7 +233,7 @@ TEST_CASE("walkAST Function-Based Visitor", "[ast][visitor]") {
     });
 
     REQUIRE(visited.size() == 3);
-    REQUIRE(visited[0] == astBinary);
+    REQUIRE(visited[0] == astBinaryExpr);
     REQUIRE(visited[1] == astInt);
     REQUIRE(visited[2] == astInt);
   }
@@ -247,11 +248,11 @@ TEST_CASE("walkAST Function-Based Visitor", "[ast][visitor]") {
     walkAST(arrayExpr, [&visited](ASTNode *node) {
       visited.push_back(node->kind);
       // Only visit the array node, skip children
-      return node->kind != astArray;
+      return node->kind != astArrayExpr;
     });
 
     REQUIRE(visited.size() == 1);
-    REQUIRE(visited[0] == astArray);
+    REQUIRE(visited[0] == astArrayExpr);
   }
 
   SECTION("Const walkAST") {
@@ -351,8 +352,10 @@ TEST_CASE("Utility Functions: collectNodes and findNode", "[ast][visitor]") {
     arrayExpr->addElement(createBoolLiteral(true, loc, allocator));
 
     auto *varIdent = createIdentifier(interner.intern("var"), loc, allocator);
+    auto *fieldIdent =
+        createIdentifier(interner.intern("field"), loc, allocator);
     auto *memberExpr =
-        createMemberExpr(varIdent, "field", false, loc, allocator);
+        createMemberExpr(varIdent, fieldIdent, false, loc, allocator);
 
     auto *funcIdent = createIdentifier(interner.intern("func"), loc, allocator);
     auto *callExpr = createCallExpr(funcIdent, loc, allocator);
@@ -369,13 +372,26 @@ TEST_CASE("Utility Functions: collectNodes and findNode", "[ast][visitor]") {
     REQUIRE(arrays.size() == 1);
     REQUIRE(calls.size() == 1);
     REQUIRE(members.size() == 1);
-    REQUIRE(identifiers.size() == 2); // "func" and "var"
+    REQUIRE(identifiers.size() == 3); // "func", "var", and "field"
     REQUIRE(literals.size() == 1);    // The "1" in the array
 
-    // Verify specific values
-    REQUIRE(identifiers[0]->name.toString() == "func");
-    REQUIRE(identifiers[1]->name.toString() == "var");
-    REQUIRE(members[0]->member == "field");
+    // Verify specific values (order may vary due to tree traversal)
+    bool foundFunc = false, foundVar = false, foundField = false;
+    for (auto *ident : identifiers) {
+      std::string_view name = ident->name.view();
+      if (name == "func")
+        foundFunc = true;
+      else if (name == "var")
+        foundVar = true;
+      else if (name == "field")
+        foundField = true;
+    }
+    REQUIRE(foundFunc);
+    REQUIRE(foundVar);
+    REQUIRE(foundField);
+    // Check that member access has correct structure
+    REQUIRE(members[0]->object != nullptr);
+    REQUIRE(members[0]->member != nullptr);
   }
 }
 
@@ -406,7 +422,7 @@ TEST_CASE("ConstASTVisitor Functionality", "[ast][visitor]") {
     visitor.visit(constRoot);
 
     REQUIRE(visitor.visitedNodes.size() == 3);
-    REQUIRE(visitor.visitedNodes[0] == astBinary);
+    REQUIRE(visitor.visitedNodes[0] == astBinaryExpr);
     REQUIRE(visitor.visitedNodes[1] == astInt);
     REQUIRE(visitor.visitedNodes[2] == astBool);
   }

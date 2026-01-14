@@ -30,6 +30,7 @@ class CallExpressionNode;
 class IndexExpressionNode;
 class ArrayExpressionNode;
 class TupleExpressionNode;
+class FieldExpressionNode;
 class StructExpressionNode;
 class MemberExpressionNode;
 class MacroCallExpressionNode;
@@ -124,6 +125,9 @@ public:
 
   virtual bool visitTuple(TupleExpressionNode *node);
   virtual void visitTuplePost(TupleExpressionNode *node);
+
+  virtual bool visitField(FieldExpressionNode *node);
+  virtual void visitFieldPost(FieldExpressionNode *node);
 
   virtual bool visitStruct(StructExpressionNode *node);
   virtual void visitStructPost(StructExpressionNode *node);
@@ -232,6 +236,9 @@ public:
 
   virtual bool visitTuple(const TupleExpressionNode *node);
   virtual void visitTuplePost(const TupleExpressionNode *node);
+
+  virtual bool visitField(const FieldExpressionNode *node);
+  virtual void visitFieldPost(const FieldExpressionNode *node);
 
   virtual bool visitStruct(const StructExpressionNode *node);
   virtual void visitStructPost(const StructExpressionNode *node);

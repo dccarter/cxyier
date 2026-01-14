@@ -33,7 +33,7 @@ public:
   explicit UnaryExpressionNode(TokenKind operator_kind, bool is_prefix,
                                ASTNode *operand_expr, Location loc,
                                ArenaAllocator &arena)
-      : ExpressionNode(astUnary, loc, arena), op(operator_kind),
+      : ExpressionNode(astUnaryExpr, loc, arena), op(operator_kind),
         isPrefix(is_prefix), operand(operand_expr) {
     if (operand) {
       addChild(operand);
@@ -69,7 +69,7 @@ public:
   explicit BinaryExpressionNode(ASTNode *left_expr, TokenKind operator_kind,
                                 ASTNode *right_expr, Location loc,
                                 ArenaAllocator &arena)
-      : ExpressionNode(astBinary, loc, arena), op(operator_kind),
+      : ExpressionNode(astBinaryExpr, loc, arena), op(operator_kind),
         left(left_expr), right(right_expr) {
     if (left) {
       addChild(left);
@@ -99,10 +99,10 @@ public:
   ASTNode *thenExpr;  ///< Expression when condition is true
   ASTNode *elseExpr;  ///< Expression when condition is false
 
-  explicit TernaryExpressionNode(ASTNode *cond_expr, ASTNode *then_expr,
+  explicit TernaryExpressionNode(ASTNode *condition_expr, ASTNode *then_expr,
                                  ASTNode *else_expr, Location loc,
                                  ArenaAllocator &arena)
-      : ExpressionNode(astTernary, loc, arena), condition(cond_expr),
+      : ExpressionNode(astTernaryExpr, loc, arena), condition(condition_expr),
         thenExpr(then_expr), elseExpr(else_expr) {
     if (condition) {
       addChild(condition);
@@ -140,7 +140,7 @@ public:
                                     TokenKind operator_kind,
                                     ASTNode *value_expr, Location loc,
                                     ArenaAllocator &arena)
-      : ExpressionNode(astAssignment, loc, arena), op(operator_kind),
+      : ExpressionNode(astAssignmentExpr, loc, arena), op(operator_kind),
         target(target_expr), value(value_expr) {
     if (target) {
       addChild(target);
@@ -213,7 +213,7 @@ public:
 
   explicit GroupExpressionNode(ASTNode *expression, Location loc,
                                ArenaAllocator &arena)
-      : ExpressionNode(astGroup, loc, arena), expr(expression) {
+      : ExpressionNode(astGroupExpr, loc, arena), expr(expression) {
     if (expr) {
       addChild(expr);
     }
@@ -238,7 +238,7 @@ public:
 
   explicit StmtExpressionNode(ASTNode *statement, Location loc,
                               ArenaAllocator &arena)
-      : ExpressionNode(astStmt, loc, arena), stmt(statement) {
+      : ExpressionNode(astStmtExpr, loc, arena), stmt(statement) {
     if (stmt) {
       addChild(stmt);
     }
@@ -296,10 +296,10 @@ public:
   ASTNode *expr;     ///< Expression being cast
   ASTNode *typeExpr; ///< Target type expression
 
-  explicit CastExpressionNode(ASTNode *expression, ASTNode *target_type,
+  explicit CastExpressionNode(ASTNode *expression, ASTNode *type_expr,
                               Location loc, ArenaAllocator &arena)
-      : ExpressionNode(astCast, loc, arena), expr(expression),
-        typeExpr(target_type) {
+      : ExpressionNode(astCastExpr, loc, arena), expr(expression),
+        typeExpr(type_expr) {
     if (expr) {
       addChild(expr);
     }
@@ -327,9 +327,9 @@ public:
   ASTNode *callee;                  ///< Function being called
   ArenaVector<ASTNode *> arguments; ///< Call arguments
 
-  explicit CallExpressionNode(ASTNode *function, Location loc,
+  explicit CallExpressionNode(ASTNode *callee_expr, Location loc,
                               ArenaAllocator &arena)
-      : ExpressionNode(astCall, loc, arena), callee(function),
+      : ExpressionNode(astCallExpr, loc, arena), callee(callee_expr),
         arguments(ArenaSTLAllocator<ASTNode *>(arena)) {
     if (callee) {
       addChild(callee);
@@ -370,7 +370,7 @@ public:
 
   explicit IndexExpressionNode(ASTNode *obj, ASTNode *idx, Location loc,
                                ArenaAllocator &arena)
-      : ExpressionNode(astIndex, loc, arena), object(obj), index(idx) {
+      : ExpressionNode(astIndexExpr, loc, arena), object(obj), index(idx) {
     if (object) {
       addChild(object);
     }
@@ -398,7 +398,7 @@ public:
   ArenaVector<ASTNode *> elements; ///< Array elements
 
   explicit ArrayExpressionNode(Location loc, ArenaAllocator &arena)
-      : ExpressionNode(astArray, loc, arena),
+      : ExpressionNode(astArrayExpr, loc, arena),
         elements(ArenaSTLAllocator<ASTNode *>(arena)) {}
 
   void addElement(ASTNode *element) {
@@ -432,7 +432,7 @@ public:
   ArenaVector<ASTNode *> elements; ///< Tuple elements
 
   explicit TupleExpressionNode(Location loc, ArenaAllocator &arena)
-      : ExpressionNode(astTuple, loc, arena),
+      : ExpressionNode(astTupleExpr, loc, arena),
         elements(ArenaSTLAllocator<ASTNode *>(arena)) {}
 
   void addElement(ASTNode *element) {
@@ -461,44 +461,72 @@ public:
  * Represents struct literals like `Point { x: 1, y: 2 }`.
  * Named field initialization.
  */
-class StructExpressionNode : public ExpressionNode {
+/**
+ * @brief Field expression node for struct literals.
+ *
+ * Represents a field in a struct literal, including optional default value.
+ */
+class FieldExpressionNode : public ExpressionNode {
 public:
-  struct Field {
-    std::string name;
-    ASTNode *value;
-  };
+  ASTNode *name;         ///< Field name (identifier)
+  ASTNode *value;        ///< Field value expression
+  ASTNode *defaultValue; ///< Optional default value
 
-  ASTNode *typeExpr;         ///< Optional type expression
-  ArenaVector<Field> fields; ///< Named fields
-
-  explicit StructExpressionNode(ASTNode *type, Location loc,
-                                ArenaAllocator &arena)
-      : ExpressionNode(astStruct, loc, arena), typeExpr(type),
-        fields(ArenaSTLAllocator<Field>(arena)) {
-    if (typeExpr) {
-      addChild(typeExpr);
+  explicit FieldExpressionNode(ASTNode *field_name, ASTNode *field_value,
+                               ASTNode *default_val, Location loc,
+                               ArenaAllocator &arena)
+      : ExpressionNode(astFieldExpr, loc, arena), name(field_name),
+        value(field_value), defaultValue(default_val) {
+    if (name) {
+      addChild(name);
     }
-  }
-
-  void addField(const std::string &name, ASTNode *value) {
-    fields.push_back({name, value});
     if (value) {
       addChild(value);
+    }
+    if (defaultValue) {
+      addChild(defaultValue);
     }
   }
 
   std::format_context::iterator
   toString(std::format_context &ctx) const override {
-    auto out = std::format_to(ctx.out(), "Struct({} {{ ",
-                              typeExpr ? std::format("{}", *typeExpr) : "");
+    auto it = std::format_to(ctx.out(), "Field({}: {}",
+                             name ? std::format("{}", *name) : "null",
+                             value ? std::format("{}", *value) : "null");
+    if (defaultValue) {
+      it = std::format_to(it, " = {}", std::format("{}", *defaultValue));
+    }
+    return std::format_to(it, ")");
+  }
+};
+
+class StructExpressionNode : public ExpressionNode {
+public:
+  ArenaVector<FieldExpressionNode *> fields; ///< Struct fields
+
+  explicit StructExpressionNode(Location loc, ArenaAllocator &arena)
+      : ExpressionNode(astStructExpr, loc, arena),
+        fields(ArenaSTLAllocator<FieldExpressionNode *>(arena)) {}
+
+  void addField(FieldExpressionNode *field) {
+    if (field) {
+      fields.push_back(field);
+      addChild(field);
+    }
+  }
+
+  std::format_context::iterator
+  toString(std::format_context &ctx) const override {
+    auto it = std::format_to(ctx.out(), "Struct({{");
     for (size_t i = 0; i < fields.size(); ++i) {
       if (i > 0)
-        out = std::format_to(out, ", ");
-      out = std::format_to(out, "{}: {}", fields[i].name,
-                           fields[i].value ? std::format("{}", *fields[i].value)
-                                           : "null");
+        it = std::format_to(it, ", ");
+      it = std::format_to(
+          it, "{}",
+          fields[i] ? std::format("{}", *static_cast<ASTNode *>(fields[i]))
+                    : "null");
     }
-    return std::format_to(out, " }})");
+    return std::format_to(it, "}})");
   }
 };
 
@@ -510,24 +538,27 @@ public:
  */
 class MemberExpressionNode : public ExpressionNode {
 public:
-  ASTNode *object;    ///< Object being accessed
-  std::string member; ///< Member name
-  bool isArrow;       ///< true for ->, false for .
+  ASTNode *object; ///< Object being accessed
+  ASTNode *member; ///< Member name (can be identifier, integer, or expression)
+  bool isArrow;    ///< true for ->, false for .
 
-  explicit MemberExpressionNode(ASTNode *obj, const std::string &member_name,
-                                bool arrow, Location loc, ArenaAllocator &arena)
-      : ExpressionNode(astMember, loc, arena), object(obj), member(member_name),
-        isArrow(arrow) {
+  explicit MemberExpressionNode(ASTNode *obj, ASTNode *member_expr, bool arrow,
+                                Location loc, ArenaAllocator &arena)
+      : ExpressionNode(astMemberExpr, loc, arena), object(obj),
+        member(member_expr), isArrow(arrow) {
     if (object) {
       addChild(object);
+    }
+    if (member) {
+      addChild(member);
     }
   }
 
   std::format_context::iterator
   toString(std::format_context &ctx) const override {
-    return std::format_to(ctx.out(), "Member({}{}{})",
+    return std::format_to(ctx.out(), "Member({}.{})",
                           object ? std::format("{}", *object) : "null",
-                          isArrow ? "->" : ".", member);
+                          member ? std::format("{}", *member) : "null");
   }
 };
 
@@ -539,13 +570,17 @@ public:
  */
 class MacroCallExpressionNode : public ExpressionNode {
 public:
-  std::string macroName;            ///< Macro name
+  ASTNode *callee;                  ///< Macro callee expression
   ArenaVector<ASTNode *> arguments; ///< Macro arguments
 
-  explicit MacroCallExpressionNode(const std::string &name, Location loc,
+  explicit MacroCallExpressionNode(ASTNode *callee_expr, Location loc,
                                    ArenaAllocator &arena)
-      : ExpressionNode(astMacroCall, loc, arena), macroName(name),
-        arguments(ArenaSTLAllocator<ASTNode *>(arena)) {}
+      : ExpressionNode(astMacroCallExpr, loc, arena), callee(callee_expr),
+        arguments(ArenaSTLAllocator<ASTNode *>(arena)) {
+    if (callee) {
+      addChild(callee);
+    }
+  }
 
   void addArgument(ASTNode *arg) {
     if (arg) {
@@ -556,14 +591,15 @@ public:
 
   std::format_context::iterator
   toString(std::format_context &ctx) const override {
-    auto out = std::format_to(ctx.out(), "MacroCall({}![", macroName);
+    auto it = std::format_to(ctx.out(), "MacroCall({}(",
+                             callee ? std::format("{}", *callee) : "null");
     for (size_t i = 0; i < arguments.size(); ++i) {
       if (i > 0)
-        out = std::format_to(out, ", ");
-      out = std::format_to(
-          out, "{}", arguments[i] ? std::format("{}", *arguments[i]) : "null");
+        it = std::format_to(it, ", ");
+      it = std::format_to(
+          it, "{}", arguments[i] ? std::format("{}", *arguments[i]) : "null");
     }
-    return std::format_to(out, "])");
+    return std::format_to(it, "))");
   }
 };
 
@@ -575,15 +611,24 @@ public:
  */
 class ClosureExpressionNode : public ExpressionNode {
 public:
+  ArenaVector<ASTNode *> captures;   ///< Captured variables
   ArenaVector<ASTNode *> parameters; ///< Parameter declarations
   ASTNode *body;                     ///< Closure body expression/block
 
   explicit ClosureExpressionNode(ASTNode *closure_body, Location loc,
                                  ArenaAllocator &arena)
-      : ExpressionNode(astClosure, loc, arena),
+      : ExpressionNode(astClosureExpr, loc, arena),
+        captures(ArenaSTLAllocator<ASTNode *>(arena)),
         parameters(ArenaSTLAllocator<ASTNode *>(arena)), body(closure_body) {
     if (body) {
       addChild(body);
+    }
+  }
+
+  void addCapture(ASTNode *capture) {
+    if (capture) {
+      captures.push_back(capture);
+      addChild(capture);
     }
   }
 
@@ -596,7 +641,22 @@ public:
 
   std::format_context::iterator
   toString(std::format_context &ctx) const override {
-    auto out = std::format_to(ctx.out(), "Closure(|");
+    auto out = std::format_to(ctx.out(), "Closure(");
+
+    // Print captures
+    if (!captures.empty()) {
+      out = std::format_to(out, "[");
+      for (size_t i = 0; i < captures.size(); ++i) {
+        if (i > 0)
+          out = std::format_to(out, ", ");
+        out = std::format_to(
+            out, "{}", captures[i] ? std::format("{}", *captures[i]) : "null");
+      }
+      out = std::format_to(out, "] ");
+    }
+
+    // Print parameters
+    out = std::format_to(out, "|");
     for (size_t i = 0; i < parameters.size(); ++i) {
       if (i > 0)
         out = std::format_to(out, ", ");
@@ -624,8 +684,8 @@ public:
   explicit RangeExpressionNode(ASTNode *start_expr, ASTNode *end_expr,
                                bool inclusive, Location loc,
                                ArenaAllocator &arena)
-      : ExpressionNode(astRange, loc, arena), start(start_expr), end(end_expr),
-        isInclusive(inclusive) {
+      : ExpressionNode(astRangeExpr, loc, arena), start(start_expr),
+        end(end_expr), isInclusive(inclusive) {
     if (start) {
       addChild(start);
     }
@@ -655,7 +715,7 @@ public:
 
   explicit SpreadExpressionNode(ASTNode *expression, Location loc,
                                 ArenaAllocator &arena)
-      : ExpressionNode(astSpread, loc, arena), expr(expression) {
+      : ExpressionNode(astSpreadExpr, loc, arena), expr(expression) {
     if (expr) {
       addChild(expr);
     }
@@ -722,9 +782,24 @@ inline IndexExpressionNode *createIndexExpr(ASTNode *object, ASTNode *index,
 /**
  * @brief Create an array expression node.
  */
+inline FieldExpressionNode *createFieldExpr(ASTNode *name, ASTNode *value,
+                                            ASTNode *defaultValue, Location loc,
+                                            ArenaAllocator &arena) {
+  return arena.construct<FieldExpressionNode>(name, value, defaultValue, loc,
+                                              arena);
+}
+
 inline ArrayExpressionNode *createArrayExpr(Location loc,
                                             ArenaAllocator &arena) {
   return arena.construct<ArrayExpressionNode>(loc, arena);
+}
+
+/**
+ * @brief Create a struct expression node.
+ */
+inline StructExpressionNode *createStructExpr(Location loc,
+                                              ArenaAllocator &arena) {
+  return arena.construct<StructExpressionNode>(loc, arena);
 }
 
 /**
@@ -736,18 +811,9 @@ inline TupleExpressionNode *createTupleExpr(Location loc,
 }
 
 /**
- * @brief Create a struct expression node.
- */
-inline StructExpressionNode *createStructExpr(ASTNode *type, Location loc,
-                                              ArenaAllocator &arena) {
-  return arena.construct<StructExpressionNode>(type, loc, arena);
-}
-
-/**
  * @brief Create a member expression node.
  */
-inline MemberExpressionNode *createMemberExpr(ASTNode *object,
-                                              const std::string &member,
+inline MemberExpressionNode *createMemberExpr(ASTNode *object, ASTNode *member,
                                               bool isArrow, Location loc,
                                               ArenaAllocator &arena) {
   return arena.construct<MemberExpressionNode>(object, member, isArrow, loc,
@@ -757,10 +823,9 @@ inline MemberExpressionNode *createMemberExpr(ASTNode *object,
 /**
  * @brief Create a macro call expression node.
  */
-inline MacroCallExpressionNode *createMacroCallExpr(const std::string &name,
-                                                    Location loc,
-                                                    ArenaAllocator &arena) {
-  return arena.construct<MacroCallExpressionNode>(name, loc, arena);
+inline MacroCallExpressionNode *
+createMacroCallExpr(ASTNode *callee, Location loc, ArenaAllocator &arena) {
+  return arena.construct<MacroCallExpressionNode>(callee, loc, arena);
 }
 
 /**

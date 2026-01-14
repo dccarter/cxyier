@@ -125,7 +125,8 @@ TEST_CASE("AST Printer - Binary Expressions", "[ast][printer]") {
     ASTPrinter printer({PrinterFlags::None});
     std::string result = printer.print(binaryNode);
 
-    REQUIRE_AST_MATCHES(binaryNode, "(Binary + (Identifier a) (Identifier b))");
+    REQUIRE_AST_MATCHES(binaryNode,
+                        "(BinaryExpr + (Identifier a) (Identifier b))");
   }
 
   SECTION("Nested binary expressions") {
@@ -144,8 +145,8 @@ TEST_CASE("AST Printer - Binary Expressions", "[ast][printer]") {
         addNode, TokenKind::Mult, cNode, loc, arena);
 
     std::string expected = R"(
-(Binary *
-  (Binary +
+(BinaryExpr *
+  (BinaryExpr +
     (Identifier a)
     (Identifier b))
   (Identifier c))
@@ -173,7 +174,7 @@ TEST_CASE("AST Printer - Complex Expressions", "[ast][printer]") {
     callNode->addChild(intArg);
 
     std::string expected = R"(
-(Call
+(CallExpr
   (Identifier foo)
   (Identifier x)
   (Int 42))
@@ -192,7 +193,7 @@ TEST_CASE("AST Printer - Complex Expressions", "[ast][printer]") {
         arena.construct<IndexExpressionNode>(arrNode, idxNode, loc, arena);
 
     std::string expected = R"(
-(Index
+(IndexExpr
   (Identifier array)
   (Identifier index))
         )";
@@ -205,12 +206,14 @@ TEST_CASE("AST Printer - Complex Expressions", "[ast][printer]") {
     InternedString fieldName = interner.intern("field");
 
     auto *objNode = arena.construct<IdentifierNode>(objName, loc, arena);
-    auto *memberNode = arena.construct<MemberExpressionNode>(objNode, "field",
+    auto *fieldNode = arena.construct<IdentifierNode>(fieldName, loc, arena);
+    auto *memberNode = arena.construct<MemberExpressionNode>(objNode, fieldNode,
                                                              false, loc, arena);
 
     std::string expected = R"(
-(Member field
-  (Identifier object))
+(MemberExpr
+  (Identifier object)
+  (Identifier field))
         )";
 
     REQUIRE_AST_MATCHES(memberNode, expected);
@@ -278,8 +281,8 @@ TEST_CASE("AST Printer - Configuration Options", "[ast][printer]") {
 TEST_CASE("AST Testing Utilities - Normalization", "[ast][testing]") {
   SECTION("Basic whitespace normalization") {
     std::string input =
-        "  ( Binary   +   ( Identifier   a )  ( Identifier   b )  )  ";
-    std::string expected = "(Binary + (Identifier a) (Identifier b))";
+        "  ( BinaryExpr   +   ( Identifier   a )  ( Identifier   b )  )  ";
+    std::string expected = "(BinaryExpr + (Identifier a) (Identifier b))";
 
     REQUIRE(normalizeSerial(input) == expected);
   }
@@ -300,14 +303,14 @@ TEST_CASE("AST Testing Utilities - Normalization", "[ast][testing]") {
 
   SECTION("Complex nested structure") {
     std::string input = R"(
-        ( Binary   +
-          ( Binary   *
+        ( BinaryExpr   +
+          ( BinaryExpr   *
             ( Identifier   x )
             ( Int   2 ) )
           ( Identifier   y ) )
         )";
     std::string expected =
-        "(Binary + (Binary * (Identifier x) (Int 2)) (Identifier y))";
+        "(BinaryExpr + (BinaryExpr * (Identifier x) (Int 2)) (Identifier y))";
 
     REQUIRE(normalizeSerial(input) == expected);
   }
@@ -377,16 +380,17 @@ TEST_CASE("AST Testing Utilities - Test Macros", "[ast][testing]") {
         leftNode, TokenKind::Plus, rightNode, loc, arena);
 
     // Various formatting styles should all work
-    REQUIRE_AST_MATCHES(binaryNode, "(Binary + (Identifier x) (Identifier y))");
+    REQUIRE_AST_MATCHES(binaryNode,
+                        "(BinaryExpr + (Identifier x) (Identifier y))");
 
     REQUIRE_AST_MATCHES(binaryNode, R"(
-(Binary +
+(BinaryExpr +
   (Identifier x)
   (Identifier y))
         )");
 
-    REQUIRE_AST_MATCHES(binaryNode,
-                        "( Binary   +   ( Identifier x )   ( Identifier y ) )");
+    REQUIRE_AST_MATCHES(
+        binaryNode, "( BinaryExpr   +   ( Identifier x )   ( Identifier y ) )");
   }
 
   SECTION("Basic structural matching") {
@@ -416,22 +420,23 @@ TEST_CASE("AST Testing Utilities - Test Macros", "[ast][testing]") {
 
     // Test structural equivalence with different formatting
     REQUIRE_AST_STRUCTURALLY_MATCHES(callNode, R"(
-      (Call
+      (CallExpr
         (Identifier foo)
-        (Binary +
+        (BinaryExpr +
           (Identifier bar)
           (Int 42))
         (String "hello"))
     )");
 
     REQUIRE_AST_STRUCTURALLY_MATCHES(
-        callNode, "(Call (Identifier foo) (Binary + (Identifier bar) (Int 42)) "
-                  "(String \"hello\"))");
+        callNode,
+        "(CallExpr (Identifier foo) (BinaryExpr + (Identifier bar) (Int 42)) "
+        "(String \"hello\"))");
 
     REQUIRE_AST_STRUCTURALLY_MATCHES(callNode, R"(
-      (    Call
+      (    CallExpr
         (   Identifier    foo   )
-        (   Binary   +
+        (   BinaryExpr   +
           (   Identifier   bar   )
           (   Int   42   )   )
         (   String   "hello"   )   )
@@ -472,19 +477,20 @@ TEST_CASE("AST Testing Utilities - Test Macros", "[ast][testing]") {
         addNode, TokenKind::Mult, subNode, loc, arena);
 
     REQUIRE_AST_STRUCTURALLY_MATCHES(mulNode, R"(
-      (Binary *
-        (Binary +
+      (BinaryExpr *
+        (BinaryExpr +
           (Identifier a)
           (Identifier b))
-        (Binary -
+        (BinaryExpr -
           (Identifier c)
           (Identifier d)))
     )");
 
     // Test with completely different whitespace formatting
     REQUIRE_AST_STRUCTURALLY_MATCHES(
-        mulNode, "(Binary *(Binary +(Identifier a)(Identifier b))(Binary "
-                 "-(Identifier c)(Identifier d)))");
+        mulNode,
+        "(BinaryExpr *(BinaryExpr +(Identifier a)(Identifier b))(BinaryExpr "
+        "-(Identifier c)(Identifier d)))");
   }
 
   SECTION("Structural comparison catches differences") {
@@ -499,20 +505,20 @@ TEST_CASE("AST Testing Utilities - Test Macros", "[ast][testing]") {
 
     // These should NOT match - different operators
     REQUIRE_FALSE(ASTTestUtils::structurallyMatches(
-        addNode, "(Binary - (Identifier a) (Identifier b))"));
+        addNode, "(BinaryExpr - (Identifier a) (Identifier b))"));
 
     // These should NOT match - different identifiers
     REQUIRE_FALSE(ASTTestUtils::structurallyMatches(
-        addNode, "(Binary + (Identifier x) (Identifier b))"));
+        addNode, "(BinaryExpr + (Identifier x) (Identifier b))"));
 
     // These should NOT match - different structure
     REQUIRE_FALSE(ASTTestUtils::structurallyMatches(
         addNode,
-        "(Binary + (Identifier a))")); // Missing second operand
+        "(BinaryExpr + (Identifier a))")); // Missing second operand
 
     // These should NOT match - wrong node type
     REQUIRE_FALSE(ASTTestUtils::structurallyMatches(
-        addNode, "(Call (Identifier a) (Identifier b))"));
+        addNode, "(CallExpr (Identifier a) (Identifier b))"));
   }
 
   SECTION("Structural comparison with string literals") {

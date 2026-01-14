@@ -62,41 +62,43 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitQualifiedPath(static_cast<QualifiedPathNode *>(node));
 
   // Expressions
-  case astUnary:
+  case astUnaryExpr:
     return visitUnary(static_cast<UnaryExpressionNode *>(node));
-  case astBinary:
+  case astBinaryExpr:
     return visitBinary(static_cast<BinaryExpressionNode *>(node));
-  case astTernary:
+  case astTernaryExpr:
     return visitTernary(static_cast<TernaryExpressionNode *>(node));
-  case astAssignment:
+  case astAssignmentExpr:
     return visitAssignment(static_cast<AssignmentExpressionNode *>(node));
-  case astGroup:
+  case astGroupExpr:
     return visitGroup(static_cast<GroupExpressionNode *>(node));
-  case astStmt:
+  case astStmtExpr:
     return visitStmt(static_cast<StmtExpressionNode *>(node));
   case astStringExpr:
     return visitStringExpr(static_cast<StringExpressionNode *>(node));
-  case astCast:
+  case astCastExpr:
     return visitCast(static_cast<CastExpressionNode *>(node));
-  case astCall:
+  case astCallExpr:
     return visitCall(static_cast<CallExpressionNode *>(node));
-  case astIndex:
+  case astIndexExpr:
     return visitIndex(static_cast<IndexExpressionNode *>(node));
-  case astArray:
+  case astArrayExpr:
     return visitArray(static_cast<ArrayExpressionNode *>(node));
-  case astTuple:
+  case astTupleExpr:
     return visitTuple(static_cast<TupleExpressionNode *>(node));
-  case astStruct:
+  case astFieldExpr:
+    return visitField(static_cast<FieldExpressionNode *>(node));
+  case astStructExpr:
     return visitStruct(static_cast<StructExpressionNode *>(node));
-  case astMember:
+  case astMemberExpr:
     return visitMember(static_cast<MemberExpressionNode *>(node));
-  case astMacroCall:
+  case astMacroCallExpr:
     return visitMacroCall(static_cast<MacroCallExpressionNode *>(node));
-  case astClosure:
+  case astClosureExpr:
     return visitClosure(static_cast<ClosureExpressionNode *>(node));
-  case astRange:
+  case astRangeExpr:
     return visitRange(static_cast<RangeExpressionNode *>(node));
-  case astSpread:
+  case astSpreadExpr:
     return visitSpread(static_cast<SpreadExpressionNode *>(node));
 
   default:
@@ -140,58 +142,61 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
     break;
 
   // Expressions
-  case astUnary:
+  case astUnaryExpr:
     visitUnaryPost(static_cast<UnaryExpressionNode *>(node));
     break;
-  case astBinary:
+  case astBinaryExpr:
     visitBinaryPost(static_cast<BinaryExpressionNode *>(node));
     break;
-  case astTernary:
+  case astTernaryExpr:
     visitTernaryPost(static_cast<TernaryExpressionNode *>(node));
     break;
-  case astAssignment:
+  case astAssignmentExpr:
     visitAssignmentPost(static_cast<AssignmentExpressionNode *>(node));
     break;
-  case astGroup:
+  case astGroupExpr:
     visitGroupPost(static_cast<GroupExpressionNode *>(node));
     break;
-  case astStmt:
+  case astStmtExpr:
     visitStmtPost(static_cast<StmtExpressionNode *>(node));
     break;
   case astStringExpr:
     visitStringExprPost(static_cast<StringExpressionNode *>(node));
     break;
-  case astCast:
+  case astCastExpr:
     visitCastPost(static_cast<CastExpressionNode *>(node));
     break;
-  case astCall:
+  case astCallExpr:
     visitCallPost(static_cast<CallExpressionNode *>(node));
     break;
-  case astIndex:
+  case astIndexExpr:
     visitIndexPost(static_cast<IndexExpressionNode *>(node));
     break;
-  case astArray:
+  case astArrayExpr:
     visitArrayPost(static_cast<ArrayExpressionNode *>(node));
     break;
-  case astTuple:
+  case astTupleExpr:
     visitTuplePost(static_cast<TupleExpressionNode *>(node));
     break;
-  case astStruct:
+  case astFieldExpr:
+    visitFieldPost(static_cast<FieldExpressionNode *>(node));
+    break;
+  case astStructExpr:
     visitStructPost(static_cast<StructExpressionNode *>(node));
     break;
-  case astMember:
+  case astMemberExpr:
     visitMemberPost(static_cast<MemberExpressionNode *>(node));
     break;
-  case astMacroCall:
+  case astMacroCallExpr:
     visitMacroCallPost(static_cast<MacroCallExpressionNode *>(node));
     break;
-  case astClosure:
+  case astClosureExpr:
     visitClosurePost(static_cast<ClosureExpressionNode *>(node));
     break;
-  case astRange:
+  case astRangeExpr:
     visitRangePost(static_cast<RangeExpressionNode *>(node));
     break;
-  case astSpread:
+  case astSpreadExpr:
     visitSpreadPost(static_cast<SpreadExpressionNode *>(node));
     break;
 
@@ -244,41 +249,43 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitQualifiedPath(static_cast<const QualifiedPathNode *>(node));
 
   // Expressions
-  case astUnary:
+  case astUnaryExpr:
     return visitUnary(static_cast<const UnaryExpressionNode *>(node));
-  case astBinary:
+  case astBinaryExpr:
     return visitBinary(static_cast<const BinaryExpressionNode *>(node));
-  case astTernary:
+  case astTernaryExpr:
     return visitTernary(static_cast<const TernaryExpressionNode *>(node));
-  case astAssignment:
+  case astAssignmentExpr:
     return visitAssignment(static_cast<const AssignmentExpressionNode *>(node));
-  case astGroup:
+  case astGroupExpr:
     return visitGroup(static_cast<const GroupExpressionNode *>(node));
-  case astStmt:
+  case astStmtExpr:
     return visitStmt(static_cast<const StmtExpressionNode *>(node));
   case astStringExpr:
     return visitStringExpr(static_cast<const StringExpressionNode *>(node));
-  case astCast:
+  case astCastExpr:
     return visitCast(static_cast<const CastExpressionNode *>(node));
-  case astCall:
+  case astCallExpr:
     return visitCall(static_cast<const CallExpressionNode *>(node));
-  case astIndex:
+  case astIndexExpr:
     return visitIndex(static_cast<const IndexExpressionNode *>(node));
-  case astArray:
+  case astArrayExpr:
     return visitArray(static_cast<const ArrayExpressionNode *>(node));
-  case astTuple:
+  case astTupleExpr:
     return visitTuple(static_cast<const TupleExpressionNode *>(node));
-  case astStruct:
+  case astFieldExpr:
+    return visitField(static_cast<const FieldExpressionNode *>(node));
+  case astStructExpr:
     return visitStruct(static_cast<const StructExpressionNode *>(node));
-  case astMember:
+  case astMemberExpr:
     return visitMember(static_cast<const MemberExpressionNode *>(node));
-  case astMacroCall:
+  case astMacroCallExpr:
     return visitMacroCall(static_cast<const MacroCallExpressionNode *>(node));
-  case astClosure:
+  case astClosureExpr:
     return visitClosure(static_cast<const ClosureExpressionNode *>(node));
-  case astRange:
+  case astRangeExpr:
     return visitRange(static_cast<const RangeExpressionNode *>(node));
-  case astSpread:
+  case astSpreadExpr:
     return visitSpread(static_cast<const SpreadExpressionNode *>(node));
 
   default:
@@ -322,58 +329,61 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
 
   // Expressions
-  case astUnary:
+  case astUnaryExpr:
     visitUnaryPost(static_cast<const UnaryExpressionNode *>(node));
     break;
-  case astBinary:
+  case astBinaryExpr:
     visitBinaryPost(static_cast<const BinaryExpressionNode *>(node));
     break;
-  case astTernary:
+  case astTernaryExpr:
     visitTernaryPost(static_cast<const TernaryExpressionNode *>(node));
     break;
-  case astAssignment:
+  case astAssignmentExpr:
     visitAssignmentPost(static_cast<const AssignmentExpressionNode *>(node));
     break;
-  case astGroup:
+  case astGroupExpr:
     visitGroupPost(static_cast<const GroupExpressionNode *>(node));
     break;
-  case astStmt:
+  case astStmtExpr:
     visitStmtPost(static_cast<const StmtExpressionNode *>(node));
     break;
   case astStringExpr:
     visitStringExprPost(static_cast<const StringExpressionNode *>(node));
     break;
-  case astCast:
+  case astCastExpr:
     visitCastPost(static_cast<const CastExpressionNode *>(node));
     break;
-  case astCall:
+  case astCallExpr:
     visitCallPost(static_cast<const CallExpressionNode *>(node));
     break;
-  case astIndex:
+  case astIndexExpr:
     visitIndexPost(static_cast<const IndexExpressionNode *>(node));
     break;
-  case astArray:
+  case astArrayExpr:
     visitArrayPost(static_cast<const ArrayExpressionNode *>(node));
     break;
-  case astTuple:
+  case astTupleExpr:
     visitTuplePost(static_cast<const TupleExpressionNode *>(node));
     break;
-  case astStruct:
+  case astFieldExpr:
+    visitFieldPost(static_cast<const FieldExpressionNode *>(node));
+    break;
+  case astStructExpr:
     visitStructPost(static_cast<const StructExpressionNode *>(node));
     break;
-  case astMember:
+  case astMemberExpr:
     visitMemberPost(static_cast<const MemberExpressionNode *>(node));
     break;
-  case astMacroCall:
+  case astMacroCallExpr:
     visitMacroCallPost(static_cast<const MacroCallExpressionNode *>(node));
     break;
-  case astClosure:
+  case astClosureExpr:
     visitClosurePost(static_cast<const ClosureExpressionNode *>(node));
     break;
-  case astRange:
+  case astRangeExpr:
     visitRangePost(static_cast<const RangeExpressionNode *>(node));
     break;
-  case astSpread:
+  case astSpreadExpr:
     visitSpreadPost(static_cast<const SpreadExpressionNode *>(node));
     break;
 
@@ -802,6 +812,22 @@ bool ConstASTVisitor::visitSpread(const SpreadExpressionNode *node) {
 }
 
 void ConstASTVisitor::visitSpreadPost(const SpreadExpressionNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ASTVisitor::visitField(FieldExpressionNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitFieldPost(FieldExpressionNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitField(const FieldExpressionNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitFieldPost(const FieldExpressionNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

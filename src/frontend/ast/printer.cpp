@@ -199,6 +199,11 @@ bool ASTPrinter::visitTuple(const TupleExpressionNode *node) {
   return true; // Continue to elements
 }
 
+bool ASTPrinter::visitField(const FieldExpressionNode *node) {
+  printNodeStartInline(node);
+  return true; // Continue to name, value, and default value
+}
+
 bool ASTPrinter::visitStruct(const StructExpressionNode *node) {
   printNodeStartInline(node);
   return true; // Continue to fields
@@ -206,8 +211,7 @@ bool ASTPrinter::visitStruct(const StructExpressionNode *node) {
 
 bool ASTPrinter::visitMember(const MemberExpressionNode *node) {
   printNodeStartInline(node);
-  *output_ << " " << node->member;
-  return true; // Continue to object
+  return true; // Continue to object and member
 }
 
 bool ASTPrinter::visitMacroCall(const MacroCallExpressionNode *node) {
