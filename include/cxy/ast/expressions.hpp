@@ -295,11 +295,13 @@ class CastExpressionNode : public ExpressionNode {
 public:
   ASTNode *expr;     ///< Expression being cast
   ASTNode *typeExpr; ///< Target type expression
+  bool isRetype; ///< true for unsafe retype (!:), false for normal cast (as)
 
   explicit CastExpressionNode(ASTNode *expression, ASTNode *type_expr,
-                              Location loc, ArenaAllocator &arena)
+                              bool unsafe_retype, Location loc,
+                              ArenaAllocator &arena)
       : ExpressionNode(astCastExpr, loc, arena), expr(expression),
-        typeExpr(type_expr) {
+        typeExpr(type_expr), isRetype(unsafe_retype) {
     if (expr) {
       addChild(expr);
     }
@@ -310,7 +312,9 @@ public:
 
   std::format_context::iterator
   toString(std::format_context &ctx) const override {
-    return std::format_to(ctx.out(), "Cast({} as {})",
+    const char *op = isRetype ? "!:" : "as";
+    const char *nodeType = isRetype ? "RetypeExpr" : "CastExpr";
+    return std::format_to(ctx.out(), "({} {} {} {})", nodeType, op,
                           expr ? std::format("{}", *expr) : "null",
                           typeExpr ? std::format("{}", *typeExpr) : "null");
   }
@@ -468,35 +472,26 @@ public:
  */
 class FieldExpressionNode : public ExpressionNode {
 public:
-  ASTNode *name;         ///< Field name (identifier)
-  ASTNode *value;        ///< Field value expression
-  ASTNode *defaultValue; ///< Optional default value
+  ASTNode *name;  ///< Field name (identifier)
+  ASTNode *value; ///< Field value expression
 
   explicit FieldExpressionNode(ASTNode *field_name, ASTNode *field_value,
-                               ASTNode *default_val, Location loc,
-                               ArenaAllocator &arena)
+                               Location loc, ArenaAllocator &arena)
       : ExpressionNode(astFieldExpr, loc, arena), name(field_name),
-        value(field_value), defaultValue(default_val) {
+        value(field_value) {
     if (name) {
       addChild(name);
     }
     if (value) {
       addChild(value);
     }
-    if (defaultValue) {
-      addChild(defaultValue);
-    }
   }
 
   std::format_context::iterator
   toString(std::format_context &ctx) const override {
-    auto it = std::format_to(ctx.out(), "Field({}: {}",
-                             name ? std::format("{}", *name) : "null",
-                             value ? std::format("{}", *value) : "null");
-    if (defaultValue) {
-      it = std::format_to(it, " = {}", std::format("{}", *defaultValue));
-    }
-    return std::format_to(it, ")");
+    return std::format_to(ctx.out(), "Field({}: {})",
+                          name ? std::format("{}", *name) : "null",
+                          value ? std::format("{}", *value) : "null");
   }
 };
 
@@ -758,8 +753,9 @@ inline StringExpressionNode *createStringExpr(Location loc,
  * @brief Create a cast expression node.
  */
 inline CastExpressionNode *createCastExpr(ASTNode *expr, ASTNode *type,
-                                          Location loc, ArenaAllocator &arena) {
-  return arena.construct<CastExpressionNode>(expr, type, loc, arena);
+                                          bool isRetype, Location loc,
+                                          ArenaAllocator &arena) {
+  return arena.construct<CastExpressionNode>(expr, type, isRetype, loc, arena);
 }
 
 /**
@@ -783,10 +779,9 @@ inline IndexExpressionNode *createIndexExpr(ASTNode *object, ASTNode *index,
  * @brief Create an array expression node.
  */
 inline FieldExpressionNode *createFieldExpr(ASTNode *name, ASTNode *value,
-                                            ASTNode *defaultValue, Location loc,
+                                            Location loc,
                                             ArenaAllocator &arena) {
-  return arena.construct<FieldExpressionNode>(name, value, defaultValue, loc,
-                                              arena);
+  return arena.construct<FieldExpressionNode>(name, value, loc, arena);
 }
 
 inline ArrayExpressionNode *createArrayExpr(Location loc,

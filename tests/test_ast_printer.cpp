@@ -1,5 +1,6 @@
 #include "ast_test_utils.hpp"
 #include "catch2.hpp"
+#include "cxy/ast/attributes.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/literals.hpp"
@@ -606,5 +607,146 @@ TEST_CASE("AST Printer - Error Conditions", "[ast][printer]") {
     // Malformed S-expressions should fall back gracefully
     REQUIRE_THROWS(parseSerial("(unclosed"));
     REQUIRE_THROWS(parseSerial("(unterminated \"string"));
+  }
+}
+
+TEST_CASE("AST Printer - Node Attributes", "[ast][printer][attributes]") {
+  ArenaAllocator arena;
+  StringInterner interner(arena);
+  Location loc("test.cxy", Position(1, 1, 0), Position(1, 5, 4));
+
+  SECTION("Node without attributes") {
+    auto *node = createBoolLiteral(true, loc, arena);
+
+    // Without IncludeAttributes flag - no attributes shown
+    ASTPrinter printer({PrinterFlags::None});
+    REQUIRE(printer.print(node) == "(Bool true)");
+
+    // With IncludeAttributes flag but no attributes - still nothing shown
+    ASTPrinter printerWithAttrs({PrinterFlags::IncludeAttributes});
+    REQUIRE(printerWithAttrs.print(node) == "(Bool true)");
+  }
+
+  SECTION("Node with single attribute") {
+    auto *node = createIntLiteral(42, loc, arena);
+    auto *attr = createAttribute(interner.intern("Test"), loc, arena);
+    node->addAttribute(attr);
+
+    // Without IncludeAttributes flag - attributes not shown
+    ASTPrinter printer({PrinterFlags::None});
+    REQUIRE(printer.print(node) == "(Int 42)");
+
+    // With IncludeAttributes flag - attributes shown
+    ASTPrinter printerWithAttrs({PrinterFlags::IncludeAttributes});
+    REQUIRE(printerWithAttrs.print(node) == "(Int 42 [Test])");
+  }
+
+  SECTION("Node with multiple attributes") {
+    auto *node = createFloatLiteral(3.14, loc, arena);
+    auto *attr1 = createAttribute(interner.intern("Test1"), loc, arena);
+    auto *attr2 = createAttribute(interner.intern("Test2"), loc, arena);
+    auto *attr3 = createAttribute(interner.intern("Test3"), loc, arena);
+
+    node->addAttribute(attr1);
+    node->addAttribute(attr2);
+    node->addAttribute(attr3);
+
+    ASTPrinter printer({PrinterFlags::IncludeAttributes});
+    REQUIRE(printer.print(node) == "(Float 3.14 [Test1 Test2 Test3])");
+  }
+
+  SECTION("Attribute management methods") {
+    auto *node = createIntLiteral(123, loc, arena);
+    auto *attr1 = createAttribute(interner.intern("Attr1"), loc, arena);
+    auto *attr2 = createAttribute(interner.intern("Attr2"), loc, arena);
+
+    REQUIRE_FALSE(node->hasAttributes());
+    REQUIRE(node->getAttributeCount() == 0);
+    REQUIRE(node->getAttribute(0) == nullptr);
+
+    node->addAttribute(attr1);
+    REQUIRE(node->hasAttributes());
+    REQUIRE(node->getAttributeCount() == 1);
+    REQUIRE(node->getAttribute(0) == attr1);
+
+    node->addAttribute(attr2);
+    REQUIRE(node->getAttributeCount() == 2);
+    REQUIRE(node->getAttribute(1) == attr2);
+
+    REQUIRE(node->removeAttribute(attr1));
+    REQUIRE(node->getAttributeCount() == 1);
+    REQUIRE(node->getAttribute(0) == attr2);
+    REQUIRE_FALSE(node->removeAttribute(attr1)); // Already removed
+
+    // Test adding null attribute (should be ignored)
+    node->addAttribute(nullptr);
+    REQUIRE(node->getAttributeCount() == 1);
+  }
+
+  SECTION("Attributes with positional arguments") {
+    auto *node = createArrayExpr(loc, arena);
+
+    // Create attribute with positional literal arguments
+    auto *attr = createAttribute(interner.intern("Config"), loc, arena);
+    attr->addArg(createIntLiteral(10, loc, arena));
+    attr->addArg(createBoolLiteral(true, loc, arena));
+    attr->addArg(createStringLiteral(interner.intern("test"), loc, arena));
+
+    node->addAttribute(attr);
+
+    ASTPrinter printer({PrinterFlags::IncludeAttributes});
+    std::string result = printer.print(node);
+    REQUIRE(result.find("[Config(10 true \"test\")]") != std::string::npos);
+  }
+
+  SECTION("Attributes with named arguments") {
+    auto *node = createBoolLiteral(false, loc, arena);
+
+    // Create attribute with named field arguments
+    auto *attr = createAttribute(interner.intern("Setup"), loc, arena);
+    auto *field1 =
+        createFieldExpr(createIdentifier(interner.intern("width"), loc, arena),
+                        createIntLiteral(800, loc, arena), loc, arena);
+    auto *field2 =
+        createFieldExpr(createIdentifier(interner.intern("height"), loc, arena),
+                        createIntLiteral(600, loc, arena), loc, arena);
+    attr->addArg(field1);
+    attr->addArg(field2);
+
+    node->addAttribute(attr);
+
+    ASTPrinter printer({PrinterFlags::IncludeAttributes});
+    std::string result = printer.print(node);
+    REQUIRE(result.find("[Setup(width 800 height 600)]") != std::string::npos);
+  }
+
+  SECTION("Combined with other printer flags") {
+    auto *node = createBoolLiteral(false, loc, arena);
+    auto *attr = createAttribute(interner.intern("Test"), loc, arena);
+    node->addAttribute(attr);
+
+    // Combine attributes with location
+    ASTPrinter printer(
+        {PrinterFlags::IncludeAttributes | PrinterFlags::IncludeLocation});
+    std::string result = printer.print(node);
+    REQUIRE(result.find("@1:1") != std::string::npos);
+    REQUIRE(result.find("[Test]") != std::string::npos);
+
+    // Combine with metadata
+    node->setMetadata("test_key", std::string("test_value"));
+    ASTPrinter printerWithMeta(
+        {PrinterFlags::IncludeAttributes | PrinterFlags::IncludeMetadata});
+    std::string resultWithMeta = printerWithMeta.print(node);
+    REQUIRE(resultWithMeta.find("[Test]") != std::string::npos);
+    REQUIRE(resultWithMeta.find("[metadata=1 entries]") != std::string::npos);
+  }
+
+  SECTION("Simple attribute names") {
+    auto *node = createIdentifier(interner.intern("myVar"), loc, arena);
+    auto *attr = createAttribute(interner.intern("deprecated"), loc, arena);
+    node->addAttribute(attr);
+
+    ASTPrinter printer({PrinterFlags::IncludeAttributes});
+    REQUIRE(printer.print(node) == "(Identifier myVar [deprecated])");
   }
 }

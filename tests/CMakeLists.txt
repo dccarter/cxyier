@@ -14,6 +14,30 @@ add_executable(cxyier_tests
     test_includes.cpp
     test_ast_visitor.cpp
     test_ast_printer.cpp
+    parser/test_token_buffer.cpp
+    parser/test_identifiers.cpp
+    parser/test_primary_expressions.cpp
+    parser/literals/test_integer_literals.cpp
+    parser/literals/test_float_literals.cpp
+    parser/literals/test_string_literals.cpp
+    parser/literals/test_character_literals.cpp
+    parser/literals/test_boolean_null_literals.cpp
+    parser/expressions/test_arithmetic_expressions.cpp
+    parser/expressions/test_shift_expressions.cpp
+    parser/expressions/test_relational_expressions.cpp
+    parser/expressions/test_equality_expressions.cpp
+    parser/expressions/test_bitwise_expressions.cpp
+    parser/expressions/test_logical_expressions.cpp
+    parser/expressions/test_conditional_expressions.cpp
+    parser/expressions/test_assignment_expressions.cpp
+    parser/expressions/test_array_literals.cpp
+    parser/expressions/test_tuple_literals.cpp
+    parser/expressions/test_function_calls.cpp
+    parser/expressions/test_indexing.cpp
+    parser/expressions/test_member_access.cpp
+    parser/expressions/test_cast_expressions.cpp
+    parser/test_expression_integration.cpp
+    parser/debug_test.cpp
 )
 
 # Link libraries (using single-header versions and our memory library)

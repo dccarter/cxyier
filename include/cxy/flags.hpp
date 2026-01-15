@@ -49,7 +49,7 @@ constexpr std::string_view flagToString(Flags flag) {
   switch (flag) {
 #define CXY_FLAG_STRING(name, bit)                                             \
   case flg##name:                                                              \
-    return "flg" #name;
+    return #name;
     CXY_FLAGS(CXY_FLAG_STRING)
 #undef CXY_FLAG_STRING
   default:

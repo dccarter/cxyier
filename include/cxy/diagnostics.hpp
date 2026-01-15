@@ -73,6 +73,8 @@ struct Location {
   [[nodiscard]] size_t getLength() const noexcept {
     return end.byteOffset - start.byteOffset;
   }
+
+  [[nodiscard]] bool isValid() const noexcept { return !filename.empty(); }
 };
 
 enum class Severity { Info, Warning, Error, Fatal };

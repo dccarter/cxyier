@@ -35,6 +35,7 @@ enum class FloatType : uint8_t {
   F64   // d suffix or no suffix (default)
 };
 
+// clang-format off
 /**
  * @brief Macro defining all symbol tokens in the Cxy language.
  *
@@ -42,29 +43,64 @@ enum class FloatType : uint8_t {
  * in the language syntax.
  */
 #define SYMBOL_LIST(f)                                                         \
-  f(LParen, "(") f(RParen, ")") f(LBracket, "[") f(RBracket, "]")              \
-      f(LBrace, "{") f(RBrace, "}") f(At, "@") f(Hash, "#") f(LNot, "!") f(    \
-          BNot, "~") f(Dot, ".") f(DotDot, "..") f(Elipsis, "...")             \
-          f(Question, "?") f(Comma, ",") f(Colon, ":") f(Semicolon, ";") f(    \
-              Assign, "=") f(Equal, "==") f(NotEqual, "!=") f(FatArrow, "=>")  \
-              f(ThinArrow, "->") f(Less, "<") f(LessEqual, "<=") f(Shl, "<<")  \
-                  f(ShlEqual, "<<=") f(Greater, ">") f(GreaterEqual, ">=") f(  \
-                      Shr, ">>") f(ShrEqual,                                   \
-                                   ">>=") f(Plus, "+") f(Minus, "-")           \
-                      f(Mult, "*") f(Div, "/") f(Mod, "%") f(BAnd, "&")        \
-                          f(BXor, "^") f(BOr, "|") f(LAnd, "&&") f(LOr, "||")  \
-                              f(PlusPlus, "++") f(MinusMinus, "--") f(         \
-                                  PlusEqual, "+=") f(MinusEqual, "-=")         \
-                                  f(MultEqual, "*=") f(DivEqual,               \
-                                                       "/=") f(ModEqual, "%=") \
-                                      f(BAndEqual, "&=") f(BAndDot, "&.") f(   \
-                                          BXorEqual, "^=") f(BOrEqual, "|=")   \
-                                          f(Quote, "`") f(CallOverride, "()")  \
-                                              f(IndexOverride,                 \
-                                                "[]") f(IndexAssignOvd, "[]=") \
-                                                  f(AstMacroAccess, "#.")      \
-                                                      f(Define, "##")          \
-                                                          f(BangColon, "!:")
+  f(LParen, "(")                                                               \
+  f(RParen, ")")                                                               \
+  f(LBracket, "[")                                                             \
+  f(RBracket, "]")                                                             \
+  f(LBrace, "{")                                                               \
+  f(RBrace, "}")                                                               \
+  f(At, "@")                                                                   \
+  f(Hash, "#")                                                                 \
+  f(LNot, "!")                                                                 \
+  f(BNot, "~")                                                                 \
+  f(Dot, ".")                                                                  \
+  f(DotDot, "..")                                                              \
+  f(Elipsis, "...")                                                            \
+  f(Question, "?")                                                             \
+  f(Comma, ",")                                                                \
+  f(Colon, ":")                                                                \
+  f(Semicolon, ";")                                                            \
+  f(Assign, "=")                                                               \
+  f(Equal, "==")                                                               \
+  f(NotEqual, "!=")                                                            \
+  f(FatArrow, "=>")                                                            \
+  f(ThinArrow, "->")                                                           \
+  f(Less, "<")                                                                 \
+  f(LessEqual, "<=")                                                           \
+  f(Shl, "<<")                                                                 \
+  f(ShlEqual, "<<=")                                                           \
+  f(Greater, ">")                                                              \
+  f(GreaterEqual, ">=")                                                        \
+  f(Shr, ">>")                                                                 \
+  f(ShrEqual, ">>=")                                                           \
+  f(Plus, "+")                                                                 \
+  f(Minus, "-")                                                                \
+  f(Mult, "*")                                                                 \
+  f(Div, "/")                                                                  \
+  f(Mod, "%")                                                                  \
+  f(BAnd, "&")                                                                 \
+  f(BXor, "^")                                                                 \
+  f(BOr, "|")                                                                  \
+  f(LAnd, "&&")                                                                \
+  f(LOr, "||")                                                                 \
+  f(PlusPlus, "++")                                                            \
+  f(MinusMinus, "--")                                                          \
+  f(PlusEqual, "+=")                                                           \
+  f(MinusEqual, "-=")                                                          \
+  f(MultEqual, "*=")                                                           \
+  f(DivEqual, "/=")                                                            \
+  f(ModEqual, "%=")                                                            \
+  f(BAndEqual, "&=")                                                           \
+  f(BAndDot, "&.")                                                             \
+  f(BXorEqual, "^=")                                                           \
+  f(BOrEqual, "|=")                                                            \
+  f(Quote, "`")                                                                \
+  f(CallOverride, "()")                                                        \
+  f(IndexOverride, "[]")                                                       \
+  f(IndexAssignOvd, "[]=")                                                     \
+  f(AstMacroAccess, "#.")                                                      \
+  f(Define, "##")                                                              \
+  f(BangColon, "!:")
 
 /**
  * @brief Macro defining primitive type keywords.
@@ -74,9 +110,20 @@ enum class FloatType : uint8_t {
  * primitive types (e.g., i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, etc.)
  */
 #define PRIM_TYPE_LIST(f)                                                      \
-  f(I8, "i8") f(I16, "i16") f(I32, "i32") f(I64, "i64") f(I128, "i128")        \
-      f(U8, "u8") f(U16, "u16") f(U32, "u32") f(U64, "u64") f(U128, "u128")    \
-          f(F32, "f32") f(F64, "f64") f(Bool, "bool") f(Char, "char")
+  f(I8, "i8")                                                                  \
+  f(I16, "i16")                                                                \
+  f(I32, "i32")                                                                \
+  f(I64, "i64")                                                                \
+  f(I128, "i128")                                                              \
+  f(U8, "u8")                                                                  \
+  f(U16, "u16")                                                                \
+  f(U32, "u32")                                                                \
+  f(U64, "u64")                                                                \
+  f(U128, "u128")                                                              \
+  f(F32, "f32")                                                                \
+  f(F64, "f64")                                                                \
+  f(Bool, "bool")                                                              \
+  f(Char, "char")
 
 /**
  * @brief Macro defining all keyword tokens in the Cxy language.
@@ -84,45 +131,67 @@ enum class FloatType : uint8_t {
  * These are reserved words that have special meaning in the language.
  */
 #define KEYWORD_LIST(f)                                                        \
-  f(Virtual, "virtual") f(Auto, "auto") f(True, "true") f(False, "false") f(   \
-      Null, "null") f(If, "if") f(Else, "else") f(Match, "match")              \
-      f(For, "for") f(In, "in") f(Is, "is") f(While, "while") f(               \
-          Break, "break") f(Return, "return") f(Yield, "yield") f(Continue,    \
-                                                                  "continue")  \
-          f(Func, "func") f(Var, "var") f(Const, "const") f(Type, "type") f(   \
-              Native, "native") f(Extern, "extern") f(Exception, "exception")  \
-              f(Struct, "struct") f(Enum, "enum") f(Pub, "pub")                \
-                  f(Opaque, "opaque") f(Catch, "catch") f(Raise, "raise") f(   \
-                      Async,                                                   \
-                      "async") f(Launch, "launch") f(Ptrof, "ptrof")           \
-                      f(Await, "await") f(Delete, "delete") f(                 \
-                          Discard,                                             \
-                          "discard") f(Switch,                                 \
-                                       "switch") f(Case,                       \
-                                                   "case") f(Default,          \
-                                                             "default")        \
-                          f(Defer, "defer") f(                                 \
-                              Macro,                                           \
-                              "macro") f(Void,                                 \
-                                         "void") f(String, "string")           \
-                              f(Range, "range") f(Module, "module") f(         \
-                                  Import,                                      \
-                                  "import") f(Include, "include")              \
-                                  f(CSources,                                  \
-                                    "cSources") f(As, "as")                    \
-                                      f(Asm, "asm") f(From, "from") f(         \
-                                          Unsafe,                              \
-                                          "unsafe") f(Interface, "interface")  \
-                                          f(This,                              \
-                                            "this") f(ThisClass, "This")       \
-                                              f(Super,                         \
-                                                "super") f(Class, "class")     \
-                                                  f(Defined,                   \
-                                                    "defined") f(Test, "test") \
-                                                      f(Plugin, "plugin")      \
-                                                          f(CBuild, "__cc")    \
-                                                              PRIM_TYPE_LIST(  \
-                                                                  f)
+  f(Virtual, "virtual")                                                        \
+  f(Auto, "auto")                                                              \
+  f(True, "true")                                                              \
+  f(False, "false")                                                            \
+  f(Null, "null")                                                              \
+  f(If, "if")                                                                  \
+  f(Else, "else")                                                              \
+  f(Match, "match")                                                            \
+  f(For, "for")                                                                \
+  f(In, "in")                                                                  \
+  f(Is, "is")                                                                  \
+  f(While, "while")                                                            \
+  f(Break, "break")                                                            \
+  f(Return, "return")                                                          \
+  f(Yield, "yield")                                                            \
+  f(Continue, "continue")                                                      \
+  f(Func, "func")                                                              \
+  f(Var, "var")                                                                \
+  f(Const, "const")                                                            \
+  f(Type, "type")                                                              \
+  f(Native, "native")                                                          \
+  f(Extern, "extern")                                                          \
+  f(Exception, "exception")                                                    \
+  f(Struct, "struct")                                                          \
+  f(Enum, "enum")                                                              \
+  f(Pub, "pub")                                                                \
+  f(Opaque, "opaque")                                                          \
+  f(Catch, "catch")                                                            \
+  f(Raise, "raise")                                                            \
+  f(Async, "async")                                                            \
+  f(Launch, "launch")                                                          \
+  f(Ptrof, "ptrof")                                                            \
+  f(Await, "await")                                                            \
+  f(Delete, "delete")                                                          \
+  f(Discard, "discard")                                                        \
+  f(Switch, "switch")                                                          \
+  f(Case, "case")                                                              \
+  f(Default, "default")                                                        \
+  f(Defer, "defer")                                                            \
+  f(Macro, "macro")                                                            \
+  f(Void, "void")                                                              \
+  f(String, "string")                                                          \
+  f(Range, "range")                                                            \
+  f(Module, "module")                                                          \
+  f(Import, "import")                                                          \
+  f(Include, "include")                                                        \
+  f(CSources, "cSources")                                                      \
+  f(As, "as")                                                                  \
+  f(Asm, "asm")                                                                \
+  f(From, "from")                                                              \
+  f(Unsafe, "unsafe")                                                          \
+  f(Interface, "interface")                                                    \
+  f(This, "this")                                                              \
+  f(ThisClass, "This")                                                         \
+  f(Super, "super")                                                            \
+  f(Class, "class")                                                            \
+  f(Defined, "defined")                                                        \
+  f(Test, "test")                                                              \
+  f(Plugin, "plugin")                                                          \
+  f(CBuild, "__cc")                                                            \
+  PRIM_TYPE_LIST(f)
 
 /**
  * @brief Macro defining special token types.
@@ -131,12 +200,15 @@ enum class FloatType : uint8_t {
  * but represent categories of tokens (identifiers, literals, etc.)
  */
 #define SPECIAL_TOKEN_LIST(f)                                                  \
-  f(Ident, "identifier") f(IntLiteral, "integer literal")                      \
-      f(FloatLiteral, "floating-point literal")                                \
-          f(CharLiteral, "character literal")                                  \
-              f(StringLiteral, "string literal") f(LString, "`(")              \
-                  f(RString, ")`") f(EoF, "end of file")                       \
-                      f(Error, "invalid token")
+  f(Ident, "identifier")                                                       \
+  f(IntLiteral, "integer literal")                                             \
+  f(FloatLiteral, "floating-point literal")                                   \
+  f(CharLiteral, "character literal")                                         \
+  f(StringLiteral, "string literal")                                          \
+  f(LString, "`(")                                                             \
+  f(RString, ")`")                                                             \
+  f(EoF, "end of file")                                                        \
+  f(Error, "invalid token")
 
 /**
  * @brief Master macro defining all token types.
@@ -149,6 +221,8 @@ enum class FloatType : uint8_t {
   SYMBOL_LIST(f)                                                               \
   KEYWORD_LIST(f)                                                              \
   SPECIAL_TOKEN_LIST(f)
+
+// clang-format on
 
 /**
  * @brief Enumeration of all token kinds in the Cxy language.
@@ -254,7 +328,7 @@ constexpr bool isLiteral(TokenKind kind) {
 constexpr bool isPrimitiveType(TokenKind kind) {
   return (kind >= TokenKind::I8 && kind <= TokenKind::Char) ||
          kind == TokenKind::Void || kind == TokenKind::String ||
-         kind == TokenKind::Bool;
+         kind == TokenKind::Bool || kind == TokenKind::Auto;
 }
 
 /**
@@ -308,8 +382,9 @@ struct Token {
    * @brief Union holding parsed literal values for different token types.
    */
   union Value {
-    bool boolValue;     ///< For true/false literals
-    uint32_t charValue; ///< For character literals (Unicode codepoint)
+    bool boolValue;             ///< For true/false literals
+    uint32_t charValue;         ///< For character literals (Unicode codepoint)
+    InternedString stringValue; ///< For string literals and identifiers
 
     struct {
       __uint128_t value;
@@ -347,6 +422,11 @@ struct Token {
      */
     explicit Value(double f, FloatType t = FloatType::Auto)
         : floatValue{f, t} {}
+
+    /**
+     * @brief Constructor for string values.
+     */
+    explicit Value(InternedString s) : stringValue(s) {}
   } value;
 
   bool hasValue = false; ///< Whether the value union contains valid data
@@ -407,6 +487,16 @@ struct Token {
    */
   Token(TokenKind k, Location loc, double val, FloatType type = FloatType::Auto)
       : kind(k), location(loc), value(val, type), hasValue(true) {}
+
+  /**
+   * @brief Construct a token with a string value.
+   *
+   * @param k The token kind (should be StringLiteral or Ident)
+   * @param loc The source location
+   * @param val The interned string value
+   */
+  Token(TokenKind k, Location loc, InternedString val)
+      : kind(k), location(loc), value(val), hasValue(true) {}
 
   /**
    * @brief Check if this is a valid token.

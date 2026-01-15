@@ -11,6 +11,7 @@ add_library(cxy_memory STATIC
     frontend/lexer.cpp
     frontend/ast/visitor.cpp
     frontend/ast/printer.cpp
+    frontend/parser.cpp
 )
 
 target_include_directories(cxy_memory PUBLIC

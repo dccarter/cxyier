@@ -23,6 +23,13 @@ namespace cxy::ast {
     f(Identifier)               \
     f(QualifiedPath)            \
                                 \
+    /* Types */                 \
+    f(PrimitiveType)            \
+                                \
+    /* Attributes */            \
+    f(Attribute)                \
+    f(AttributeList)            \
+                                \
     /* Expressions */           \
     f(UnaryExpr)                \
     f(BinaryExpr)               \

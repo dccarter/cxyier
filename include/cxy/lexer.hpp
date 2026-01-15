@@ -42,7 +42,7 @@ public:
 
   // Constructor
   Lexer(std::string_view filename, std::string_view content,
-        DiagnosticLogger &logger);
+        DiagnosticLogger &logger, StringInterner &interner);
 
 private:
   // Buffer stack for include directives
@@ -57,6 +57,7 @@ private:
 
   std::vector<LexerBuffer> bufferStack;
   DiagnosticLogger &logger;
+  StringInterner &interner;
 
   // Phase 6: String interpolation state (stack-based for nesting)
   struct InterpolationContext {
@@ -105,6 +106,14 @@ private:
   Token lexCharacter();
   Token lexIdentifierOrKeyword();
   Token lexSymbol();
+
+  // String processing helpers
+  Token createProcessedStringToken(const char *contentStart,
+                                   size_t sourceLength, bool hasEscapes,
+                                   size_t estimatedLength,
+                                   const Position &start);
+  size_t processEscapeSequences(const char *source, size_t sourceLength,
+                                char *dest);
 
   // Helper methods
   bool isAtBufferEnd() const;

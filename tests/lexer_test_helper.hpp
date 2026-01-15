@@ -1,7 +1,9 @@
 #pragma once
 
+#include "cxy/arena_allocator.hpp"
 #include "cxy/diagnostics.hpp"
 #include "cxy/lexer.hpp"
+#include "cxy/strings.hpp"
 #include "cxy/token.hpp"
 #include <memory>
 #include <string>
@@ -17,7 +19,7 @@ namespace cxy {
  */
 class LexerTestHelper {
 public:
-  LexerTestHelper() {
+  LexerTestHelper() : arena(1024 * 1024) { // 1MB arena
     logger = std::make_unique<DiagnosticLogger>();
     // Remove default console sink to avoid noise in tests
     logger->removeAllSinks();
@@ -26,6 +28,7 @@ public:
     diagnosticsPtr = memoryDiagnostics.get();
     logger->addSink(std::move(memoryDiagnostics));
     sourceManager = std::make_unique<SourceManager>();
+    interner = std::make_unique<StringInterner>(arena);
   }
 
   std::vector<Token> tokenize(const std::string &input,
@@ -36,7 +39,7 @@ public:
     // Register the source content with SourceManager
     sourceManager->registerFile(filename, input);
 
-    Lexer lexer(filename, input, *logger);
+    Lexer lexer(filename, input, *logger, *interner);
     std::vector<Token> tokens;
 
     Token token;
@@ -50,6 +53,14 @@ public:
 
   std::string_view getTokenText(const Token &token) {
     return cxy::getTokenText(token, *sourceManager);
+  }
+
+  std::string_view getStringValue(const Token &token) {
+    if (token.hasLiteralValue() && (token.kind == TokenKind::StringLiteral ||
+                                    token.kind == TokenKind::Ident)) {
+      return token.value.stringValue.view();
+    }
+    return "";
   }
 
   DiagnosticLogger &getLogger() { return *logger; }
@@ -79,8 +90,10 @@ public:
   void clearDiagnostics() { diagnosticsPtr->clear(); }
 
 private:
+  ArenaAllocator arena;
   std::unique_ptr<DiagnosticLogger> logger;
   std::unique_ptr<SourceManager> sourceManager;
+  std::unique_ptr<StringInterner> interner;
   std::unique_ptr<InMemoryDiagnosticSink> memoryDiagnostics;
   InMemoryDiagnosticSink *diagnosticsPtr; // Non-owning pointer for easy access
 };

@@ -28,6 +28,7 @@ class StringExpressionNode;
 class CastExpressionNode;
 class CallExpressionNode;
 class IndexExpressionNode;
+class PrimitiveTypeNode;
 class ArrayExpressionNode;
 class TupleExpressionNode;
 class FieldExpressionNode;
@@ -88,6 +89,9 @@ public:
 
   virtual bool visitQualifiedPath(QualifiedPathNode *node);
   virtual void visitQualifiedPathPost(QualifiedPathNode *node);
+
+  virtual bool visitPrimitiveType(PrimitiveTypeNode *node);
+  virtual void visitPrimitiveTypePost(PrimitiveTypeNode *node);
 
   // Expression node visits
   virtual bool visitUnary(UnaryExpressionNode *node);
@@ -199,6 +203,9 @@ public:
 
   virtual bool visitQualifiedPath(const QualifiedPathNode *node);
   virtual void visitQualifiedPathPost(const QualifiedPathNode *node);
+
+  virtual bool visitPrimitiveType(const PrimitiveTypeNode *node);
+  virtual void visitPrimitiveTypePost(const PrimitiveTypeNode *node);
 
   // Expression node visits
   virtual bool visitUnary(const UnaryExpressionNode *node);

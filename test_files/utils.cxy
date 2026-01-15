@@ -1,8 +1,0 @@
-// Simple utility file for testing includes
-func add(x: i32, y: i32) -> i32 {
-    return x + y;
-}
-
-const PI = 3.14159;
-
-var globalCounter = 0;

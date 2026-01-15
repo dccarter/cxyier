@@ -1,7 +1,9 @@
 #include "cxy/ast/visitor.hpp"
+#include "cxy/ast/attributes.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/literals.hpp"
+#include "cxy/ast/types.hpp"
 
 namespace cxy::ast {
 
@@ -60,6 +62,8 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitIdentifier(static_cast<IdentifierNode *>(node));
   case astQualifiedPath:
     return visitQualifiedPath(static_cast<QualifiedPathNode *>(node));
+  case astPrimitiveType:
+    return visitPrimitiveType(static_cast<PrimitiveTypeNode *>(node));
 
   // Expressions
   case astUnaryExpr:
@@ -139,6 +143,9 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
     break;
   case astQualifiedPath:
     visitQualifiedPathPost(static_cast<QualifiedPathNode *>(node));
+    break;
+  case astPrimitiveType:
+    visitPrimitiveTypePost(static_cast<PrimitiveTypeNode *>(node));
     break;
 
   // Expressions
@@ -247,6 +254,8 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitIdentifier(static_cast<const IdentifierNode *>(node));
   case astQualifiedPath:
     return visitQualifiedPath(static_cast<const QualifiedPathNode *>(node));
+  case astPrimitiveType:
+    return visitPrimitiveType(static_cast<const PrimitiveTypeNode *>(node));
 
   // Expressions
   case astUnaryExpr:
@@ -326,6 +335,9 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
   case astQualifiedPath:
     visitQualifiedPathPost(static_cast<const QualifiedPathNode *>(node));
+    break;
+  case astPrimitiveType:
+    visitPrimitiveTypePost(static_cast<const PrimitiveTypeNode *>(node));
     break;
 
   // Expressions
@@ -457,6 +469,14 @@ bool ASTVisitor::visitQualifiedPath(QualifiedPathNode *node) {
 }
 
 void ASTVisitor::visitQualifiedPathPost(QualifiedPathNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitPrimitiveType(PrimitiveTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitPrimitiveTypePost(PrimitiveTypeNode *node) {
   visitNodePost(static_cast<ASTNode *>(node));
 }
 
@@ -667,6 +687,14 @@ bool ConstASTVisitor::visitQualifiedPath(const QualifiedPathNode *node) {
 }
 
 void ConstASTVisitor::visitQualifiedPathPost(const QualifiedPathNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitPrimitiveType(const PrimitiveTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitPrimitiveTypePost(const PrimitiveTypeNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

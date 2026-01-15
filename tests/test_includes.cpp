@@ -1,6 +1,8 @@
 #include "catch2.hpp"
+#include "cxy/arena_allocator.hpp"
 #include "cxy/diagnostics.hpp"
 #include "cxy/lexer.hpp"
+#include "cxy/strings.hpp"
 #include "cxy/token.hpp"
 #include "lexer_test_helper.hpp"
 
@@ -15,7 +17,9 @@ TEST_CASE("Basic buffer pushing and popping", "[lexer][phase7]") {
   LexerTestHelper helper;
 
   std::string mainContent = "var main = 1;";
-  Lexer lexer("main.cxy", mainContent, helper.getLogger());
+  ArenaAllocator arena(1024 * 1024);
+  StringInterner interner(arena);
+  Lexer lexer("main.cxy", mainContent, helper.getLogger(), interner);
 
   // Should be able to push a new buffer
   bool success = lexer.pushBuffer("other.cxy", "var other = 2;");
@@ -36,7 +40,9 @@ TEST_CASE("Cycle detection prevents infinite includes", "[lexer][phase7]") {
   LexerTestHelper helper;
 
   std::string content = "var main = 1;";
-  Lexer lexer("main.cxy", content, helper.getLogger());
+  ArenaAllocator arena(1024 * 1024);
+  StringInterner interner(arena);
+  Lexer lexer("main.cxy", content, helper.getLogger(), interner);
 
   // Should be able to include different file
   bool success1 = lexer.pushBuffer("utils.cxy", "var util = 2;");
@@ -71,7 +77,9 @@ println(b);)";
   std::string utilsContent = "a + 10";
 
   auto &logger = helper.getLogger();
-  Lexer lexer("main.cxy", mainContent, logger);
+  ArenaAllocator arena(1024 * 1024);
+  StringInterner interner(arena);
+  Lexer lexer("main.cxy", mainContent, logger, interner);
 
   // Register sources with helper's source manager for token text extraction
   helper.tokenize(mainContent, "main.cxy");
@@ -194,7 +202,9 @@ TEST_CASE("Buffer popping happens automatically on EOF", "[lexer][phase7]") {
 
   std::string mainContent = "var main = 1;";
   auto &logger = helper.getLogger();
-  Lexer lexer("main.cxy", mainContent, logger);
+  ArenaAllocator arena(1024 * 1024);
+  StringInterner interner(arena);
+  Lexer lexer("main.cxy", mainContent, logger, interner);
 
   // Push a short buffer
   bool success = lexer.pushBuffer("short.cxy", "var x;");
@@ -231,7 +241,9 @@ TEST_CASE("Nested buffer management", "[lexer][phase7]") {
   LexerTestHelper helper;
 
   std::string mainContent = "var a = 1;";
-  Lexer lexer("main.cxy", mainContent, helper.getLogger());
+  ArenaAllocator arena(1024 * 1024);
+  StringInterner interner(arena);
+  Lexer lexer("main.cxy", mainContent, helper.getLogger(), interner);
 
   // Create a chain: main -> level1 -> level2 -> level3
   bool s1 = lexer.pushBuffer("level1.cxy", "var b = 2;");
@@ -264,7 +276,9 @@ TEST_CASE("Empty buffer handling", "[lexer][phase7]") {
   LexerTestHelper helper;
 
   std::string mainContent = "var main = 1;";
-  Lexer lexer("main.cxy", mainContent, helper.getLogger());
+  ArenaAllocator arena(1024 * 1024);
+  StringInterner interner(arena);
+  Lexer lexer("main.cxy", mainContent, helper.getLogger(), interner);
 
   // Push empty buffer
   bool success = lexer.pushBuffer("empty.cxy", "");
@@ -279,7 +293,9 @@ TEST_CASE("Whitespace-only buffer handling", "[lexer][phase7]") {
   LexerTestHelper helper;
 
   std::string mainContent = "var main = 1;";
-  Lexer lexer("main.cxy", mainContent, helper.getLogger());
+  ArenaAllocator arena(1024 * 1024);
+  StringInterner interner(arena);
+  Lexer lexer("main.cxy", mainContent, helper.getLogger(), interner);
 
   // Push whitespace-only buffer
   bool success = lexer.pushBuffer("whitespace.cxy", "   \n\t  \n  ");
@@ -294,7 +310,9 @@ TEST_CASE("Buffer stack location tracking", "[lexer][phase7]") {
   LexerTestHelper helper;
 
   std::string mainContent = "var main = 1;";
-  Lexer lexer("main.cxy", mainContent, helper.getLogger());
+  ArenaAllocator arena(1024 * 1024);
+  StringInterner interner(arena);
+  Lexer lexer("main.cxy", mainContent, helper.getLogger(), interner);
 
   bool success = lexer.pushBuffer("other.cxy", "var other = 2;");
   REQUIRE(success);

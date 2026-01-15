@@ -6,6 +6,18 @@
 #include <iostream>
 #include <sstream>
 
+// Forward declarations for attribute types
+namespace cxy::ast {
+class AttributeNode;
+class FieldExpressionNode;
+class BoolLiteralNode;
+class IntLiteralNode;
+class FloatLiteralNode;
+class StringLiteralNode;
+class CharLiteralNode;
+class IdentifierNode;
+} // namespace cxy::ast
+
 namespace cxy::ast {
 
 /**
@@ -13,12 +25,13 @@ namespace cxy::ast {
  */
 enum class PrinterFlags : uint32_t {
   None = 0,
-  IncludeLocation = 1 << 0, ///< Include source location info
-  IncludeTypes = 1 << 1,    ///< Include type annotations
-  IncludeFlags = 1 << 2,    ///< Include node flags
-  IncludeMetadata = 1 << 3, ///< Include metadata
-  CompactLiterals = 1 << 4, ///< Compact literal representation
-  CompactMode = 1 << 5,     ///< Minimize whitespace
+  IncludeLocation = 1 << 0,   ///< Include source location info
+  IncludeTypes = 1 << 1,      ///< Include type annotations
+  IncludeFlags = 1 << 2,      ///< Include node flags
+  IncludeMetadata = 1 << 3,   ///< Include metadata
+  IncludeAttributes = 1 << 4, ///< Include node attributes
+  CompactLiterals = 1 << 5,   ///< Compact literal representation
+  CompactMode = 1 << 6,       ///< Minimize whitespace
   Default = IncludeLocation
 };
 
@@ -99,6 +112,7 @@ protected:
 
   bool visitIdentifier(const IdentifierNode *node) override;
   bool visitQualifiedPath(const QualifiedPathNode *node) override;
+  bool visitPrimitiveType(const PrimitiveTypeNode *node) override;
 
   bool visitUnary(const UnaryExpressionNode *node) override;
   bool visitBinary(const BinaryExpressionNode *node) override;
@@ -125,10 +139,14 @@ private:
   void printNodeStart(const ASTNode *node);
   void printNodeEnd();
   void printNodeStartInline(const ASTNode *node);
+  void printNodeEndInline(const ASTNode *node);
+  void printNodeEndInlineWithAttributes(const ASTNode *node);
   void printLocation(const Location &loc);
   void printType(const Type *type);
   void printFlags(Flags flags);
   void printMetadata(const ASTNode *node);
+  void printAttributes(const ASTNode *node);
+  void printAttributeArgument(const ASTNode *arg);
   void printIndent();
   void increaseIndent();
   void decreaseIndent();

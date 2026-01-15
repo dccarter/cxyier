@@ -39,6 +39,9 @@ public:
   // Arena-allocated children storage
   ArenaVector<ASTNode *> children;
 
+  // Arena-allocated attributes storage
+  ArenaVector<ASTNode *> attrs;
+
   // Progressive enhancement fields (filled by semantic passes)
   Type *type = nullptr;  ///< Type information (null initially)
   Flags flags = flgNone; ///< Compiler pass flags
@@ -55,6 +58,7 @@ public:
    */
   explicit ASTNode(NodeKind k, Location loc, ArenaAllocator &arena)
       : kind(k), location(loc), children(ArenaSTLAllocator<ASTNode *>(arena)),
+        attrs(ArenaSTLAllocator<ASTNode *>(arena)),
         metadata(
             ArenaSTLAllocator<std::pair<const std::string, std::any>>(arena)) {}
 
@@ -137,6 +141,59 @@ public:
    * @return true if node has any children
    */
   bool hasChildren() const { return !children.empty(); }
+
+  // Attribute management methods
+
+  /**
+   * @brief Add an attribute node.
+   *
+   * Attributes are stored separately from children to allow for
+   * cleaner separation of syntax structure from metadata.
+   *
+   * @param attr Attribute node to add (must be arena-allocated)
+   */
+  void addAttribute(ASTNode *attr) {
+    if (attr) {
+      attrs.push_back(attr);
+    }
+  }
+
+  /**
+   * @brief Remove an attribute node.
+   *
+   * @param attr Attribute node to remove
+   * @return true if attribute was found and removed
+   */
+  bool removeAttribute(ASTNode *attr) {
+    auto it = std::find(attrs.begin(), attrs.end(), attr);
+    if (it != attrs.end()) {
+      attrs.erase(it);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * @brief Get attribute at specific index.
+   *
+   * @param index Attribute index
+   * @return Attribute node or nullptr if index out of bounds
+   */
+  ASTNode *getAttribute(size_t index) const {
+    return index < attrs.size() ? attrs[index] : nullptr;
+  }
+
+  /**
+   * @brief Get number of attributes.
+   * @return Attribute count
+   */
+  size_t getAttributeCount() const { return attrs.size(); }
+
+  /**
+   * @brief Check if node has attributes.
+   * @return true if node has any attributes
+   */
+  bool hasAttributes() const { return !attrs.empty(); }
 
   // Flag management methods
 

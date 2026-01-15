@@ -1,7 +1,9 @@
 #include "cxy/ast/printer.hpp"
+#include "cxy/ast/attributes.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/literals.hpp"
+#include "cxy/ast/types.hpp"
 #include "cxy/flags.hpp"
 #include "cxy/token.hpp"
 #include <format>
@@ -71,38 +73,77 @@ bool ASTPrinter::visitNode(const ASTNode *node) {
 }
 
 void ASTPrinter::visitNodePost(const ASTNode *node) {
+  // Always decrement depth for all nodes to maintain balance
   currentDepth_--;
-  decreaseIndent();
-  printNodeEnd();
+
+  // Only handle non-inline nodes (inline nodes handle their own closing)
+  if (!shouldPrintInline(node) && !isCompactMode()) {
+    // Print attributes before closing for non-inline nodes
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    decreaseIndent();
+    printNodeEnd();
+  }
   isFirstChild_ = false;
 }
 
 bool ASTPrinter::visitNoop(const ASTNode *node) {
   printNodeStartInline(node);
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
   return false; // No children for noop
 }
 
 bool ASTPrinter::visitBool(const BoolLiteralNode *node) {
   printNodeStartInline(node);
   *output_ << " " << (node->value ? "true" : "false");
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
   return false; // No children for literals
 }
 
 bool ASTPrinter::visitInt(const IntLiteralNode *node) {
   printNodeStartInline(node);
   *output_ << " " << static_cast<long long>(node->value);
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
   return false;
 }
 
 bool ASTPrinter::visitFloat(const FloatLiteralNode *node) {
   printNodeStartInline(node);
   *output_ << " " << node->value;
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
   return false;
 }
 
 bool ASTPrinter::visitString(const StringLiteralNode *node) {
   printNodeStartInline(node);
   *output_ << " \"" << node->value.view() << "\"";
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
   return false;
 }
 
@@ -113,17 +154,46 @@ bool ASTPrinter::visitChar(const CharLiteralNode *node) {
   } else {
     *output_ << std::format(" '\\u{{{:04x}}}'", node->value);
   }
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
   return false;
 }
 
 bool ASTPrinter::visitNull(const NullLiteralNode *node) {
   printNodeStartInline(node);
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
   return false;
 }
 
 bool ASTPrinter::visitIdentifier(const IdentifierNode *node) {
   printNodeStartInline(node);
   *output_ << " " << node->name.view();
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
+  return false;
+}
+
+bool ASTPrinter::visitPrimitiveType(const PrimitiveTypeNode *node) {
+  *output_ << " (Type " << tokenKindToString(node->typeKind);
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
   return false;
 }
 
@@ -176,7 +246,9 @@ bool ASTPrinter::visitStringExpr(const StringExpressionNode *node) {
 
 bool ASTPrinter::visitCast(const CastExpressionNode *node) {
   printNodeStartInline(node);
-  return true; // Continue to target type and expression
+  const char *op = node->isRetype ? "!:" : "as";
+  *output_ << " " << op;
+  return true; // Continue to expression and type
 }
 
 bool ASTPrinter::visitCall(const CallExpressionNode *node) {
@@ -191,12 +263,12 @@ bool ASTPrinter::visitIndex(const IndexExpressionNode *node) {
 
 bool ASTPrinter::visitArray(const ArrayExpressionNode *node) {
   printNodeStartInline(node);
-  return true; // Continue to elements
+  return true; // Continue to array elements
 }
 
 bool ASTPrinter::visitTuple(const TupleExpressionNode *node) {
   printNodeStartInline(node);
-  return true; // Continue to elements
+  return true; // Continue to tuple elements
 }
 
 bool ASTPrinter::visitField(const FieldExpressionNode *node) {
@@ -234,6 +306,11 @@ bool ASTPrinter::visitSpread(const SpreadExpressionNode *node) {
   return true; // Continue to expression
 }
 
+void ASTPrinter::printNodeEnd() {
+  *output_ << ")";
+  needsIndent_ = !isCompactMode();
+}
+
 void ASTPrinter::printNodeStart(const ASTNode *node) {
   if (needsIndent_) {
     printIndent();
@@ -260,12 +337,21 @@ void ASTPrinter::printNodeStart(const ASTNode *node) {
     printMetadata(node);
   }
 
+  if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+    printAttributes(node);
+  }
+
   needsIndent_ = !isCompactMode();
 }
 
-void ASTPrinter::printNodeEnd() {
+void ASTPrinter::printNodeEndInline(const ASTNode *node) { *output_ << ")"; }
+
+void ASTPrinter::printNodeEndInlineWithAttributes(const ASTNode *node) {
+  // Print attributes at the end for inline nodes
+  if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+    printAttributes(node);
+  }
   *output_ << ")";
-  needsIndent_ = !isCompactMode();
 }
 
 void ASTPrinter::printNodeStartInline(const ASTNode *node) {
@@ -281,6 +367,18 @@ void ASTPrinter::printNodeStartInline(const ASTNode *node) {
     // Print optional attributes inline
     if (config_.hasFlag(PrinterFlags::IncludeLocation)) {
       printLocation(node->location);
+    }
+
+    if (config_.hasFlag(PrinterFlags::IncludeTypes) && node->type) {
+      printType(node->type);
+    }
+
+    if (config_.hasFlag(PrinterFlags::IncludeFlags) && node->flags != flgNone) {
+      printFlags(node->flags);
+    }
+
+    if (config_.hasFlag(PrinterFlags::IncludeMetadata)) {
+      printMetadata(node);
     }
 
     needsIndent_ = false;
@@ -311,6 +409,105 @@ void ASTPrinter::printFlags(Flags flags) {
 void ASTPrinter::printMetadata(const ASTNode *node) {
   if (!node->metadata.empty()) {
     *output_ << " [metadata=" << node->metadata.size() << " entries]";
+  }
+}
+
+void ASTPrinter::printAttributes(const ASTNode *node) {
+  if (!node->attrs.empty()) {
+    *output_ << " [";
+    for (size_t i = 0; i < node->attrs.size(); ++i) {
+      if (i > 0) {
+        *output_ << " ";
+      }
+
+      if (node->attrs[i] && node->attrs[i]->kind == astAttribute) {
+        // Cast to AttributeNode to access name and args
+        auto *attr = static_cast<const AttributeNode *>(node->attrs[i]);
+        *output_ << attr->name.view();
+
+        if (attr->hasParameters()) {
+          *output_ << "(";
+          for (size_t j = 0; j < attr->args.size(); ++j) {
+            if (j > 0) {
+              *output_ << " ";
+            }
+
+            ASTNode *arg = attr->args[j];
+            if (arg->kind == astFieldExpr) {
+              // Named parameter: name value
+              auto *field = static_cast<const FieldExpressionNode *>(arg);
+              if (field->name) {
+                printAttributeArgument(field->name);
+                *output_ << " ";
+              }
+              if (field->value) {
+                printAttributeArgument(field->value);
+              }
+            } else {
+              // Positional parameter: just the value
+              printAttributeArgument(arg);
+            }
+          }
+          *output_ << ")";
+        }
+      } else if (node->attrs[i]) {
+        // Fallback for non-attribute nodes
+        *output_ << nodeKindToString(node->attrs[i]->kind);
+      } else {
+        *output_ << "null";
+      }
+    }
+    *output_ << "]";
+  }
+}
+
+void ASTPrinter::printAttributeArgument(const ASTNode *arg) {
+  if (!arg) {
+    *output_ << "null";
+    return;
+  }
+
+  switch (arg->kind) {
+  case astBool: {
+    auto *boolNode = static_cast<const BoolLiteralNode *>(arg);
+    *output_ << (boolNode->value ? "true" : "false");
+    break;
+  }
+  case astInt: {
+    auto *intNode = static_cast<const IntLiteralNode *>(arg);
+    *output_ << static_cast<long long>(intNode->value);
+    break;
+  }
+  case astFloat: {
+    auto *floatNode = static_cast<const FloatLiteralNode *>(arg);
+    *output_ << floatNode->value;
+    break;
+  }
+  case astString: {
+    auto *stringNode = static_cast<const StringLiteralNode *>(arg);
+    *output_ << "\"" << stringNode->value.view() << "\"";
+    break;
+  }
+  case astChar: {
+    auto *charNode = static_cast<const CharLiteralNode *>(arg);
+    if (charNode->value >= 32 && charNode->value <= 126) {
+      *output_ << "'" << static_cast<char>(charNode->value) << "'";
+    } else {
+      *output_ << std::format("'\\u{{{:04x}}}'", charNode->value);
+    }
+    break;
+  }
+  case astIdentifier: {
+    auto *identNode = static_cast<const IdentifierNode *>(arg);
+    *output_ << identNode->name.view();
+    break;
+  }
+  case astNull:
+    *output_ << "null";
+    break;
+  default:
+    *output_ << nodeKindToString(arg->kind);
+    break;
   }
 }
 

@@ -9,8 +9,8 @@ namespace cxy {
 
 // Constructor
 Lexer::Lexer(std::string_view filename, std::string_view content,
-             DiagnosticLogger &logger)
-    : logger(logger) {
+             DiagnosticLogger &logger, StringInterner &interner)
+    : logger(logger), interner(interner) {
   bufferStack.push_back({filename, content, 0, 1, 1, 0});
 }
 
@@ -249,10 +249,6 @@ Token Lexer::lexNextToken() {
     }
     return Token(TokenKind::Hash, makeLocation(start));
   case '.':
-    // Check if this is a floating point number starting with '.'
-    if (!isAtBufferEnd() && isDigit(peekChar(1))) {
-      return lexFloat(start, 10, 0, false); // Decimal float starting with '.'
-    }
     advance();
     if (currentChar() == '.') {
       advance();
@@ -391,8 +387,9 @@ Token Lexer::lexIdentifierOrKeyword() {
     return Token(it->second, makeLocation(start));
   }
 
-  // Create identifier token (only allocate string when needed)
-  return Token(TokenKind::Ident, makeLocation(start));
+  // Intern the identifier text
+  InternedString internedIdent = interner.intern(text);
+  return Token(TokenKind::Ident, makeLocation(start), internedIdent);
 }
 
 // Enhanced number lexing with multiple bases, underscores, and type suffixes
@@ -683,58 +680,39 @@ Token Lexer::lexString() {
 }
 
 Token Lexer::lexRegularString(const Position &start) {
-  // Parse as regular string (existing logic)
+  // Scan string content and detect escapes
+  const char *contentStart = &currentBuffer().content[currentBuffer().position];
+  size_t sourceLength = 0;
+  bool hasEscapes = false;
+  size_t estimatedLength = 0;
+
+  // Scan to find end and detect escapes
   while (!isAtBufferEnd() && currentChar() != '"') {
-    char c = currentChar();
-
-    if (c == '\\') {
-      // Handle escape sequence validation
-      advance(); // consume backslash
-      if (isAtBufferEnd()) {
-        reportError(LexError::UnterminatedString,
-                    "Unterminated string literal: escape at end");
-        return Token(TokenKind::Error, makeLocation(start));
+    if (currentChar() == '\\') {
+      hasEscapes = true;
+      advance(); // skip backslash
+      if (!isAtBufferEnd()) {
+        advance();            // skip escaped char
+        estimatedLength += 1; // most escapes become 1 char
       }
-
-      // Track error count before parsing escape sequence
-      size_t errorCountBefore = logger.getErrorCount();
-
-      char escapeChar = currentChar();
-      if (escapeChar == 'u' || escapeChar == 'U') {
-        // Handle Unicode escapes (just validate, don't store)
-        parseEscapeSequenceForChar();
-      } else {
-        // Handle basic escapes
-        parseBasicEscapeSequence();
-      }
-
-      // If errors were reported during escape parsing, continue but note the
-      // error
-      if (logger.getErrorCount() > errorCountBefore) {
-        // Error already reported, just continue parsing
-      }
+      sourceLength += 2; // backslash + escaped char
     } else {
-      // Regular character - validate UTF-8 and handle newlines naturally
-      if (c == '\n') {
-        // Multiline strings are allowed in regular strings
-        advance();
-      } else if (!isValidUTF8Start(c)) {
-        reportError(LexError::InvalidUtf8, "Invalid UTF-8 sequence in string");
-        advance();
-      } else {
-        advance();
-      }
+      advance();
+      estimatedLength += 1;
+      sourceLength += 1;
     }
   }
 
   if (isAtBufferEnd()) {
-    reportError(LexError::UnterminatedString,
-                "Unterminated string literal: EOF reached");
+    reportError(LexError::UnterminatedString, "Unterminated string literal");
     return Token(TokenKind::Error, makeLocation(start));
   }
 
   advance(); // consume closing quote
-  return Token(TokenKind::StringLiteral, makeLocation(start));
+
+  // Create processed string token using Option 1
+  return createProcessedStringToken(contentStart, sourceLength, hasEscapes,
+                                    estimatedLength, start);
 }
 
 // Basic character lexing (Phase 4)
@@ -808,6 +786,9 @@ Token Lexer::lexRawString() {
   advance(); // consume 'r'
   advance(); // consume opening quote
 
+  const char *contentStart = &currentBuffer().content[currentBuffer().position];
+  size_t contentLength = 0;
+
   while (!isAtBufferEnd() && currentChar() != '"') {
     char c = currentChar();
 
@@ -818,6 +799,7 @@ Token Lexer::lexRawString() {
                   "Invalid UTF-8 sequence in raw string");
     }
     advance();
+    contentLength++;
   }
 
   if (isAtBufferEnd()) {
@@ -828,8 +810,10 @@ Token Lexer::lexRawString() {
 
   advance(); // consume closing quote
 
-  // Raw string content will be extracted via SourceManager when needed
-  return Token(TokenKind::StringLiteral, makeLocation(start));
+  // Raw strings: no escapes, just intern directly
+  std::string_view rawContent(contentStart, contentLength);
+  InternedString internedContent = interner.intern(rawContent);
+  return Token(TokenKind::StringLiteral, makeLocation(start), internedContent);
 }
 
 // Phase 5: Comment handling
@@ -1456,6 +1440,165 @@ Lexer::LexerBuffer &Lexer::currentBuffer() { return bufferStack.back(); }
 
 const Lexer::LexerBuffer &Lexer::currentBuffer() const {
   return bufferStack.back();
+}
+
+// String processing implementation using Option 1 (stack+heap strategy)
+Token Lexer::createProcessedStringToken(const char *contentStart,
+                                        size_t sourceLength, bool hasEscapes,
+                                        size_t estimatedLength,
+                                        const Position &start) {
+  if (!hasEscapes) {
+    // No escapes: intern directly
+    std::string_view content(contentStart, sourceLength);
+    InternedString internedContent = interner.intern(content);
+    return Token(TokenKind::StringLiteral, makeLocation(start),
+                 internedContent);
+  }
+
+  // Has escapes: use temporary buffer
+  constexpr size_t STACK_BUFFER_SIZE = 512;
+
+  if (estimatedLength <= STACK_BUFFER_SIZE) {
+    // Small strings: use stack buffer
+    char stackBuffer[STACK_BUFFER_SIZE];
+    size_t actualLength =
+        processEscapeSequences(contentStart, sourceLength, stackBuffer);
+
+    std::string_view processedView(stackBuffer, actualLength);
+    InternedString internedContent = interner.intern(processedView);
+    return Token(TokenKind::StringLiteral, makeLocation(start),
+                 internedContent);
+    // stackBuffer automatically freed when function exits
+  } else {
+    // Large strings: use heap allocation
+    std::unique_ptr<char[]> heapBuffer =
+        std::make_unique<char[]>(estimatedLength + 1);
+    size_t actualLength =
+        processEscapeSequences(contentStart, sourceLength, heapBuffer.get());
+
+    std::string_view processedView(heapBuffer.get(), actualLength);
+    InternedString internedContent = interner.intern(processedView);
+    return Token(TokenKind::StringLiteral, makeLocation(start),
+                 internedContent);
+    // heapBuffer automatically freed when unique_ptr goes out of scope
+  }
+}
+
+size_t Lexer::processEscapeSequences(const char *source, size_t sourceLength,
+                                     char *dest) {
+  size_t writePos = 0;
+
+  for (size_t i = 0; i < sourceLength; ++i) {
+    if (source[i] == '\\' && i + 1 < sourceLength) {
+      // Process escape sequence
+      char next = source[i + 1];
+      switch (next) {
+      case 'n':
+        dest[writePos++] = '\n';
+        i++; // skip the escaped character
+        break;
+      case 't':
+        dest[writePos++] = '\t';
+        i++;
+        break;
+      case 'r':
+        dest[writePos++] = '\r';
+        i++;
+        break;
+      case '\\':
+        dest[writePos++] = '\\';
+        i++;
+        break;
+      case '"':
+        dest[writePos++] = '"';
+        i++;
+        break;
+      case '0':
+        dest[writePos++] = '\0';
+        i++;
+        break;
+      case '{':
+        dest[writePos++] = '{';
+        i++;
+        break;
+      case '}':
+        dest[writePos++] = '}';
+        i++;
+        break;
+      case 'u': {
+        // Handle Unicode escapes \u{...}
+        if (i + 2 < sourceLength && source[i + 2] == '{') {
+          // Find closing }
+          size_t closePos = i + 3;
+          while (closePos < sourceLength && source[closePos] != '}') {
+            closePos++;
+          }
+          if (closePos < sourceLength) {
+            // Parse hex digits between { and }
+            uint32_t codepoint = 0;
+            bool valid = true;
+            for (size_t j = i + 3; j < closePos; j++) {
+              char c = source[j];
+              if (c >= '0' && c <= '9') {
+                codepoint = (codepoint << 4) | (c - '0');
+              } else if (c >= 'a' && c <= 'f') {
+                codepoint = (codepoint << 4) | (c - 'a' + 10);
+              } else if (c >= 'A' && c <= 'F') {
+                codepoint = (codepoint << 4) | (c - 'A' + 10);
+              } else {
+                valid = false;
+                break;
+              }
+            }
+            if (valid && codepoint <= 0x10FFFF) {
+              // Encode as UTF-8
+              if (codepoint < 0x80) {
+                dest[writePos++] = static_cast<char>(codepoint);
+              } else if (codepoint < 0x800) {
+                dest[writePos++] = static_cast<char>(0xC0 | (codepoint >> 6));
+                dest[writePos++] = static_cast<char>(0x80 | (codepoint & 0x3F));
+              } else if (codepoint < 0x10000) {
+                dest[writePos++] = static_cast<char>(0xE0 | (codepoint >> 12));
+                dest[writePos++] =
+                    static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+                dest[writePos++] = static_cast<char>(0x80 | (codepoint & 0x3F));
+              } else {
+                dest[writePos++] = static_cast<char>(0xF0 | (codepoint >> 18));
+                dest[writePos++] =
+                    static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F));
+                dest[writePos++] =
+                    static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+                dest[writePos++] = static_cast<char>(0x80 | (codepoint & 0x3F));
+              }
+              i = closePos; // skip past the }
+            } else {
+              // Invalid Unicode escape, copy literally
+              dest[writePos++] = source[i];
+            }
+          } else {
+            // Malformed escape, copy literally
+            dest[writePos++] = source[i];
+          }
+        } else {
+          // Not a valid \u{...} escape, copy literally
+          dest[writePos++] = source[i];
+        }
+        break;
+      }
+      default:
+        // Unknown escape sequence, copy both characters literally
+        dest[writePos++] = source[i];     // backslash
+        dest[writePos++] = source[i + 1]; // escaped char
+        i++;
+        break;
+      }
+    } else {
+      // Regular character
+      dest[writePos++] = source[i];
+    }
+  }
+
+  return writePos;
 }
 
 } // namespace cxy
