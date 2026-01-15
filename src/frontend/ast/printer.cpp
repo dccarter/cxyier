@@ -241,7 +241,30 @@ bool ASTPrinter::visitStmt(const StmtExpressionNode *node) {
 
 bool ASTPrinter::visitStringExpr(const StringExpressionNode *node) {
   printNodeStartInline(node);
-  return true; // Continue to string parts
+
+  // Print parts specially - string literals as raw strings, expressions as AST
+  // nodes
+  for (size_t i = 0; i < node->parts.size(); ++i) {
+    *output_ << " ";
+
+    ASTNode *part = node->parts[i];
+    if (part && part->kind == astString) {
+      // Print string literals as raw quoted strings
+      auto *stringLiteral = static_cast<const StringLiteralNode *>(part);
+      *output_ << "\"" << stringLiteral->value.view() << "\"";
+    } else if (part) {
+      // Print expressions as AST nodes
+      visit(part);
+    }
+  }
+
+  if (shouldPrintInline(node) || isCompactMode()) {
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
+    }
+    *output_ << ")";
+  }
+  return false; // Don't continue to children since we handled them manually
 }
 
 bool ASTPrinter::visitCast(const CastExpressionNode *node) {
@@ -283,6 +306,7 @@ bool ASTPrinter::visitStruct(const StructExpressionNode *node) {
 
 bool ASTPrinter::visitMember(const MemberExpressionNode *node) {
   printNodeStartInline(node);
+  *output_ << " " << (node->isArrow ? "&." : ".");
   return true; // Continue to object and member
 }
 
@@ -298,6 +322,8 @@ bool ASTPrinter::visitClosure(const ClosureExpressionNode *node) {
 
 bool ASTPrinter::visitRange(const RangeExpressionNode *node) {
   printNodeStartInline(node);
+  const char *op = node->isInclusive ? ".." : "..<";
+  *output_ << " " << op;
   return true; // Continue to start and end
 }
 

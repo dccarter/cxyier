@@ -55,6 +55,7 @@ enum class FloatType : uint8_t {
   f(BNot, "~")                                                                 \
   f(Dot, ".")                                                                  \
   f(DotDot, "..")                                                              \
+  f(DotDotLess, "..<")                                                         \
   f(Elipsis, "...")                                                            \
   f(Question, "?")                                                             \
   f(Comma, ",")                                                                \

@@ -53,7 +53,7 @@ TEST_CASE("Parser: Cast expression precedence",
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
       (CastExpr as
-        (MemberExpr
+        (MemberExpr .
           (Identifier obj)
           (Identifier field))
         (Type i32))

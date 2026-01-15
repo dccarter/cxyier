@@ -32,10 +32,15 @@ add_executable(cxyier_tests
     parser/expressions/test_assignment_expressions.cpp
     parser/expressions/test_array_literals.cpp
     parser/expressions/test_tuple_literals.cpp
+    parser/expressions/test_struct_literals.cpp
+    parser/expressions/test_range_expressions.cpp
     parser/expressions/test_function_calls.cpp
     parser/expressions/test_indexing.cpp
     parser/expressions/test_member_access.cpp
     parser/expressions/test_cast_expressions.cpp
+    parser/expressions/test_spread_expressions.cpp
+    parser/expressions/test_string_interpolation.cpp
+    parser/expressions/test_macro_calls.cpp
     parser/test_expression_integration.cpp
     parser/debug_test.cpp
 )

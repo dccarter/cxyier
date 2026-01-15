@@ -252,6 +252,10 @@ Token Lexer::lexNextToken() {
     advance();
     if (currentChar() == '.') {
       advance();
+      if (currentChar() == '<') {
+        advance();
+        return Token(TokenKind::DotDotLess, makeLocation(start));
+      }
       if (currentChar() == '.') {
         advance();
         return Token(TokenKind::Elipsis, makeLocation(start));
@@ -451,8 +455,17 @@ Token Lexer::lexNumber() {
     }
 
     // Check for floating point indicator
-    if (c == '.' || c == 'e' || c == 'E' ||
-        (base == 16 && (c == 'p' || c == 'P'))) {
+    if (c == '.') {
+      // Look ahead to check if this is a range operator (.., ..<)
+      if (buffer.position + 1 < buffer.content.size() &&
+          buffer.content[buffer.position + 1] == '.') {
+        // This is a range operator, not a decimal point
+        // Return the integer and let the next token be the range operator
+        break;
+      }
+      // This is a floating point number
+      return lexFloat(start, base, value, hasDigits);
+    } else if (c == 'e' || c == 'E' || (base == 16 && (c == 'p' || c == 'P'))) {
       // This is a floating point number
       return lexFloat(start, base, value, hasDigits);
     }
@@ -712,7 +725,8 @@ Token Lexer::lexRegularString(const Position &start) {
 
   // Create processed string token using Option 1
   return createProcessedStringToken(contentStart, sourceLength, hasEscapes,
-                                    estimatedLength, start);
+                                    estimatedLength, start,
+                                    TokenKind::StringLiteral);
 }
 
 // Basic character lexing (Phase 4)
@@ -1245,46 +1259,40 @@ Token Lexer::lexInterpolatedString() {
   const auto &buffer = currentBuffer();
   Position start(buffer.line, buffer.column, buffer.byteOffset);
 
-  // Parse string content up to first '{' or end of string
-  while (!isAtBufferEnd() && currentChar() != '"') {
-    char c = currentChar();
+  // Scan string content until '{' or '"'
+  InterpolatedScanResult result = scanInterpolatedStringContent(start);
 
-    if (c == '\\') {
-      // Handle escape sequences in interpolated strings
-      advance(); // consume backslash
-      if (!isAtBufferEnd()) {
-        advance(); // consume escaped character
-      }
-    } else if (c == '{') {
-      // Found interpolation start
-      // Create LString token with location spanning the string content before
-      // '{'
-      Position end(buffer.line, buffer.column, buffer.byteOffset);
-      Location stringLoc(std::string(buffer.filename), start, end);
+  if (result.foundInterpolation) {
+    // Found '{' - create LString token with content before '{'
+    advance(); // consume '{' to enter expression mode
+    enterExpressionMode();
 
-      advance(); // consume '{' to enter expression mode
-      enterExpressionMode();
-
-      return Token(TokenKind::LString, stringLoc);
-    } else {
-      advance();
+    // Check for empty interpolation
+    skipWhitespace();
+    if (currentChar() == '}') {
+      reportError(LexError::InvalidInterpolation,
+                  "Empty interpolation '{}' is not allowed");
+      return Token(TokenKind::Error, makeLocation(start));
     }
+
+    return createProcessedStringToken(result.contentStart, result.sourceLength,
+                                      result.hasEscapes, result.estimatedLength,
+                                      start, TokenKind::LString);
+  } else {
+    // Reached end of string without interpolation - this should be an RString
+    if (isAtBufferEnd()) {
+      reportError(LexError::UnterminatedString,
+                  "Unterminated string literal: EOF reached");
+      return Token(TokenKind::Error, makeLocation(start));
+    }
+
+    advance(); // consume closing quote
+    popInterpolationContext();
+
+    return createProcessedStringToken(result.contentStart, result.sourceLength,
+                                      result.hasEscapes, result.estimatedLength,
+                                      start, TokenKind::RString);
   }
-
-  // Reached end of string without finding interpolation
-  if (isAtBufferEnd()) {
-    reportError(LexError::UnterminatedString,
-                "Unterminated string literal: EOF reached");
-    return Token(TokenKind::Error, makeLocation(start));
-  }
-
-  // This was actually a regular string - create RString and pop context
-  Position end(buffer.line, buffer.column, buffer.byteOffset);
-  Location stringLoc(std::string(buffer.filename), start, end);
-  advance(); // consume closing quote
-  popInterpolationContext();
-
-  return Token(TokenKind::RString, stringLoc);
 }
 
 Token Lexer::continueStringAfterExpression() {
@@ -1293,46 +1301,40 @@ Token Lexer::continueStringAfterExpression() {
   const auto &buffer = currentBuffer();
   Position start(buffer.line, buffer.column, buffer.byteOffset);
 
-  // Parse string content up to next '{' or end of string
-  while (!isAtBufferEnd() && currentChar() != '"') {
-    char c = currentChar();
+  // Scan string content until '{' or '"'
+  InterpolatedScanResult result = scanInterpolatedStringContent(start);
 
-    if (c == '\\') {
-      // Handle escape sequences
-      advance(); // consume backslash
-      if (!isAtBufferEnd()) {
-        advance(); // consume escaped character
-      }
-    } else if (c == '{') {
-      // Found next interpolation - create StringLiteral token before consuming
-      // '{'
-      Position end(buffer.line, buffer.column, buffer.byteOffset);
-      Location stringLoc(std::string(buffer.filename), start, end);
+  if (result.foundInterpolation) {
+    // Found '{' - create StringLiteral token with content before '{'
+    advance(); // consume '{' to enter expression mode
+    enterExpressionMode();
 
-      advance(); // consume '{' to enter expression mode
-      enterExpressionMode();
-
-      return Token(TokenKind::StringLiteral, stringLoc);
-    } else {
-      advance();
+    // Check for empty interpolation
+    skipWhitespace();
+    if (currentChar() == '}') {
+      reportError(LexError::InvalidInterpolation,
+                  "Empty interpolation '{}' is not allowed");
+      return Token(TokenKind::Error, makeLocation(start));
     }
+
+    return createProcessedStringToken(result.contentStart, result.sourceLength,
+                                      result.hasEscapes, result.estimatedLength,
+                                      start, TokenKind::StringLiteral);
+  } else {
+    // Reached end of string - create RString token
+    if (isAtBufferEnd()) {
+      reportError(LexError::UnterminatedString,
+                  "Unterminated string literal: EOF reached");
+      return Token(TokenKind::Error, makeLocation(start));
+    }
+
+    advance(); // consume closing quote
+    popInterpolationContext();
+
+    return createProcessedStringToken(result.contentStart, result.sourceLength,
+                                      result.hasEscapes, result.estimatedLength,
+                                      start, TokenKind::RString);
   }
-
-  // Reached end of string
-  if (isAtBufferEnd()) {
-    reportError(LexError::UnterminatedString,
-                "Unterminated string literal: EOF reached");
-    return Token(TokenKind::Error, makeLocation(start));
-  }
-
-  // Create RString token with location spanning the final string content
-  Position end(buffer.line, buffer.column, buffer.byteOffset);
-  Location stringLoc(std::string(buffer.filename), start, end);
-
-  advance(); // consume closing quote
-  popInterpolationContext();
-
-  return Token(TokenKind::RString, stringLoc);
 }
 
 bool Lexer::hasInterpolation() {
@@ -1446,13 +1448,13 @@ const Lexer::LexerBuffer &Lexer::currentBuffer() const {
 Token Lexer::createProcessedStringToken(const char *contentStart,
                                         size_t sourceLength, bool hasEscapes,
                                         size_t estimatedLength,
-                                        const Position &start) {
+                                        const Position &start,
+                                        TokenKind tokenKind) {
   if (!hasEscapes) {
     // No escapes: intern directly
     std::string_view content(contentStart, sourceLength);
     InternedString internedContent = interner.intern(content);
-    return Token(TokenKind::StringLiteral, makeLocation(start),
-                 internedContent);
+    return Token(tokenKind, makeLocation(start), internedContent);
   }
 
   // Has escapes: use temporary buffer
@@ -1466,8 +1468,7 @@ Token Lexer::createProcessedStringToken(const char *contentStart,
 
     std::string_view processedView(stackBuffer, actualLength);
     InternedString internedContent = interner.intern(processedView);
-    return Token(TokenKind::StringLiteral, makeLocation(start),
-                 internedContent);
+    return Token(tokenKind, makeLocation(start), internedContent);
     // stackBuffer automatically freed when function exits
   } else {
     // Large strings: use heap allocation
@@ -1478,10 +1479,53 @@ Token Lexer::createProcessedStringToken(const char *contentStart,
 
     std::string_view processedView(heapBuffer.get(), actualLength);
     InternedString internedContent = interner.intern(processedView);
-    return Token(TokenKind::StringLiteral, makeLocation(start),
-                 internedContent);
+    return Token(tokenKind, makeLocation(start), internedContent);
     // heapBuffer automatically freed when unique_ptr goes out of scope
   }
+}
+
+// Helper function to scan interpolated string content until { or "
+struct InterpolatedScanResult {
+  const char *contentStart;
+  size_t sourceLength;
+  bool hasEscapes;
+  size_t estimatedLength;
+  bool foundInterpolation; // true if stopped at {, false if stopped at "
+};
+
+Lexer::InterpolatedScanResult
+Lexer::scanInterpolatedStringContent(const Position &start) {
+  const auto &buffer = currentBuffer();
+  const char *contentStart = &buffer.content[buffer.position];
+  size_t sourceLength = 0;
+  bool hasEscapes = false;
+  size_t estimatedLength = 0;
+  bool foundInterpolation = false;
+
+  // Scan until we hit { or "
+  while (!isAtBufferEnd() && currentChar() != '"' && currentChar() != '{') {
+    if (currentChar() == '\\') {
+      hasEscapes = true;
+      advance(); // skip backslash
+      if (!isAtBufferEnd()) {
+        advance();            // skip escaped char
+        estimatedLength += 1; // most escapes become 1 char
+      }
+      sourceLength += 2; // backslash + escaped char
+    } else {
+      advance();
+      estimatedLength += 1;
+      sourceLength += 1;
+    }
+  }
+
+  // Check what stopped us
+  if (!isAtBufferEnd() && currentChar() == '{') {
+    foundInterpolation = true;
+  }
+
+  return {contentStart, sourceLength, hasEscapes, estimatedLength,
+          foundInterpolation};
 }
 
 size_t Lexer::processEscapeSequences(const char *source, size_t sourceLength,

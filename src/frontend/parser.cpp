@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <format>
+#include <functional>
 
 namespace cxy {
 
@@ -352,13 +353,13 @@ ast::ASTNode *Parser::parseEqualityExpression() {
 
 ast::ASTNode *Parser::parseRelationalExpression() {
   // relational_expression ::=
-  //   | shift_expression
-  //   | relational_expression '<' shift_expression
-  //   | relational_expression '<=' shift_expression
-  //   | relational_expression '>' shift_expression
-  //   | relational_expression '>=' shift_expression
+  //   | range_expression
+  //   | relational_expression '<' range_expression
+  //   | relational_expression '<=' range_expression
+  //   | relational_expression '>' range_expression
+  //   | relational_expression '>=' range_expression
 
-  ast::ASTNode *left = parseShiftExpression();
+  ast::ASTNode *left = parseRangeExpression();
   if (!left) {
     return nullptr;
   }
@@ -368,7 +369,7 @@ ast::ASTNode *Parser::parseRelationalExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseShiftExpression();
+    ast::ASTNode *right = parseRangeExpression();
     if (!right) {
       return nullptr;
     }
@@ -377,6 +378,92 @@ ast::ASTNode *Parser::parseRelationalExpression() {
                                  arena_);
   }
 
+  return left;
+}
+
+ast::ASTNode *Parser::parseRangeExpression() {
+  // range_expression ::=
+  //   | shift_expression
+  //   | range_expression '..' shift_expression
+  //   | range_expression '..<' shift_expression
+  //   | '..' shift_expression
+  //   | shift_expression '..'
+  //   | '..'
+
+  // Handle open start ranges (..expr, ..<expr, ..)
+  if (check(TokenKind::DotDot)) {
+    Token opToken = current();
+    advance(); // consume '..'
+
+    // Check if there's a right side expression
+    if (!isAtEnd() && !check(TokenKind::RBracket) && !check(TokenKind::Comma) &&
+        !check(TokenKind::RParen) && !check(TokenKind::RBrace) &&
+        !check(TokenKind::Semicolon)) {
+      // ..expr (open start inclusive range)
+      ast::ASTNode *end = parseShiftExpression();
+      if (!end) {
+        return nullptr;
+      }
+      return ast::createRangeExpr(nullptr, end, true, opToken.location, arena_);
+    } else {
+      // Just .. (full open range)
+      return ast::createRangeExpr(nullptr, nullptr, true, opToken.location,
+                                  arena_);
+    }
+  }
+
+  if (check(TokenKind::DotDotLess)) {
+    Token opToken = current();
+    advance(); // consume '..<'
+
+    ast::ASTNode *end = parseShiftExpression();
+    if (!end) {
+      return nullptr;
+    }
+    return ast::createRangeExpr(nullptr, end, false, opToken.location, arena_);
+  }
+
+  // First, parse left side expression
+  ast::ASTNode *left = parseShiftExpression();
+  if (!left) {
+    return nullptr;
+  }
+
+  // Check for range operators after parsing left side
+  if (check(TokenKind::DotDot)) {
+    Token opToken = current();
+    advance(); // consume '..'
+
+    // Check if there's a right side expression
+    if (!isAtEnd() && !check(TokenKind::RBracket) && !check(TokenKind::Comma) &&
+        !check(TokenKind::RParen) && !check(TokenKind::RBrace) &&
+        !check(TokenKind::Semicolon)) {
+      // expr..expr (inclusive range)
+      ast::ASTNode *right = parseShiftExpression();
+      if (!right) {
+        return nullptr;
+      }
+      return ast::createRangeExpr(left, right, true, opToken.location, arena_);
+    } else {
+      // expr.. (open end range)
+      return ast::createRangeExpr(left, nullptr, true, opToken.location,
+                                  arena_);
+    }
+  }
+
+  if (check(TokenKind::DotDotLess)) {
+    Token opToken = current();
+    advance(); // consume '..<'
+
+    // Must have a right side for exclusive ranges
+    ast::ASTNode *right = parseShiftExpression();
+    if (!right) {
+      return nullptr;
+    }
+    return ast::createRangeExpr(left, right, false, opToken.location, arena_);
+  }
+
+  // No range operator found, just return the left side
   return left;
 }
 
@@ -474,6 +561,7 @@ ast::ASTNode *Parser::parseUnaryExpression() {
   //   | '~' unary_expression
   //   | '&' unary_expression
   //   | '&&' unary_expression
+  //   | '^' unary_expression
 
   // Check for prefix operators
   if (check(TokenKind::PlusPlus) || check(TokenKind::MinusMinus) ||
@@ -560,8 +648,7 @@ ast::ASTNode *Parser::parsePostfixExpression() {
 
   while (check(TokenKind::PlusPlus) || check(TokenKind::MinusMinus) ||
          check(TokenKind::LParen) || check(TokenKind::LBracket) ||
-         check(TokenKind::Dot) || check(TokenKind::BAndDot) ||
-         check(TokenKind::FloatLiteral)) {
+         check(TokenKind::Dot) || check(TokenKind::BAndDot)) {
 
     if (check(TokenKind::LBracket)) {
       // Array indexing
@@ -669,10 +756,43 @@ ast::ASTNode *Parser::parsePrimaryExpression() {
   //   | identifier_expression
   //   | '(' expression ')'
   //   | array_literal
+  //   | struct_literal
+  //   | spread_expression
 
-  // Check for array literal first
+  // Check for spread expression first
+  if (check(TokenKind::Elipsis)) {
+    Location loc = current().location;
+    advance(); // consume '...'
+
+    // Check for double spread (nested spread expressions are not allowed)
+    if (check(TokenKind::Elipsis)) {
+      ParseError error = createUnexpectedTokenError(
+          TokenKind::Ident,
+          "Cannot spread a spread expression - '...' after '...' is invalid");
+      reportError(error);
+      return nullptr;
+    }
+
+    // Parse the expression to spread
+    ast::ASTNode *expr = parsePostfixExpression();
+    if (!expr) {
+      ParseError error = createUnexpectedTokenError(
+          TokenKind::Ident, "Expected expression after '...'");
+      reportError(error);
+      return nullptr;
+    }
+
+    return ast::createSpreadExpr(expr, loc, arena_);
+  }
+
+  // Check for array literal
   if (check(TokenKind::LBracket)) {
     return parseArrayLiteral();
+  }
+
+  // Check for anonymous struct literal
+  if (check(TokenKind::LBrace)) {
+    return parseStructLiteral(nullptr);
   }
 
   // Check for parenthesized expression or tuple literal
@@ -685,21 +805,33 @@ ast::ASTNode *Parser::parsePrimaryExpression() {
     return parseLiteralExpression();
   }
 
-  // Try identifier expression
+  // Try interpolated string expression
+  if (check(TokenKind::LString)) {
+    return parseInterpolatedString();
+  }
+
+  // Try identifier expression or macro call
   if (check(TokenKind::Ident)) {
-    return parseIdentifierExpression();
+    // Check for macro call (identifier followed by '!')
+    if (lookahead(1).kind == TokenKind::LNot) {
+      return parseMacroCall();
+    } else {
+      return parseIdentifierExpression();
+    }
   }
 
   // No valid primary expression found
   std::vector<TokenKind> expected = {
       TokenKind::IntLiteral,    TokenKind::FloatLiteral, TokenKind::CharLiteral,
-      TokenKind::StringLiteral, TokenKind::True,         TokenKind::False,
-      TokenKind::Null,          TokenKind::Ident,        TokenKind::LParen,
-      TokenKind::LBracket};
+      TokenKind::StringLiteral, TokenKind::LString,      TokenKind::True,
+      TokenKind::False,         TokenKind::Null,         TokenKind::Ident,
+      TokenKind::LParen,        TokenKind::LBracket,     TokenKind::LBrace,
+      TokenKind::Elipsis};
 
   ParseError error = createUnexpectedTokenError(
-      expected, "Expected literal, identifier, parenthesized expression, or "
-                "array literal");
+      expected, "Expected literal, identifier, parenthesized expression, "
+                "array literal, struct literal, spread expression, or "
+                "interpolated string");
   reportError(error);
   return nullptr;
 }
@@ -740,6 +872,7 @@ ast::ASTNode *Parser::parseLiteralExpression() {
 
 ast::ASTNode *Parser::parseIdentifierExpression() {
   // identifier_expression ::= Ident
+  // typed_struct_literal ::= Ident '{' struct_field_list? '}'
 
   if (!check(TokenKind::Ident)) {
     ParseError error =
@@ -759,9 +892,94 @@ ast::ASTNode *Parser::parseIdentifierExpression() {
     return nullptr;
   }
 
+  // Check for typed struct literal (identifier followed by '{')
+  if (check(TokenKind::LBrace)) {
+    // Create identifier node for the type
+    InternedString name = identToken.value.stringValue;
+    ast::ASTNode *typeNode =
+        ast::createIdentifier(name, identToken.location, arena_);
+    return parseStructLiteral(typeNode);
+  }
+
   // Use the processed identifier value directly from the token
   InternedString name = identToken.value.stringValue;
   return ast::createIdentifier(name, identToken.location, arena_);
+}
+
+ast::ASTNode *Parser::parseMacroCall() {
+  // macro_call ::=
+  //   | identifier '!'                            # Bare macro call
+  //   | identifier '!' '(' argument_list? ')'     # Function-like macro
+
+  if (!check(TokenKind::Ident)) {
+    ParseError error = createUnexpectedTokenError(TokenKind::Ident,
+                                                  "Expected macro identifier");
+    reportError(error);
+    return nullptr;
+  }
+
+  Token identToken = current();
+  advance(); // consume identifier
+
+  if (!identToken.hasLiteralValue()) {
+    ParseError error = createUnexpectedTokenError(
+        TokenKind::Ident, "Macro identifier token missing value");
+    reportError(error);
+    return nullptr;
+  }
+
+  if (!expect(TokenKind::LNot, "Expected '!' after macro identifier")) {
+    return nullptr;
+  }
+
+  // Create identifier node for macro name
+  InternedString name = identToken.value.stringValue;
+  ast::ASTNode *macroName =
+      ast::createIdentifier(name, identToken.location, arena_);
+
+  // Create macro call expression
+  auto *macroCall =
+      ast::createMacroCallExpr(macroName, identToken.location, arena_);
+
+  // Check for function-like macro with parentheses
+  if (check(TokenKind::LParen)) {
+    advance(); // consume '('
+
+    // Check for empty argument list
+    if (check(TokenKind::RParen)) {
+      advance(); // consume ')'
+      return macroCall;
+    }
+
+    // Parse arguments
+    ast::ASTNode *firstArg = parseExpression();
+    if (!firstArg) {
+      return nullptr;
+    }
+    macroCall->addArgument(firstArg);
+
+    // Parse remaining arguments
+    while (check(TokenKind::Comma)) {
+      advance(); // consume ','
+
+      // Allow trailing comma
+      if (check(TokenKind::RParen)) {
+        break;
+      }
+
+      ast::ASTNode *arg = parseExpression();
+      if (!arg) {
+        return nullptr;
+      }
+      macroCall->addArgument(arg);
+    }
+
+    if (!expect(TokenKind::RParen, "Expected ')' after macro arguments")) {
+      return nullptr;
+    }
+  }
+
+  return macroCall;
 }
 
 // Private literal parsing helpers
@@ -1000,10 +1218,170 @@ ast::ASTNode *Parser::parseTupleOrGroupedExpression() {
   }
 }
 
+ast::ASTNode *Parser::parseStructLiteral(ast::ASTNode *type) {
+  // struct_literal ::= [type] '{' struct_field_list? '}'
+  // struct_field_list ::= struct_field (',' struct_field)*
+  // struct_field ::= Ident ':' expression | Ident
+
+  if (!expect(TokenKind::LBrace, "Expected '{' to start struct literal")) {
+    return nullptr;
+  }
+
+  Location startLoc = previous().location;
+  auto *structExpr = ast::createStructExpr(type, startLoc, arena_);
+
+  // Handle empty struct literal
+  if (check(TokenKind::RBrace)) {
+    advance(); // consume '}'
+
+    // Anonymous structs cannot be empty
+    if (!type) {
+      ParseError error = createUnexpectedTokenError(
+          TokenKind::Ident, "Anonymous struct literals cannot be empty");
+      reportError(error);
+      return nullptr;
+    }
+
+    return structExpr;
+  }
+
+  // Parse field list
+  do {
+    // Each field must start with an identifier
+    if (!check(TokenKind::Ident)) {
+      ParseError error = createUnexpectedTokenError(
+          TokenKind::Ident, "Expected field name in struct literal");
+      reportError(error);
+      return nullptr;
+    }
+
+    Token fieldNameToken = current();
+    advance(); // consume field name
+
+    if (!fieldNameToken.hasLiteralValue()) {
+      ParseError error = createUnexpectedTokenError(
+          TokenKind::Ident, "Field name token missing value");
+      reportError(error);
+      return nullptr;
+    }
+
+    InternedString fieldName = fieldNameToken.value.stringValue;
+    ast::ASTNode *nameNode =
+        ast::createIdentifier(fieldName, fieldNameToken.location, arena_);
+    ast::ASTNode *valueNode;
+
+    // Check for explicit value or shorthand syntax
+    if (check(TokenKind::Colon)) {
+      advance(); // consume ':'
+
+      // Parse field value expression
+      valueNode = parseExpression();
+      if (!valueNode) {
+        return nullptr;
+      }
+    } else {
+      // Shorthand syntax - field name is also the variable name
+      valueNode =
+          ast::createIdentifier(fieldName, fieldNameToken.location, arena_);
+    }
+
+    // Create field node and add to struct
+    auto *fieldExpr = ast::createFieldExpr(nameNode, valueNode,
+                                           fieldNameToken.location, arena_);
+    structExpr->addField(fieldExpr);
+
+    // Check for comma or end
+    if (check(TokenKind::Comma)) {
+      advance(); // consume ','
+
+      // Allow trailing comma
+      if (check(TokenKind::RBrace)) {
+        break;
+      }
+    } else if (check(TokenKind::RBrace)) {
+      break;
+    } else {
+      ParseError error =
+          createUnexpectedTokenError({TokenKind::Comma, TokenKind::RBrace},
+                                     "Expected ',' or '}' after struct field");
+      reportError(error);
+      return nullptr;
+    }
+  } while (!isAtEnd() && !check(TokenKind::RBrace));
+
+  if (!expect(TokenKind::RBrace, "Expected '}' to end struct literal")) {
+    return nullptr;
+  }
+
+  return structExpr;
+}
+
 // Error recovery
 
+ast::ASTNode *Parser::parseInterpolatedString() {
+  if (!check(TokenKind::LString)) {
+    ParseError error = createUnexpectedTokenError(
+        TokenKind::LString, "Expected interpolated string");
+    reportError(error);
+    return nullptr;
+  }
+
+  Location startLoc = current().location;
+  Token lToken = current();
+  advance(); // consume LString
+
+  // Create StringExpression to hold all parts
+  auto *stringExpr = ast::createStringExpr(startLoc, arena_);
+
+  // Add initial string part from LString if it has content
+  if (lToken.hasValue && !lToken.value.stringValue.view().empty()) {
+    InternedString initialPart = lToken.value.stringValue;
+    auto *initialLiteral =
+        ast::createStringLiteral(initialPart, lToken.location, arena_);
+    stringExpr->addPart(initialLiteral);
+  }
+
+  // Parse the sequence of string parts and expressions
+  while (true) {
+    if (check(TokenKind::RString)) {
+      // End of interpolated string
+      Token rToken = current();
+      advance(); // consume RString
+
+      // Add final string part if it has content
+      if (rToken.hasValue && !rToken.value.stringValue.view().empty()) {
+        InternedString finalPart = rToken.value.stringValue;
+        auto *finalLiteral =
+            ast::createStringLiteral(finalPart, rToken.location, arena_);
+        stringExpr->addPart(finalLiteral);
+      }
+      break;
+    } else if (check(TokenKind::StringLiteral)) {
+      // Middle string part between expressions
+      Token strToken = current();
+      advance(); // consume StringLiteral
+
+      if (strToken.hasValue && !strToken.value.stringValue.view().empty()) {
+        InternedString stringPart = strToken.value.stringValue;
+        auto *stringLiteral =
+            ast::createStringLiteral(stringPart, strToken.location, arena_);
+        stringExpr->addPart(stringLiteral);
+      }
+    } else {
+      // Parse expression within the interpolation
+      ast::ASTNode *expr = parseExpression();
+      if (!expr) {
+        return nullptr;
+      }
+      stringExpr->addPart(expr);
+    }
+  }
+
+  return stringExpr;
+}
+
 void Parser::synchronize() {
-  // Skip tokens until we find a synchronization point
+  // Skip tokens until we reach a synchronization point
   while (!isAtEnd() && !isSynchronizationPoint()) {
     advance();
   }

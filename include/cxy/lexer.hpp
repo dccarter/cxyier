@@ -111,7 +111,18 @@ private:
   Token createProcessedStringToken(const char *contentStart,
                                    size_t sourceLength, bool hasEscapes,
                                    size_t estimatedLength,
-                                   const Position &start);
+                                   const Position &start, TokenKind tokenKind);
+
+  // Helper for scanning interpolated string content
+  struct InterpolatedScanResult {
+    const char *contentStart;
+    size_t sourceLength;
+    bool hasEscapes;
+    size_t estimatedLength;
+    bool foundInterpolation; // true if stopped at {, false if stopped at "
+  };
+  InterpolatedScanResult scanInterpolatedStringContent(const Position &start);
+
   size_t processEscapeSequences(const char *source, size_t sourceLength,
                                 char *dest);
 

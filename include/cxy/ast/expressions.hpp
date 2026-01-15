@@ -497,11 +497,17 @@ public:
 
 class StructExpressionNode : public ExpressionNode {
 public:
+  ASTNode *type; ///< Optional struct type (nullptr for anonymous)
   ArenaVector<FieldExpressionNode *> fields; ///< Struct fields
 
-  explicit StructExpressionNode(Location loc, ArenaAllocator &arena)
-      : ExpressionNode(astStructExpr, loc, arena),
-        fields(ArenaSTLAllocator<FieldExpressionNode *>(arena)) {}
+  explicit StructExpressionNode(ASTNode *struct_type, Location loc,
+                                ArenaAllocator &arena)
+      : ExpressionNode(astStructExpr, loc, arena), type(struct_type),
+        fields(ArenaSTLAllocator<FieldExpressionNode *>(arena)) {
+    if (type) {
+      addChild(type);
+    }
+  }
 
   void addField(FieldExpressionNode *field) {
     if (field) {
@@ -512,7 +518,11 @@ public:
 
   std::format_context::iterator
   toString(std::format_context &ctx) const override {
-    auto it = std::format_to(ctx.out(), "Struct({{");
+    auto it = std::format_to(ctx.out(), "Struct(");
+    if (type) {
+      it = std::format_to(it, "{} ", *type);
+    }
+    it = std::format_to(it, "{{");
     for (size_t i = 0; i < fields.size(); ++i) {
       if (i > 0)
         it = std::format_to(it, ", ");
@@ -691,10 +701,19 @@ public:
 
   std::format_context::iterator
   toString(std::format_context &ctx) const override {
-    std::string op = isInclusive ? "..=" : "..";
-    return std::format_to(ctx.out(), "Range({}{}{})",
-                          start ? std::format("{}", *start) : "", op,
-                          end ? std::format("{}", *end) : "");
+    auto it = std::format_to(ctx.out(), "RangeExpr");
+    if (isInclusive) {
+      it = std::format_to(it, " ..");
+    } else {
+      it = std::format_to(it, " ..<");
+    }
+    if (start) {
+      it = std::format_to(it, " {}", *start);
+    }
+    if (end) {
+      it = std::format_to(it, " {}", *end);
+    }
+    return it;
   }
 };
 
@@ -792,9 +811,9 @@ inline ArrayExpressionNode *createArrayExpr(Location loc,
 /**
  * @brief Create a struct expression node.
  */
-inline StructExpressionNode *createStructExpr(Location loc,
+inline StructExpressionNode *createStructExpr(ASTNode *type, Location loc,
                                               ArenaAllocator &arena) {
-  return arena.construct<StructExpressionNode>(loc, arena);
+  return arena.construct<StructExpressionNode>(type, loc, arena);
 }
 
 /**

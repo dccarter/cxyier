@@ -100,6 +100,21 @@ public:
   ast::ASTNode *parseRelationalExpression();
 
   /**
+   * @brief Parse a range expression (.., ..<).
+   *
+   * range_expression ::=
+   *   | shift_expression
+   *   | range_expression '..' shift_expression
+   *   | range_expression '..<' shift_expression
+   *   | '..' shift_expression
+   *   | shift_expression '..'
+   *   | '..'
+   *
+   * @return Parsed range expression AST node, or nullptr on error
+   */
+  ast::ASTNode *parseRangeExpression();
+
+  /**
    * @brief Parse an equality expression (== and !=).
    *
    * equality_expression ::=
@@ -313,6 +328,17 @@ public:
   ast::ASTNode *parseIdentifierExpression();
 
   /**
+   * @brief Parse a macro call expression.
+   *
+   * macro_call ::=
+   *   | identifier '!'                            # Bare macro call
+   *   | identifier '!' '(' argument_list? ')'     # Function-like macro
+   *
+   * @return Parsed macro call AST node, or nullptr on error
+   */
+  ast::ASTNode *parseMacroCall();
+
+  /**
    * @brief Parse an array literal expression.
    *
    * array_literal ::= '[' array_element_list? ']'
@@ -334,6 +360,35 @@ public:
    * @return Parsed tuple or grouped expression AST node, or nullptr on error
    */
   ast::ASTNode *parseTupleOrGroupedExpression();
+
+  /**
+   * @brief Parse a struct literal expression.
+   *
+   * struct_literal ::= [type] '{' struct_field_list? '}'
+   * struct_field_list ::= struct_field (',' struct_field)*
+   * struct_field ::= Ident ':' expression | Ident
+   *
+   * Supports both typed struct literals (Point { x: 1, y: 2 }) and
+   * anonymous struct literals ({ x: 1, y: 2 }). Also supports shorthand
+   * syntax where field name matches variable name.
+   *
+   * @param type Optional type node for typed struct literals (nullptr for
+   * anonymous)
+   * @return Parsed struct literal AST node, or nullptr on error
+   */
+  ast::ASTNode *parseStructLiteral(ast::ASTNode *type);
+
+  /**
+   * @brief Parse an interpolated string expression.
+   *
+   * interpolated_string ::= LString (expression | StringLiteral)* RString
+   *
+   * Supports nested expressions within {} and handles string parts between
+   * interpolations.
+   *
+   * @return Parsed interpolated string AST node, or nullptr on error
+   */
+  ast::ASTNode *parseInterpolatedString();
 
   // Token buffer access methods
 

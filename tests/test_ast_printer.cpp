@@ -212,7 +212,7 @@ TEST_CASE("AST Printer - Complex Expressions", "[ast][printer]") {
                                                              false, loc, arena);
 
     std::string expected = R"(
-(MemberExpr
+(MemberExpr .
   (Identifier object)
   (Identifier field))
         )";

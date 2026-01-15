@@ -10,26 +10,26 @@ TEST_CASE("Parser: Simple member access", "[parser][expressions][member]") {
     auto fixture = createParserFixture("obj.field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_MATCHES(expr,
-                        "(MemberExpr (Identifier obj) (Identifier field))");
+                        "(MemberExpr . (Identifier obj) (Identifier field))");
   }
 
   SECTION("Numeric field access") {
     auto fixture = createParserFixture("obj.0");
     auto *expr = fixture->parseExpression();
-    REQUIRE_AST_MATCHES(expr, "(MemberExpr (Identifier obj) (Int 0))");
+    REQUIRE_AST_MATCHES(expr, "(MemberExpr . (Identifier obj) (Int 0))");
   }
 
   SECTION("Multi-digit numeric access") {
     auto fixture = createParserFixture("tuple.42");
     auto *expr = fixture->parseExpression();
-    REQUIRE_AST_MATCHES(expr, "(MemberExpr (Identifier tuple) (Int 42))");
+    REQUIRE_AST_MATCHES(expr, "(MemberExpr . (Identifier tuple) (Int 42))");
   }
 
   SECTION("Complex expression as object") {
     auto fixture = createParserFixture("(x + y).field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
+      (MemberExpr .
         (BinaryExpr +
           (Identifier x)
           (Identifier y))
@@ -44,7 +44,7 @@ TEST_CASE("Parser: Overloaded member access (&.)",
     auto fixture = createParserFixture("obj&.field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
+      (MemberExpr &.
         (Identifier obj)
         (Identifier field))
     )");
@@ -54,8 +54,8 @@ TEST_CASE("Parser: Overloaded member access (&.)",
     auto fixture = createParserFixture("obj&.inner&.field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
-        (MemberExpr
+      (MemberExpr &.
+        (MemberExpr &.
           (Identifier obj)
           (Identifier inner))
         (Identifier field))
@@ -68,8 +68,8 @@ TEST_CASE("Parser: Chained member access", "[parser][expressions][member]") {
     auto fixture = createParserFixture("obj.inner.field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
-        (MemberExpr
+      (MemberExpr .
+        (MemberExpr .
           (Identifier obj)
           (Identifier inner))
         (Identifier field))
@@ -80,8 +80,8 @@ TEST_CASE("Parser: Chained member access", "[parser][expressions][member]") {
     auto fixture = createParserFixture("obj.tuple.0");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
-        (MemberExpr
+      (MemberExpr .
+        (MemberExpr .
           (Identifier obj)
           (Identifier tuple))
         (Int 0))
@@ -92,10 +92,10 @@ TEST_CASE("Parser: Chained member access", "[parser][expressions][member]") {
     auto fixture = createParserFixture("a.b.c.d.e");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
-        (MemberExpr
-          (MemberExpr
-            (MemberExpr
+      (MemberExpr .
+        (MemberExpr .
+          (MemberExpr .
+            (MemberExpr .
               (Identifier a)
               (Identifier b))
             (Identifier c))
@@ -111,7 +111,7 @@ TEST_CASE("Parser: Member access with complex expressions",
     auto fixture = createParserFixture("getObject().field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
+      (MemberExpr .
         (CallExpr (Identifier getObject))
         (Identifier field))
     )");
@@ -121,7 +121,7 @@ TEST_CASE("Parser: Member access with complex expressions",
     auto fixture = createParserFixture("[obj1, obj2].0");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
+      (MemberExpr .
         (ArrayExpr (Identifier obj1) (Identifier obj2))
         (Int 0))
     )");
@@ -131,7 +131,7 @@ TEST_CASE("Parser: Member access with complex expressions",
     auto fixture = createParserFixture("(x, y, z).1");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
+      (MemberExpr .
         (TupleExpr (Identifier x) (Identifier y) (Identifier z))
         (Int 1))
     )");
@@ -141,7 +141,7 @@ TEST_CASE("Parser: Member access with complex expressions",
     auto fixture = createParserFixture("array[0].field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
+      (MemberExpr .
         (IndexExpr
           (Identifier array)
           (Int 0))
@@ -156,7 +156,7 @@ TEST_CASE("Parser: Member access with whitespace variations",
     auto fixture = createParserFixture("obj.field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_MATCHES(expr,
-                        "(MemberExpr (Identifier obj) (Identifier field))");
+                        "(MemberExpr . (Identifier obj) (Identifier field))");
   }
 
   SECTION("Spaces around dot (whitespace allowed)") {
@@ -164,15 +164,15 @@ TEST_CASE("Parser: Member access with whitespace variations",
     auto fixture = createParserFixture("obj . field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_MATCHES(expr,
-                        "(MemberExpr (Identifier obj) (Identifier field))");
+                        "(MemberExpr . (Identifier obj) (Identifier field))");
   }
 
   SECTION("Newlines in chained access") {
     auto fixture = createParserFixture("obj\n  .field\n  .method");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
-        (MemberExpr
+      (MemberExpr .
+        (MemberExpr .
           (Identifier obj)
           (Identifier field))
         (Identifier method))
@@ -187,7 +187,7 @@ TEST_CASE("Parser: Member access precedence",
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
       (BinaryExpr +
-        (MemberExpr
+        (MemberExpr .
           (Identifier obj)
           (Identifier field))
         (Int 1))
@@ -198,7 +198,7 @@ TEST_CASE("Parser: Member access precedence",
     auto fixture = createParserFixture("(a + b).field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
+      (MemberExpr .
         (BinaryExpr +
           (Identifier a)
           (Identifier b))
@@ -212,10 +212,10 @@ TEST_CASE("Parser: Member access precedence",
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
       (BinaryExpr +
         (BinaryExpr *
-          (MemberExpr
+          (MemberExpr .
             (Identifier obj)
             (Identifier field))
-          (MemberExpr
+          (MemberExpr .
             (Identifier array)
             (Identifier length)))
         (Int 1))
@@ -230,7 +230,7 @@ TEST_CASE("Parser: Mixed member access, indexing, and function calls",
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
       (CallExpr
-        (MemberExpr
+        (MemberExpr .
           (Identifier obj)
           (Identifier method)))
     )");
@@ -241,7 +241,7 @@ TEST_CASE("Parser: Mixed member access, indexing, and function calls",
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
       (CallExpr
-        (MemberExpr
+        (MemberExpr .
           (Identifier obj)
           (Identifier method))
         (Identifier arg1)
@@ -254,9 +254,9 @@ TEST_CASE("Parser: Mixed member access, indexing, and function calls",
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
       (CallExpr
-        (MemberExpr
+        (MemberExpr .
           (CallExpr
-            (MemberExpr
+            (MemberExpr .
               (Identifier obj)
               (Identifier getInner)))
           (Identifier method)))
@@ -267,7 +267,7 @@ TEST_CASE("Parser: Mixed member access, indexing, and function calls",
     auto fixture = createParserFixture("objects[i].field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
+      (MemberExpr .
         (IndexExpr
           (Identifier objects)
           (Identifier i))
@@ -279,10 +279,10 @@ TEST_CASE("Parser: Mixed member access, indexing, and function calls",
     auto fixture = createParserFixture("getObjects()[0].method().result.field");
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
-      (MemberExpr
-        (MemberExpr
+      (MemberExpr .
+        (MemberExpr .
           (CallExpr
-            (MemberExpr
+            (MemberExpr .
               (IndexExpr
                 (CallExpr (Identifier getObjects))
                 (Int 0))
@@ -297,7 +297,7 @@ TEST_CASE("Parser: Mixed member access, indexing, and function calls",
     auto *expr = fixture->parseExpression();
     REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
       (IndexExpr
-        (MemberExpr
+        (MemberExpr .
           (Identifier obj)
           (Identifier array))
         (Identifier i))
@@ -307,13 +307,13 @@ TEST_CASE("Parser: Mixed member access, indexing, and function calls",
   SECTION("Function call with member access arguments") {
     auto fixture = createParserFixture("myFunc(obj.field, array.0)");
     auto *expr = fixture->parseExpression();
-    REQUIRE_AST_STRUCTURALLY_MATCHES(expr, R"(
+    REQUIRE_AST_MATCHES(expr, R"(
       (CallExpr
         (Identifier myFunc)
-        (MemberExpr
+        (MemberExpr .
           (Identifier obj)
           (Identifier field))
-        (MemberExpr
+        (MemberExpr .
           (Identifier array)
           (Int 0)))
     )");
