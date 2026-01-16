@@ -2,6 +2,7 @@
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/literals.hpp"
+#include "cxy/ast/statements.hpp"
 #include "cxy/ast/types.hpp"
 #include "cxy/types/primitive.hpp"
 
@@ -1442,6 +1443,26 @@ bool Parser::isSynchronizationPoint() const {
   }
 
   return false;
+}
+
+// Phase 4: Statement parsing implementation
+
+ast::ASTNode *Parser::parseExpressionStatement() {
+  Location startLoc = current().location;
+
+  // Parse the expression
+  ast::ASTNode *expr = parseExpression();
+  if (!expr) {
+    return nullptr; // Error already reported by parseExpression
+  }
+
+  // Check for optional semicolon
+  if (check(TokenKind::Semicolon)) {
+    advance(); // consume semicolon
+  }
+
+  // Create expression statement node
+  return ast::createExprStatement(expr, startLoc, arena_);
 }
 
 } // namespace cxy

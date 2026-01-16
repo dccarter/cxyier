@@ -493,6 +493,18 @@ public:
    */
   bool isAtEnd() const { return current().isEof(); }
 
+  // Phase 4: Statement parsing interface
+
+  /**
+   * @brief Parse an expression statement.
+   *
+   * expression_statement ::=
+   *   | expression ';'?                  # Expression with optional semicolon
+   *
+   * @return Parsed expression statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseExpressionStatement();
+
 private:
   // LL(3) sliding window buffer
   Token
