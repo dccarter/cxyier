@@ -1499,6 +1499,8 @@ ast::ASTNode *Parser::parseStatement() {
   case TokenKind::Const:
   case TokenKind::Auto:
     return parseVariableDeclaration();
+  case TokenKind::If:
+    return parseIfStatement();
   default:
     // Fall back to expression statement
     return parseExpressionStatement();
@@ -1665,7 +1667,7 @@ ast::ASTNode *Parser::parseExpressionStatement() {
 
 // Phase 5.1: Variable declaration parsing implementation
 
-ast::ASTNode *Parser::parseVariableDeclaration() {
+ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable) {
   Location startLoc = current().location;
   bool isConst = false;
   
@@ -1699,21 +1701,28 @@ ast::ASTNode *Parser::parseVariableDeclaration() {
   decl->addName(firstNameNode);
   advance(); // consume first identifier
 
-  // Parse additional names (comma-separated)
-  while (check(TokenKind::Comma)) {
-    advance(); // consume comma
+  // Parse additional names (comma-separated) - only if not single variable
+  if (!singleVariable) {
+    while (check(TokenKind::Comma)) {
+      advance(); // consume comma
 
-    // Check for trailing comma (optional)
-    if (!check(TokenKind::Ident)) {
-      // Trailing comma - stop parsing names
-      break;
+      // Check for trailing comma (optional)
+      if (!check(TokenKind::Ident)) {
+        // Trailing comma - stop parsing names
+        break;
+      }
+
+      // Parse next identifier
+      InternedString name = current().value.stringValue;
+      auto *nameNode = ast::createIdentifier(name, current().location, arena_);
+      decl->addName(nameNode);
+      advance(); // consume identifier
     }
-
-    // Parse next identifier
-    InternedString name = current().value.stringValue;
-    auto *nameNode = ast::createIdentifier(name, current().location, arena_);
-    decl->addName(nameNode);
-    advance(); // consume identifier
+  } else if (check(TokenKind::Comma)) {
+    // Single variable mode - comma not allowed
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Only single variable declarations allowed in this context"));
+    return nullptr;
   }
 
   // Parse optional type annotation
@@ -1741,9 +1750,16 @@ ast::ASTNode *Parser::parseVariableDeclaration() {
   }
 
   // Validate constraint: either type or initializer must be present
+  // In single variable mode (if conditions), initializer is always required
   if (!typeExpr && !initializer) {
     reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
                            "Variable declaration must have either type annotation or initializer"));
+    return nullptr;
+  }
+  
+  if (singleVariable && !initializer) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Variable declarations in if conditions must have an initializer"));
     return nullptr;
   }
 
@@ -1753,6 +1769,112 @@ ast::ASTNode *Parser::parseVariableDeclaration() {
   }
 
   return decl;
+}
+
+// Phase 4.5: If statement parsing implementation
+
+ast::ASTNode *Parser::parseIfStatement() {
+  Location startLoc = current().location;
+  
+  // Consume 'if' keyword
+  if (!expect(TokenKind::If)) {
+    return nullptr;
+  }
+
+  // Parse condition (with or without parentheses)
+  bool hasParentheses = false;
+  ast::ASTNode *condition = nullptr;
+  
+  if (check(TokenKind::LParen)) {
+    hasParentheses = true;
+    advance(); // consume '('
+    
+    // Parse condition expression or variable declaration
+    if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
+      condition = parseVariableDeclaration(true); // single variable only
+    } else {
+      condition = parseExpression();
+    }
+    
+    if (!condition) {
+      return nullptr; // Error already reported
+    }
+    
+    if (!expect(TokenKind::RParen)) {
+      return nullptr;
+    }
+  } else {
+    // Parse bare condition (expression or variable declaration)
+    if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
+      condition = parseVariableDeclaration(true); // single variable only
+    } else {
+      condition = parseExpression();
+    }
+    
+    if (!condition) {
+      return nullptr; // Error already reported
+    }
+  }
+
+  // Parse if body
+  ast::ASTNode *thenStatement = nullptr;
+  
+  if (hasParentheses) {
+    // With parentheses: single statement or block allowed
+    if (check(TokenKind::LBrace)) {
+      thenStatement = parseBlockStatement();
+    } else {
+      thenStatement = parseStatement();
+    }
+  } else {
+    // Without parentheses: block required
+    if (!check(TokenKind::LBrace)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Block statement required when if condition has no parentheses"));
+      return nullptr;
+    }
+    thenStatement = parseBlockStatement();
+  }
+  
+  if (!thenStatement) {
+    return nullptr; // Error already reported
+  }
+
+  // Parse optional else clause
+  ast::ASTNode *elseStatement = nullptr;
+  if (check(TokenKind::Else)) {
+    advance(); // consume 'else'
+    
+    if (check(TokenKind::If)) {
+      // else if - parse another if statement
+      elseStatement = parseIfStatement();
+    } else {
+      // else clause - follow same rules as then clause
+      if (hasParentheses) {
+        // With parentheses in main condition: single statement or block allowed
+        if (check(TokenKind::LBrace)) {
+          elseStatement = parseBlockStatement();
+        } else {
+          elseStatement = parseStatement();
+        }
+      } else {
+        // Without parentheses in main condition: block required
+        if (!check(TokenKind::LBrace)) {
+          reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                                 "Expected block statement after 'else'"));
+          return nullptr;
+        }
+        elseStatement = parseBlockStatement();
+      }
+    }
+    
+    if (!elseStatement) {
+      return nullptr; // Error already reported
+    }
+  }
+
+  // Create if statement node
+  return ast::createIfStatement(condition, thenStatement, startLoc, arena_, elseStatement);
 }
 
 } // namespace cxy

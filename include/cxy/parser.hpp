@@ -605,9 +605,25 @@ private:
    * type_annotation ::= ':' type_expression
    * initializer ::= '=' expression
    *
+   * @param singleVariable If true, only allow single variable declaration (for if conditions)
    * @return Parsed variable declaration AST node, or nullptr on error
    */
-  ast::ASTNode *parseVariableDeclaration();
+  ast::ASTNode *parseVariableDeclaration(bool singleVariable = false);
+
+  /**
+   * @brief Parse an if statement.
+   *
+   * if_statement ::=
+   *   | 'if' condition if_body else_clause?
+   *
+   * condition ::= '(' condition_expr ')' | condition_expr
+   * condition_expr ::= expression | single_variable_declaration
+   * if_body ::= statement | block_statement
+   * else_clause ::= 'else' if_statement | 'else' block_statement
+   *
+   * @return Parsed if statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseIfStatement();
 
   /**
    * @brief Parse an integer literal token into an AST node.
