@@ -120,6 +120,13 @@ public:
   }
 
   /**
+   * @brief Parse a statement and return the result.
+   */
+  ast::ASTNode *parseStatement() {
+    return parser_.parseStatement();
+  }
+
+  /**
    * @brief Check if parser is at end of input.
    */
   bool isAtEnd() const { return parser_.isAtEnd(); }

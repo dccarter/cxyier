@@ -45,6 +45,9 @@ add_executable(cxyier_tests
     parser/debug_test.cpp
     parser/test_type_integration.cpp
     parser/statements/test_expression_statements.cpp
+    parser/statements/test_break_continue_statements.cpp
+    parser/statements/test_block_statements.cpp
+    parser/statements/test_defer_return_yield_statements.cpp
     types/test_type_infrastructure.cpp
     types/test_primitive_types.cpp
     ast_printer_statements_test.cpp

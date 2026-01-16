@@ -12,7 +12,7 @@ using namespace cxy::test;
 TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]") {
     SECTION("Simple function call statement without semicolon") {
         auto fixture = createParserFixture("foo()");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -26,7 +26,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 
     SECTION("Simple function call statement with semicolon") {
         auto fixture = createParserFixture("foo();");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -40,7 +40,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 
     SECTION("Assignment statement without semicolon") {
         auto fixture = createParserFixture("x = 42");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -54,7 +54,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 
     SECTION("Assignment statement with semicolon") {
         auto fixture = createParserFixture("x = 42;");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -64,7 +64,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 
     SECTION("Compound assignment statement") {
         auto fixture = createParserFixture("counter += 1");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -74,7 +74,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 
     SECTION("Increment statement") {
         auto fixture = createParserFixture("++counter");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -84,7 +84,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 
     SECTION("Method chain statement") {
         auto fixture = createParserFixture("obj.method().chain()");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -98,7 +98,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 
     SECTION("Macro call statement") {
         auto fixture = createParserFixture("println!(\"Hello\")");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -108,7 +108,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 
     SECTION("Complex expression statement") {
         auto fixture = createParserFixture("getData().transform(mapper).filter(predicate).save()");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astExprStmt);
@@ -124,7 +124,7 @@ TEST_CASE("Expression Statement Parsing", "[parser][statements][expression-stmt]
 TEST_CASE("Expression Statement Boundary Detection", "[parser][statements][boundaries]") {
     SECTION("Statement boundary without semicolon - end of input") {
         auto fixture = createParserFixture("foo()");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(fixture->current().kind == TokenKind::EoF);
@@ -132,7 +132,7 @@ TEST_CASE("Expression Statement Boundary Detection", "[parser][statements][bound
 
     SECTION("Statement boundary with semicolon") {
         auto fixture = createParserFixture("foo(); bar()");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE_AST_MATCHES(stmt, "(ExprStmt (CallExpr (Identifier foo)))");
@@ -144,7 +144,7 @@ TEST_CASE("Expression Statement Boundary Detection", "[parser][statements][bound
 
     SECTION("Statement boundary before statement keyword") {
         auto fixture = createParserFixture("foo() if");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE_AST_MATCHES(stmt, "(ExprStmt (CallExpr (Identifier foo)))");
@@ -155,7 +155,7 @@ TEST_CASE("Expression Statement Boundary Detection", "[parser][statements][bound
 
     SECTION("Statement boundary before block") {
         auto fixture = createParserFixture("foo() { bar(); }");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt != nullptr);
         REQUIRE_AST_MATCHES(stmt, "(ExprStmt (CallExpr (Identifier foo)))");
@@ -168,7 +168,7 @@ TEST_CASE("Expression Statement Boundary Detection", "[parser][statements][bound
 TEST_CASE("Expression Statement Error Cases", "[parser][statements][errors]") {
     SECTION("Empty input") {
         auto fixture = createParserFixture("");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -176,7 +176,7 @@ TEST_CASE("Expression Statement Error Cases", "[parser][statements][errors]") {
 
     SECTION("Invalid expression") {
         auto fixture = createParserFixture("++");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -184,7 +184,7 @@ TEST_CASE("Expression Statement Error Cases", "[parser][statements][errors]") {
 
     SECTION("Unexpected token after valid expression") {
         auto fixture = createParserFixture("foo() ]");
-        auto *stmt = fixture->parseExpressionStatement();
+        auto *stmt = fixture->parseStatement();
 
         // Should successfully parse the function call
         REQUIRE(stmt != nullptr);

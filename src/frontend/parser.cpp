@@ -1445,7 +1445,200 @@ bool Parser::isSynchronizationPoint() const {
   return false;
 }
 
+bool Parser::isStatementStart() const {
+  // Check if current token can start a statement
+  TokenKind kind = current().kind;
+  
+  // Statement keywords
+  if (kind == TokenKind::Break || kind == TokenKind::Continue ||
+      kind == TokenKind::Defer || kind == TokenKind::Return ||
+      kind == TokenKind::Yield) {
+    return true;
+  }
+  
+  // Block statement
+  if (kind == TokenKind::LBrace) {
+    return true;
+  }
+  
+  // Control flow keywords (for future phases)
+  if (kind == TokenKind::If || kind == TokenKind::While ||
+      kind == TokenKind::For || kind == TokenKind::Match) {
+    return true;
+  }
+  
+  // Declaration keywords (for future phases)
+  if (kind == TokenKind::Func || kind == TokenKind::Var ||
+      kind == TokenKind::Const || kind == TokenKind::Struct ||
+      kind == TokenKind::Enum || kind == TokenKind::Type) {
+    return true;
+  }
+  
+  return false;
+}
+
 // Phase 4: Statement parsing implementation
+
+ast::ASTNode *Parser::parseStatement() {
+  // Dispatch based on current token
+  switch (current().kind) {
+  case TokenKind::Break:
+    return parseBreakStatement();
+  case TokenKind::Continue:
+    return parseContinueStatement();
+  case TokenKind::LBrace:
+    return parseBlockStatement();
+  case TokenKind::Defer:
+    return parseDeferStatement();
+  case TokenKind::Return:
+    return parseReturnStatement();
+  case TokenKind::Yield:
+    return parseYieldStatement();
+  default:
+    // Fall back to expression statement
+    return parseExpressionStatement();
+  }
+}
+
+ast::ASTNode *Parser::parseBreakStatement() {
+  Location startLoc = current().location;
+  
+  // Consume 'break' keyword
+  if (!expect(TokenKind::Break)) {
+    return nullptr;
+  }
+
+  // Check for optional semicolon
+  if (check(TokenKind::Semicolon)) {
+    advance(); // consume semicolon
+  }
+
+  // Create break statement node
+  return ast::createBreakStatement(startLoc, arena_);
+}
+
+ast::ASTNode *Parser::parseContinueStatement() {
+  Location startLoc = current().location;
+  
+  // Consume 'continue' keyword
+  if (!expect(TokenKind::Continue)) {
+    return nullptr;
+  }
+
+  // Check for optional semicolon
+  if (check(TokenKind::Semicolon)) {
+    advance(); // consume semicolon
+  }
+
+  // Create continue statement node
+  return ast::createContinueStatement(startLoc, arena_);
+}
+
+ast::ASTNode *Parser::parseBlockStatement() {
+  Location startLoc = current().location;
+  
+  // Consume opening brace
+  if (!expect(TokenKind::LBrace)) {
+    return nullptr;
+  }
+
+  // Create block statement node
+  auto *blockStmt = ast::createBlockStatement(startLoc, arena_);
+  if (!blockStmt) {
+    return nullptr;
+  }
+
+  // Parse statements until closing brace
+  while (!check(TokenKind::RBrace) && !isAtEnd()) {
+    auto *stmt = parseStatement();
+    if (stmt) {
+      blockStmt->addStatement(stmt);
+    } else {
+      // Error in statement parsing - try to recover
+      synchronize();
+      // Continue parsing other statements in the block
+    }
+  }
+
+  // Consume closing brace
+  if (!expect(TokenKind::RBrace)) {
+    ParseError error = createUnexpectedTokenError(TokenKind::RBrace,
+                                                  "Expected '}' to close block statement");
+    reportError(error);
+    return nullptr;
+  }
+
+  return blockStmt;
+}
+
+ast::ASTNode *Parser::parseDeferStatement() {
+  Location startLoc = current().location;
+  
+  // Consume 'defer' keyword
+  if (!expect(TokenKind::Defer)) {
+    return nullptr;
+  }
+
+  // Parse the statement to defer
+  auto *stmt = parseStatement();
+  if (!stmt) {
+    ParseError error = createUnexpectedTokenError(TokenKind::LBrace,
+                                                  "Expected statement after 'defer'");
+    reportError(error);
+    return nullptr;
+  }
+
+  // Create defer statement node
+  return ast::createDeferStatement(stmt, startLoc, arena_);
+}
+
+ast::ASTNode *Parser::parseReturnStatement() {
+  Location startLoc = current().location;
+  
+  // Consume 'return' keyword
+  if (!expect(TokenKind::Return)) {
+    return nullptr;
+  }
+
+  // Parse optional expression
+  ast::ASTNode *expr = nullptr;
+  if (!check(TokenKind::Semicolon) && !isAtEnd() && !isStatementStart()) {
+    expr = parseExpression();
+    // Note: expr can be nullptr if parsing fails, but we continue
+  }
+
+  // Check for optional semicolon
+  if (check(TokenKind::Semicolon)) {
+    advance(); // consume semicolon
+  }
+
+  // Create return statement node
+  return ast::createReturnStatement(startLoc, arena_, expr);
+}
+
+ast::ASTNode *Parser::parseYieldStatement() {
+  Location startLoc = current().location;
+  
+  // Consume 'yield' keyword
+  if (!expect(TokenKind::Yield)) {
+    return nullptr;
+  }
+
+  // Parse optional expression
+  ast::ASTNode *expr = nullptr;
+  if (!check(TokenKind::Semicolon) && !isAtEnd() && !isStatementStart()) {
+    expr = parseExpression();
+    // Note: expr can be nullptr if parsing fails, but we continue
+  }
+
+  // Check for optional semicolon
+  if (check(TokenKind::Semicolon)) {
+    advance(); // consume semicolon
+  }
+
+  // Create yield statement node
+  return ast::createYieldStatement(startLoc, arena_, expr);
+}
 
 ast::ASTNode *Parser::parseExpressionStatement() {
   Location startLoc = current().location;

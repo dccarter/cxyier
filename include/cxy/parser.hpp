@@ -496,6 +496,18 @@ public:
   // Phase 4: Statement parsing interface
 
   /**
+   * @brief Parse a statement.
+   *
+   * statement ::=
+   *   | break_statement
+   *   | continue_statement  
+   *   | expression_statement
+   *
+   * @return Parsed statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseStatement();
+
+  /**
    * @brief Parse an expression statement.
    *
    * expression_statement ::=
@@ -522,6 +534,66 @@ private:
   std::vector<ParseError> errors_; ///< Accumulated parse errors
 
   // Private parsing helpers
+
+  /**
+   * @brief Parse a break statement.
+   *
+   * break_statement ::=
+   *   | 'break' ';'?                     # Break with optional semicolon
+   *
+   * @return Parsed break statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseBreakStatement();
+
+  /**
+   * @brief Parse a continue statement.
+   *
+   * continue_statement ::=
+   *   | 'continue' ';'?                  # Continue with optional semicolon
+   *
+   * @return Parsed continue statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseContinueStatement();
+
+  /**
+   * @brief Parse a block statement.
+   *
+   * block_statement ::=
+   *   | '{' statement* '}'               # Block with zero or more statements
+   *
+   * @return Parsed block statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseBlockStatement();
+
+  /**
+   * @brief Parse a defer statement.
+   *
+   * defer_statement ::=
+   *   | 'defer' statement                # Defer execution until scope exit
+   *
+   * @return Parsed defer statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseDeferStatement();
+
+  /**
+   * @brief Parse a return statement.
+   *
+   * return_statement ::=
+   *   | 'return' expression? ';'?        # Return with optional value and semicolon
+   *
+   * @return Parsed return statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseReturnStatement();
+
+  /**
+   * @brief Parse a yield statement.
+   *
+   * yield_statement ::=
+   *   | 'yield' expression? ';'?         # Yield with optional value and semicolon
+   *
+   * @return Parsed yield statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseYieldStatement();
 
   /**
    * @brief Parse an integer literal token into an AST node.
@@ -581,6 +653,16 @@ private:
    * @return True if we should stop error recovery here
    */
   bool isSynchronizationPoint() const;
+
+  /**
+   * @brief Check if current token can start a statement.
+   *
+   * Used for optional expression parsing in return/yield statements
+   * to determine when to stop parsing the optional expression.
+   *
+   * @return True if current token can start a statement
+   */
+  bool isStatementStart() const;
 };
 
 } // namespace cxy

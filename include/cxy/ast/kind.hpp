@@ -53,12 +53,12 @@ namespace cxy::ast {
                                 \
     /* Statements */            \
     f(ExprStmt)                 \
+    f(BlockStmt)                \
     f(BreakStmt)                \
     f(ContinueStmt)             \
     f(DeferStmt)                \
     f(ReturnStmt)               \
     f(YieldStmt)                \
-    f(BlockStmt)                \
     f(IfStmt)                   \
     f(ForStmt)                  \
     f(WhileStmt)                \
