@@ -50,6 +50,7 @@ add_executable(cxyier_tests
     parser/statements/test_defer_return_yield_statements.cpp
     parser/statements/test_variable_declarations.cpp
     parser/statements/test_if_statements.cpp
+    parser/statements/test_while_statements.cpp
     declarations/test_variable_declarations.cpp
     types/test_type_infrastructure.cpp
     types/test_primitive_types.cpp

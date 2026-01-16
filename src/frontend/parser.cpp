@@ -115,18 +115,18 @@ Parser::createUnexpectedTokenError(const std::vector<TokenKind> &expected,
 
 // Phase 2: Expression parsing with operator precedence
 
-ast::ASTNode *Parser::parseExpression() {
+ast::ASTNode *Parser::parseExpression(bool withoutStructLiterals) {
   // Start at the top of the precedence hierarchy
   // Now includes assignment expressions
-  return parseAssignmentExpression();
+  return parseAssignmentExpression(withoutStructLiterals);
 }
 
-ast::ASTNode *Parser::parseAssignmentExpression() {
+ast::ASTNode *Parser::parseAssignmentExpression(bool withoutStructLiterals) {
   // assignment_expression ::=
   //   | conditional_expression
   //   | conditional_expression assignment_operator assignment_expression
 
-  ast::ASTNode *left = parseConditionalExpression();
+  ast::ASTNode *left = parseConditionalExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -137,7 +137,7 @@ ast::ASTNode *Parser::parseAssignmentExpression() {
     advance(); // consume operator
 
     // Parse the right-hand side (right-associative)
-    ast::ASTNode *right = parseAssignmentExpression();
+    ast::ASTNode *right = parseAssignmentExpression(withoutStructLiterals);
     if (!right) {
       return nullptr; // Error already reported
     }
@@ -150,12 +150,12 @@ ast::ASTNode *Parser::parseAssignmentExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseConditionalExpression() {
+ast::ASTNode *Parser::parseConditionalExpression(bool withoutStructLiterals) {
   // conditional_expression ::=
   //   | logical_or_expression
   //   | logical_or_expression '?' expression ':' conditional_expression
 
-  ast::ASTNode *condition = parseLogicalOrExpression();
+  ast::ASTNode *condition = parseLogicalOrExpression(withoutStructLiterals);
   if (!condition) {
     return nullptr;
   }
@@ -166,7 +166,7 @@ ast::ASTNode *Parser::parseConditionalExpression() {
     advance(); // consume '?'
 
     // Parse the 'then' expression
-    ast::ASTNode *thenExpr = parseExpression();
+    ast::ASTNode *thenExpr = parseExpression(withoutStructLiterals);
     if (!thenExpr) {
       return nullptr; // Error already reported
     }
@@ -178,7 +178,7 @@ ast::ASTNode *Parser::parseConditionalExpression() {
     }
 
     // Parse the 'else' expression (right-associative)
-    ast::ASTNode *elseExpr = parseConditionalExpression();
+    ast::ASTNode *elseExpr = parseConditionalExpression(withoutStructLiterals);
     if (!elseExpr) {
       return nullptr; // Error already reported
     }
@@ -191,12 +191,12 @@ ast::ASTNode *Parser::parseConditionalExpression() {
   return condition;
 }
 
-ast::ASTNode *Parser::parseLogicalOrExpression() {
+ast::ASTNode *Parser::parseLogicalOrExpression(bool withoutStructLiterals) {
   // logical_or_expression ::=
   //   | logical_and_expression
   //   | logical_or_expression '||' logical_and_expression
 
-  ast::ASTNode *left = parseLogicalAndExpression();
+  ast::ASTNode *left = parseLogicalAndExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -205,7 +205,7 @@ ast::ASTNode *Parser::parseLogicalOrExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseLogicalAndExpression();
+    ast::ASTNode *right = parseLogicalAndExpression(withoutStructLiterals);
     if (!right) {
       return nullptr; // Error already reported
     }
@@ -218,12 +218,12 @@ ast::ASTNode *Parser::parseLogicalOrExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseLogicalAndExpression() {
+ast::ASTNode *Parser::parseLogicalAndExpression(bool withoutStructLiterals) {
   // logical_and_expression ::=
   //   | bitwise_or_expression
   //   | logical_and_expression '&&' bitwise_or_expression
 
-  ast::ASTNode *left = parseBitwiseOrExpression();
+  ast::ASTNode *left = parseBitwiseOrExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -232,7 +232,7 @@ ast::ASTNode *Parser::parseLogicalAndExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseBitwiseOrExpression();
+    ast::ASTNode *right = parseBitwiseOrExpression(withoutStructLiterals);
     if (!right) {
       return nullptr; // Error already reported
     }
@@ -245,12 +245,12 @@ ast::ASTNode *Parser::parseLogicalAndExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseBitwiseOrExpression() {
+ast::ASTNode *Parser::parseBitwiseOrExpression(bool withoutStructLiterals) {
   // bitwise_or_expression ::=
   //   | bitwise_xor_expression
   //   | bitwise_or_expression '|' bitwise_xor_expression
 
-  ast::ASTNode *left = parseBitwiseXorExpression();
+  ast::ASTNode *left = parseBitwiseXorExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -259,7 +259,7 @@ ast::ASTNode *Parser::parseBitwiseOrExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseBitwiseXorExpression();
+    ast::ASTNode *right = parseBitwiseXorExpression(withoutStructLiterals);
     if (!right) {
       return nullptr; // Error already reported
     }
@@ -272,12 +272,12 @@ ast::ASTNode *Parser::parseBitwiseOrExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseBitwiseXorExpression() {
+ast::ASTNode *Parser::parseBitwiseXorExpression(bool withoutStructLiterals) {
   // bitwise_xor_expression ::=
   //   | bitwise_and_expression
   //   | bitwise_xor_expression '^' bitwise_and_expression
 
-  ast::ASTNode *left = parseBitwiseAndExpression();
+  ast::ASTNode *left = parseBitwiseAndExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -286,7 +286,7 @@ ast::ASTNode *Parser::parseBitwiseXorExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseBitwiseAndExpression();
+    ast::ASTNode *right = parseBitwiseAndExpression(withoutStructLiterals);
     if (!right) {
       return nullptr; // Error already reported
     }
@@ -299,12 +299,12 @@ ast::ASTNode *Parser::parseBitwiseXorExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseBitwiseAndExpression() {
+ast::ASTNode *Parser::parseBitwiseAndExpression(bool withoutStructLiterals) {
   // bitwise_and_expression ::=
   //   | equality_expression
   //   | bitwise_and_expression '&' equality_expression
 
-  ast::ASTNode *left = parseEqualityExpression();
+  ast::ASTNode *left = parseEqualityExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -313,7 +313,7 @@ ast::ASTNode *Parser::parseBitwiseAndExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseEqualityExpression();
+    ast::ASTNode *right = parseEqualityExpression(withoutStructLiterals);
     if (!right) {
       return nullptr; // Error already reported
     }
@@ -326,13 +326,13 @@ ast::ASTNode *Parser::parseBitwiseAndExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseEqualityExpression() {
+ast::ASTNode *Parser::parseEqualityExpression(bool withoutStructLiterals) {
   // equality_expression ::=
   //   | relational_expression
   //   | equality_expression '==' relational_expression
   //   | equality_expression '!=' relational_expression
 
-  ast::ASTNode *left = parseRelationalExpression();
+  ast::ASTNode *left = parseRelationalExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -341,7 +341,7 @@ ast::ASTNode *Parser::parseEqualityExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseRelationalExpression();
+    ast::ASTNode *right = parseRelationalExpression(withoutStructLiterals);
     if (!right) {
       return nullptr; // Error already reported
     }
@@ -354,7 +354,7 @@ ast::ASTNode *Parser::parseEqualityExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseRelationalExpression() {
+ast::ASTNode *Parser::parseRelationalExpression(bool withoutStructLiterals) {
   // relational_expression ::=
   //   | range_expression
   //   | relational_expression '<' range_expression
@@ -362,7 +362,7 @@ ast::ASTNode *Parser::parseRelationalExpression() {
   //   | relational_expression '>' range_expression
   //   | relational_expression '>=' range_expression
 
-  ast::ASTNode *left = parseRangeExpression();
+  ast::ASTNode *left = parseRangeExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -372,7 +372,7 @@ ast::ASTNode *Parser::parseRelationalExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseRangeExpression();
+    ast::ASTNode *right = parseRangeExpression(withoutStructLiterals);
     if (!right) {
       return nullptr;
     }
@@ -384,7 +384,7 @@ ast::ASTNode *Parser::parseRelationalExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseRangeExpression() {
+ast::ASTNode *Parser::parseRangeExpression(bool withoutStructLiterals) {
   // range_expression ::=
   //   | shift_expression
   //   | range_expression '..' shift_expression
@@ -403,7 +403,7 @@ ast::ASTNode *Parser::parseRangeExpression() {
         !check(TokenKind::RParen) && !check(TokenKind::RBrace) &&
         !check(TokenKind::Semicolon)) {
       // ..expr (open start inclusive range)
-      ast::ASTNode *end = parseShiftExpression();
+      ast::ASTNode *end = parseShiftExpression(withoutStructLiterals);
       if (!end) {
         return nullptr;
       }
@@ -419,7 +419,7 @@ ast::ASTNode *Parser::parseRangeExpression() {
     Token opToken = current();
     advance(); // consume '..<'
 
-    ast::ASTNode *end = parseShiftExpression();
+    ast::ASTNode *end = parseShiftExpression(withoutStructLiterals);
     if (!end) {
       return nullptr;
     }
@@ -427,7 +427,7 @@ ast::ASTNode *Parser::parseRangeExpression() {
   }
 
   // First, parse left side expression
-  ast::ASTNode *left = parseShiftExpression();
+  ast::ASTNode *left = parseShiftExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -442,7 +442,7 @@ ast::ASTNode *Parser::parseRangeExpression() {
         !check(TokenKind::RParen) && !check(TokenKind::RBrace) &&
         !check(TokenKind::Semicolon)) {
       // expr..expr (inclusive range)
-      ast::ASTNode *right = parseShiftExpression();
+      ast::ASTNode *right = parseShiftExpression(withoutStructLiterals);
       if (!right) {
         return nullptr;
       }
@@ -459,7 +459,7 @@ ast::ASTNode *Parser::parseRangeExpression() {
     advance(); // consume '..<'
 
     // Must have a right side for exclusive ranges
-    ast::ASTNode *right = parseShiftExpression();
+    ast::ASTNode *right = parseShiftExpression(withoutStructLiterals);
     if (!right) {
       return nullptr;
     }
@@ -470,13 +470,13 @@ ast::ASTNode *Parser::parseRangeExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseShiftExpression() {
+ast::ASTNode *Parser::parseShiftExpression(bool withoutStructLiterals) {
   // shift_expression ::=
   //   | additive_expression
   //   | shift_expression '<<' additive_expression
   //   | shift_expression '>>' additive_expression
 
-  ast::ASTNode *left = parseAdditiveExpression();
+  ast::ASTNode *left = parseAdditiveExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -485,7 +485,7 @@ ast::ASTNode *Parser::parseShiftExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseAdditiveExpression();
+    ast::ASTNode *right = parseAdditiveExpression(withoutStructLiterals);
     if (!right) {
       return nullptr;
     }
@@ -497,13 +497,13 @@ ast::ASTNode *Parser::parseShiftExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseAdditiveExpression() {
+ast::ASTNode *Parser::parseAdditiveExpression(bool withoutStructLiterals) {
   // additive_expression ::=
   //   | multiplicative_expression
   //   | additive_expression '+' multiplicative_expression
   //   | additive_expression '-' multiplicative_expression
 
-  ast::ASTNode *left = parseMultiplicativeExpression();
+  ast::ASTNode *left = parseMultiplicativeExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -512,7 +512,7 @@ ast::ASTNode *Parser::parseAdditiveExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseMultiplicativeExpression();
+    ast::ASTNode *right = parseMultiplicativeExpression(withoutStructLiterals);
     if (!right) {
       return nullptr;
     }
@@ -524,14 +524,14 @@ ast::ASTNode *Parser::parseAdditiveExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseMultiplicativeExpression() {
+ast::ASTNode *Parser::parseMultiplicativeExpression(bool withoutStructLiterals) {
   // multiplicative_expression ::=
   //   | cast_expression
   //   | multiplicative_expression '*' cast_expression
   //   | multiplicative_expression '/' cast_expression
   //   | multiplicative_expression '%' cast_expression
 
-  ast::ASTNode *left = parseCastExpression();
+  ast::ASTNode *left = parseCastExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -541,7 +541,7 @@ ast::ASTNode *Parser::parseMultiplicativeExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *right = parseCastExpression();
+    ast::ASTNode *right = parseCastExpression(withoutStructLiterals);
     if (!right) {
       return nullptr;
     }
@@ -553,7 +553,7 @@ ast::ASTNode *Parser::parseMultiplicativeExpression() {
   return left;
 }
 
-ast::ASTNode *Parser::parseUnaryExpression() {
+ast::ASTNode *Parser::parseUnaryExpression(bool withoutStructLiterals) {
   // unary_expression ::=
   //   | postfix_expression
   //   | '++' unary_expression
@@ -576,7 +576,7 @@ ast::ASTNode *Parser::parseUnaryExpression() {
     Token opToken = current();
     advance(); // consume operator
 
-    ast::ASTNode *operand = parseUnaryExpression(); // right-associative
+    ast::ASTNode *operand = parseUnaryExpression(withoutStructLiterals); // right-associative
     if (!operand) {
       return nullptr;
     }
@@ -586,16 +586,16 @@ ast::ASTNode *Parser::parseUnaryExpression() {
   }
 
   // No prefix operator, delegate to postfix expression
-  return parsePostfixExpression();
+  return parsePostfixExpression(withoutStructLiterals);
 }
 
-ast::ASTNode *Parser::parseCastExpression() {
+ast::ASTNode *Parser::parseCastExpression(bool withoutStructLiterals) {
   // cast_expression ::=
   //   | postfix_expression
   //   | cast_expression 'as' type_expression
   //   | cast_expression '!:' type_expression
 
-  ast::ASTNode *left = parseUnaryExpression();
+  ast::ASTNode *left = parseUnaryExpression(withoutStructLiterals);
   if (!left) {
     return nullptr;
   }
@@ -637,14 +637,14 @@ ast::ASTNode *Parser::parseTypeExpression() {
   return ast::createPrimitiveType(typeToken.kind, typeToken.location, arena_);
 }
 
-ast::ASTNode *Parser::parsePostfixExpression() {
+ast::ASTNode *Parser::parsePostfixExpression(bool withoutStructLiterals) {
   // postfix_expression ::=
   //   | primary_expression
   //   | postfix_expression '++'
   //   | postfix_expression '--'
   //   | postfix_expression '(' argument_list? ')'
 
-  ast::ASTNode *expr = parsePrimaryExpression();
+  ast::ASTNode *expr = parsePrimaryExpression(withoutStructLiterals);
   if (!expr) {
     return nullptr;
   }
@@ -673,7 +673,7 @@ ast::ASTNode *Parser::parsePostfixExpression() {
       Location memberLoc = current().location;
       advance(); // consume '.'
 
-      ast::ASTNode *memberExpr = parsePrimaryExpression();
+      ast::ASTNode *memberExpr = parsePrimaryExpression(withoutStructLiterals);
       if (!memberExpr) {
         return nullptr;
       }
@@ -692,7 +692,7 @@ ast::ASTNode *Parser::parsePostfixExpression() {
         return nullptr;
       }
 
-      ast::ASTNode *memberExpr = parseIdentifierExpression();
+      ast::ASTNode *memberExpr = parseIdentifierExpression(true);
       if (!memberExpr) {
         return nullptr;
       }
@@ -753,7 +753,7 @@ ast::ASTNode *Parser::parsePostfixExpression() {
   return expr;
 }
 
-ast::ASTNode *Parser::parsePrimaryExpression() {
+ast::ASTNode *Parser::parsePrimaryExpression(bool withoutStructLiterals) {
   // primary_expression ::=
   //   | literal_expression
   //   | identifier_expression
@@ -777,7 +777,7 @@ ast::ASTNode *Parser::parsePrimaryExpression() {
     }
 
     // Parse the expression to spread
-    ast::ASTNode *expr = parsePostfixExpression();
+    ast::ASTNode *expr = parsePostfixExpression(withoutStructLiterals);
     if (!expr) {
       ParseError error = createUnexpectedTokenError(
           TokenKind::Ident, "Expected expression after '...'");
@@ -794,7 +794,7 @@ ast::ASTNode *Parser::parsePrimaryExpression() {
   }
 
   // Check for anonymous struct literal
-  if (check(TokenKind::LBrace)) {
+  if (check(TokenKind::LBrace) && !withoutStructLiterals) {
     return parseStructLiteral(nullptr);
   }
 
@@ -819,7 +819,7 @@ ast::ASTNode *Parser::parsePrimaryExpression() {
     if (lookahead(1).kind == TokenKind::LNot) {
       return parseMacroCall();
     } else {
-      return parseIdentifierExpression();
+      return parseIdentifierExpression(withoutStructLiterals);
     }
   }
 
@@ -873,7 +873,7 @@ ast::ASTNode *Parser::parseLiteralExpression() {
   }
 }
 
-ast::ASTNode *Parser::parseIdentifierExpression() {
+ast::ASTNode *Parser::parseIdentifierExpression(bool withoutStructLiterals) {
   // identifier_expression ::= Ident
   // typed_struct_literal ::= Ident '{' struct_field_list? '}'
 
@@ -896,7 +896,7 @@ ast::ASTNode *Parser::parseIdentifierExpression() {
   }
 
   // Check for typed struct literal (identifier followed by '{')
-  if (check(TokenKind::LBrace)) {
+  if (check(TokenKind::LBrace) && !withoutStructLiterals) {
     // Create identifier node for the type
     InternedString name = identToken.value.stringValue;
     ast::ASTNode *typeNode =
@@ -1008,11 +1008,11 @@ ast::ASTNode *Parser::parseIntegerLiteral() {
   // Convert token's unsigned value to signed for AST node
   __int128 value = static_cast<__int128>(token.getIntValue());
   auto *node = ast::createIntLiteral(value, token.location, arena_);
-  
+
   // Assign type from token information
   IntegerKind intKind = token.getIntType();
   node->type = typeRegistry_.integerType(intKind);
-  
+
   return node;
 }
 
@@ -1036,11 +1036,11 @@ ast::ASTNode *Parser::parseFloatLiteral() {
 
   double value = token.getFloatValue();
   auto *node = ast::createFloatLiteral(value, token.location, arena_);
-  
+
   // Assign type from token information
   FloatKind floatKind = token.getFloatType();
   node->type = typeRegistry_.floatType(floatKind);
-  
+
   return node;
 }
 
@@ -1064,10 +1064,10 @@ ast::ASTNode *Parser::parseCharacterLiteral() {
 
   uint32_t value = token.getCharValue();
   auto *node = ast::createCharLiteral(value, token.location, arena_);
-  
+
   // Assign character type
   node->type = typeRegistry_.charType();
-  
+
   return node;
 }
 
@@ -1093,11 +1093,11 @@ ast::ASTNode *Parser::parseStringLiteral() {
   // Get the processed string value directly from the token
   InternedString value = token.value.stringValue;
   auto *node = ast::createStringLiteral(value, token.location, arena_);
-  
+
   // Assign string type (using CharType as placeholder for now)
   // TODO: Implement proper string type in type system
   node->type = typeRegistry_.charType();
-  
+
   return node;
 }
 
@@ -1120,10 +1120,10 @@ ast::ASTNode *Parser::parseBooleanLiteral() {
   }
 
   auto *node = ast::createBoolLiteral(value, token.location, arena_);
-  
+
   // Assign boolean type
   node->type = typeRegistry_.boolType();
-  
+
   return node;
 }
 
@@ -1449,32 +1449,32 @@ bool Parser::isSynchronizationPoint() const {
 bool Parser::isStatementStart() const {
   // Check if current token can start a statement
   TokenKind kind = current().kind;
-  
+
   // Statement keywords
   if (kind == TokenKind::Break || kind == TokenKind::Continue ||
       kind == TokenKind::Defer || kind == TokenKind::Return ||
       kind == TokenKind::Yield) {
     return true;
   }
-  
+
   // Block statement
   if (kind == TokenKind::LBrace) {
     return true;
   }
-  
+
   // Control flow keywords (for future phases)
   if (kind == TokenKind::If || kind == TokenKind::While ||
       kind == TokenKind::For || kind == TokenKind::Match) {
     return true;
   }
-  
+
   // Declaration keywords (for future phases)
   if (kind == TokenKind::Func || kind == TokenKind::Var ||
       kind == TokenKind::Const || kind == TokenKind::Struct ||
       kind == TokenKind::Enum || kind == TokenKind::Type) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -1501,6 +1501,8 @@ ast::ASTNode *Parser::parseStatement() {
     return parseVariableDeclaration();
   case TokenKind::If:
     return parseIfStatement();
+  case TokenKind::While:
+    return parseWhileStatement();
   default:
     // Fall back to expression statement
     return parseExpressionStatement();
@@ -1509,7 +1511,7 @@ ast::ASTNode *Parser::parseStatement() {
 
 ast::ASTNode *Parser::parseBreakStatement() {
   Location startLoc = current().location;
-  
+
   // Consume 'break' keyword
   if (!expect(TokenKind::Break)) {
     return nullptr;
@@ -1526,7 +1528,7 @@ ast::ASTNode *Parser::parseBreakStatement() {
 
 ast::ASTNode *Parser::parseContinueStatement() {
   Location startLoc = current().location;
-  
+
   // Consume 'continue' keyword
   if (!expect(TokenKind::Continue)) {
     return nullptr;
@@ -1543,7 +1545,7 @@ ast::ASTNode *Parser::parseContinueStatement() {
 
 ast::ASTNode *Parser::parseBlockStatement() {
   Location startLoc = current().location;
-  
+
   // Consume opening brace
   if (!expect(TokenKind::LBrace)) {
     return nullptr;
@@ -1580,7 +1582,7 @@ ast::ASTNode *Parser::parseBlockStatement() {
 
 ast::ASTNode *Parser::parseDeferStatement() {
   Location startLoc = current().location;
-  
+
   // Consume 'defer' keyword
   if (!expect(TokenKind::Defer)) {
     return nullptr;
@@ -1601,7 +1603,7 @@ ast::ASTNode *Parser::parseDeferStatement() {
 
 ast::ASTNode *Parser::parseReturnStatement() {
   Location startLoc = current().location;
-  
+
   // Consume 'return' keyword
   if (!expect(TokenKind::Return)) {
     return nullptr;
@@ -1625,7 +1627,7 @@ ast::ASTNode *Parser::parseReturnStatement() {
 
 ast::ASTNode *Parser::parseYieldStatement() {
   Location startLoc = current().location;
-  
+
   // Consume 'yield' keyword
   if (!expect(TokenKind::Yield)) {
     return nullptr;
@@ -1670,7 +1672,7 @@ ast::ASTNode *Parser::parseExpressionStatement() {
 ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable) {
   Location startLoc = current().location;
   bool isConst = false;
-  
+
   // Parse declaration keyword
   if (check(TokenKind::Const)) {
     isConst = true;
@@ -1756,7 +1758,7 @@ ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable) {
                            "Variable declaration must have either type annotation or initializer"));
     return nullptr;
   }
-  
+
   if (singleVariable && !initializer) {
     reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
                            "Variable declarations in if conditions must have an initializer"));
@@ -1775,7 +1777,7 @@ ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable) {
 
 ast::ASTNode *Parser::parseIfStatement() {
   Location startLoc = current().location;
-  
+
   // Consume 'if' keyword
   if (!expect(TokenKind::If)) {
     return nullptr;
@@ -1784,22 +1786,22 @@ ast::ASTNode *Parser::parseIfStatement() {
   // Parse condition (with or without parentheses)
   bool hasParentheses = false;
   ast::ASTNode *condition = nullptr;
-  
+
   if (check(TokenKind::LParen)) {
     hasParentheses = true;
     advance(); // consume '('
-    
+
     // Parse condition expression or variable declaration
     if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
       condition = parseVariableDeclaration(true); // single variable only
     } else {
       condition = parseExpression();
     }
-    
+
     if (!condition) {
       return nullptr; // Error already reported
     }
-    
+
     if (!expect(TokenKind::RParen)) {
       return nullptr;
     }
@@ -1808,9 +1810,9 @@ ast::ASTNode *Parser::parseIfStatement() {
     if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
       condition = parseVariableDeclaration(true); // single variable only
     } else {
-      condition = parseExpression();
+      condition = parseExpression(true);
     }
-    
+
     if (!condition) {
       return nullptr; // Error already reported
     }
@@ -1818,7 +1820,7 @@ ast::ASTNode *Parser::parseIfStatement() {
 
   // Parse if body
   ast::ASTNode *thenStatement = nullptr;
-  
+
   if (hasParentheses) {
     // With parentheses: single statement or block allowed
     if (check(TokenKind::LBrace)) {
@@ -1835,7 +1837,7 @@ ast::ASTNode *Parser::parseIfStatement() {
     }
     thenStatement = parseBlockStatement();
   }
-  
+
   if (!thenStatement) {
     return nullptr; // Error already reported
   }
@@ -1844,7 +1846,7 @@ ast::ASTNode *Parser::parseIfStatement() {
   ast::ASTNode *elseStatement = nullptr;
   if (check(TokenKind::Else)) {
     advance(); // consume 'else'
-    
+
     if (check(TokenKind::If)) {
       // else if - parse another if statement
       elseStatement = parseIfStatement();
@@ -1867,7 +1869,7 @@ ast::ASTNode *Parser::parseIfStatement() {
         elseStatement = parseBlockStatement();
       }
     }
-    
+
     if (!elseStatement) {
       return nullptr; // Error already reported
     }
@@ -1875,6 +1877,80 @@ ast::ASTNode *Parser::parseIfStatement() {
 
   // Create if statement node
   return ast::createIfStatement(condition, thenStatement, startLoc, arena_, elseStatement);
+}
+
+ast::ASTNode *Parser::parseWhileStatement() {
+  Location startLoc = current().location;
+
+  // Consume 'while' keyword
+  if (!expect(TokenKind::While)) {
+    return nullptr;
+  }
+
+  // Parse optional condition (with or without parentheses)
+  bool hasParentheses = false;
+  ast::ASTNode *condition = nullptr;
+
+  if (check(TokenKind::LBrace)) {
+    // Infinite loop: while { }
+    condition = nullptr;
+  } else if (check(TokenKind::LParen)) {
+    hasParentheses = true;
+    advance(); // consume '('
+
+    // Parse condition expression or variable declaration
+    if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
+      condition = parseVariableDeclaration(true); // single variable only
+    } else {
+      condition = parseExpression();
+    }
+
+    if (!condition) {
+      return nullptr; // Error already reported
+    }
+
+    if (!expect(TokenKind::RParen)) {
+      return nullptr;
+    }
+  } else {
+    // Parse bare condition (expression or variable declaration)
+    if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
+      condition = parseVariableDeclaration(true); // single variable only
+    } else {
+      condition = parseExpression(true); // withoutStructLiterals = true
+    }
+
+    if (!condition) {
+      return nullptr; // Error already reported
+    }
+  }
+
+  // Parse while body
+  ast::ASTNode *body = nullptr;
+
+  if (hasParentheses) {
+    // With parentheses: single statement or block allowed
+    if (check(TokenKind::LBrace)) {
+      body = parseBlockStatement();
+    } else {
+      body = parseStatement();
+    }
+  } else {
+    // Without parentheses or infinite loop: block required
+    if (!check(TokenKind::LBrace)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Block statement required for while loop"));
+      return nullptr;
+    }
+    body = parseBlockStatement();
+  }
+
+  if (!body) {
+    return nullptr; // Error already reported
+  }
+
+  // Create while statement node
+  return ast::createWhileStatement(condition, body, startLoc, arena_);
 }
 
 } // namespace cxy

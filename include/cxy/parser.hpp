@@ -85,7 +85,7 @@ public:
    *
    * @return Parsed expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseExpression();
+  ast::ASTNode *parseExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a relational expression (<, <=, >, >=).
@@ -99,7 +99,7 @@ public:
    *
    * @return Parsed relational expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseRelationalExpression();
+  ast::ASTNode *parseRelationalExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a range expression (.., ..<).
@@ -114,7 +114,7 @@ public:
    *
    * @return Parsed range expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseRangeExpression();
+  ast::ASTNode *parseRangeExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse an equality expression (== and !=).
@@ -126,7 +126,7 @@ public:
    *
    * @return Parsed equality expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseEqualityExpression();
+  ast::ASTNode *parseEqualityExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a bitwise AND expression (&).
@@ -137,7 +137,7 @@ public:
    *
    * @return Parsed bitwise AND expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseBitwiseAndExpression();
+  ast::ASTNode *parseBitwiseAndExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a bitwise XOR expression (^).
@@ -148,7 +148,7 @@ public:
    *
    * @return Parsed bitwise XOR expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseBitwiseXorExpression();
+  ast::ASTNode *parseBitwiseXorExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a bitwise OR expression (|).
@@ -159,7 +159,7 @@ public:
    *
    * @return Parsed bitwise OR expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseBitwiseOrExpression();
+  ast::ASTNode *parseBitwiseOrExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a logical AND expression (&&).
@@ -170,7 +170,7 @@ public:
    *
    * @return Parsed logical AND expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseLogicalAndExpression();
+  ast::ASTNode *parseLogicalAndExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a logical OR expression (||).
@@ -181,7 +181,7 @@ public:
    *
    * @return Parsed logical OR expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseLogicalOrExpression();
+  ast::ASTNode *parseLogicalOrExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a conditional expression (ternary ?:).
@@ -192,7 +192,7 @@ public:
    *
    * @return Parsed conditional expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseConditionalExpression();
+  ast::ASTNode *parseConditionalExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse an assignment expression (=, +=, -=, etc.).
@@ -203,7 +203,7 @@ public:
    *
    * @return Parsed assignment expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseAssignmentExpression();
+  ast::ASTNode *parseAssignmentExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a shift expression (<< and >>).
@@ -215,7 +215,7 @@ public:
    *
    * @return Parsed shift expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseShiftExpression();
+  ast::ASTNode *parseShiftExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse an additive expression (+ and -).
@@ -227,7 +227,7 @@ public:
    *
    * @return Parsed additive expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseAdditiveExpression();
+  ast::ASTNode *parseAdditiveExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a multiplicative expression (*, /, %).
@@ -240,7 +240,7 @@ public:
    *
    * @return Parsed multiplicative expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseMultiplicativeExpression();
+  ast::ASTNode *parseMultiplicativeExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a unary expression (prefix operators).
@@ -258,7 +258,7 @@ public:
    *
    * @return Parsed unary expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseUnaryExpression();
+  ast::ASTNode *parseUnaryExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a cast expression (as, !: operators).
@@ -270,7 +270,7 @@ public:
    *
    * @return Parsed cast expression AST node, or nullptr on error
    */
-  ast::ASTNode *parseCastExpression();
+  ast::ASTNode *parseCastExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a type expression (primitive types).
@@ -291,7 +291,7 @@ public:
    *
    * @return Parsed postfix expression AST node, or nullptr on error
    */
-  ast::ASTNode *parsePostfixExpression();
+  ast::ASTNode *parsePostfixExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a primary expression (literals, identifiers, parenthesized).
@@ -303,7 +303,7 @@ public:
    *
    * @return Parsed primary expression AST node, or nullptr on error
    */
-  ast::ASTNode *parsePrimaryExpression();
+  ast::ASTNode *parsePrimaryExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a literal expression of any type.
@@ -327,7 +327,7 @@ public:
    *
    * @return Parsed identifier AST node, or nullptr on error
    */
-  ast::ASTNode *parseIdentifierExpression();
+  ast::ASTNode *parseIdentifierExpression(bool withoutStructLiterals = false);
 
   /**
    * @brief Parse a macro call expression.
@@ -624,6 +624,20 @@ private:
    * @return Parsed if statement AST node, or nullptr on error
    */
   ast::ASTNode *parseIfStatement();
+
+  /**
+   * @brief Parse a while statement.
+   *
+   * while_statement ::=
+   *   | 'while' condition? while_body
+   *
+   * condition ::= '(' condition_expr ')' | condition_expr
+   * condition_expr ::= expression | single_variable_declaration
+   * while_body ::= statement | block_statement
+   *
+   * @return Parsed while statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseWhileStatement();
 
   /**
    * @brief Parse an integer literal token into an AST node.
