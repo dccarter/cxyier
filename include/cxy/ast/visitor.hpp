@@ -55,6 +55,10 @@ class SwitchStatementNode;
 class MatchStatementNode;
 class CaseStatementNode;
 
+// Declaration node forward declarations
+class DeclarationNode;
+class VariableDeclarationNode;
+
 /**
  * @brief Base visitor class for AST traversal.
  *
@@ -206,6 +210,10 @@ public:
 
   virtual bool visitCaseStmt(CaseStatementNode *node);
   virtual void visitCaseStmtPost(CaseStatementNode *node);
+
+  // Declaration node visits
+  virtual bool visitVariableDeclaration(VariableDeclarationNode *node);
+  virtual void visitVariableDeclarationPost(VariableDeclarationNode *node);
 
 private:
   // Internal dispatch method
@@ -360,6 +368,10 @@ public:
 
   virtual bool visitCaseStmt(const CaseStatementNode *node);
   virtual void visitCaseStmtPost(const CaseStatementNode *node);
+
+  // Declaration node visits
+  virtual bool visitVariableDeclaration(const VariableDeclarationNode *node);
+  virtual void visitVariableDeclarationPost(const VariableDeclarationNode *node);
 
 protected:
   // Internal dispatch method

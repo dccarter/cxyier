@@ -1,4 +1,5 @@
 #include "cxy/parser.hpp"
+#include "cxy/ast/declarations.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/literals.hpp"
@@ -1494,6 +1495,10 @@ ast::ASTNode *Parser::parseStatement() {
     return parseReturnStatement();
   case TokenKind::Yield:
     return parseYieldStatement();
+  case TokenKind::Var:
+  case TokenKind::Const:
+  case TokenKind::Auto:
+    return parseVariableDeclaration();
   default:
     // Fall back to expression statement
     return parseExpressionStatement();
@@ -1656,6 +1661,98 @@ ast::ASTNode *Parser::parseExpressionStatement() {
 
   // Create expression statement node
   return ast::createExprStatement(expr, startLoc, arena_);
+}
+
+// Phase 5.1: Variable declaration parsing implementation
+
+ast::ASTNode *Parser::parseVariableDeclaration() {
+  Location startLoc = current().location;
+  bool isConst = false;
+  
+  // Parse declaration keyword
+  if (check(TokenKind::Const)) {
+    isConst = true;
+    advance(); // consume 'const'
+  } else if (check(TokenKind::Var)) {
+    advance(); // consume 'var'
+  } else if (check(TokenKind::Auto)) {
+    advance(); // consume 'auto'
+  } else {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected 'var', 'const', or 'auto'"));
+    return nullptr;
+  }
+
+  // Create variable declaration node
+  auto *decl = ast::createVariableDeclaration(startLoc, arena_, isConst);
+
+  // Parse name list - first name is required
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected identifier"));
+    return nullptr;
+  }
+
+  // Parse first identifier
+  InternedString firstName = current().value.stringValue;
+  auto *firstNameNode = ast::createIdentifier(firstName, current().location, arena_);
+  decl->addName(firstNameNode);
+  advance(); // consume first identifier
+
+  // Parse additional names (comma-separated)
+  while (check(TokenKind::Comma)) {
+    advance(); // consume comma
+
+    // Check for trailing comma (optional)
+    if (!check(TokenKind::Ident)) {
+      // Trailing comma - stop parsing names
+      break;
+    }
+
+    // Parse next identifier
+    InternedString name = current().value.stringValue;
+    auto *nameNode = ast::createIdentifier(name, current().location, arena_);
+    decl->addName(nameNode);
+    advance(); // consume identifier
+  }
+
+  // Parse optional type annotation
+  ast::ASTNode *typeExpr = nullptr;
+  if (check(TokenKind::Colon)) {
+    advance(); // consume ':'
+
+    typeExpr = parseTypeExpression();
+    if (!typeExpr) {
+      return nullptr; // Error already reported
+    }
+    decl->setType(typeExpr);
+  }
+
+  // Parse optional initializer
+  ast::ASTNode *initializer = nullptr;
+  if (check(TokenKind::Assign)) {
+    advance(); // consume '='
+
+    initializer = parseExpression();
+    if (!initializer) {
+      return nullptr; // Error already reported
+    }
+    decl->setInitializer(initializer);
+  }
+
+  // Validate constraint: either type or initializer must be present
+  if (!typeExpr && !initializer) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Variable declaration must have either type annotation or initializer"));
+    return nullptr;
+  }
+
+  // Check for optional semicolon
+  if (check(TokenKind::Semicolon)) {
+    advance(); // consume semicolon
+  }
+
+  return decl;
 }
 
 } // namespace cxy

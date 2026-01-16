@@ -1,5 +1,6 @@
 #include "cxy/ast/printer.hpp"
 #include "cxy/ast/attributes.hpp"
+#include "cxy/ast/declarations.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/kind.hpp"
@@ -669,6 +670,11 @@ bool ASTPrinter::visitCaseStmt(const CaseStatementNode *node) {
     *output_ << " default";
   }
   return true; // Continue to values and statement children
+}
+
+bool ASTPrinter::visitVariableDeclaration(const VariableDeclarationNode *node) {
+  printNodeStartInline(node);
+  return true;
 }
 
 } // namespace cxy::ast

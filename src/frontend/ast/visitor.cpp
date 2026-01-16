@@ -1,5 +1,6 @@
 #include "cxy/ast/visitor.hpp"
 #include "cxy/ast/attributes.hpp"
+#include "cxy/ast/declarations.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/literals.hpp"
@@ -133,6 +134,10 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitMatchStmt(static_cast<MatchStatementNode *>(node));
   case astCaseStmt:
     return visitCaseStmt(static_cast<CaseStatementNode *>(node));
+
+  // Declarations
+  case astVariableDeclaration:
+    return visitVariableDeclaration(static_cast<VariableDeclarationNode *>(node));
 
   default:
     // Fallback to generic visitNode for unknown types
@@ -277,6 +282,11 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
     visitCaseStmtPost(static_cast<CaseStatementNode *>(node));
     break;
 
+  // Declarations
+  case astVariableDeclaration:
+    visitVariableDeclarationPost(static_cast<VariableDeclarationNode *>(node));
+    break;
+
   default:
     // Fallback to generic visitNodePost for unknown types
     visitNodePost(node);
@@ -394,6 +404,10 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitMatchStmt(static_cast<const MatchStatementNode *>(node));
   case astCaseStmt:
     return visitCaseStmt(static_cast<const CaseStatementNode *>(node));
+
+  // Declarations
+  case astVariableDeclaration:
+    return visitVariableDeclaration(static_cast<const VariableDeclarationNode *>(node));
 
   default:
     // Fallback to generic visitNode for unknown types
@@ -536,6 +550,11 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
   case astCaseStmt:
     visitCaseStmtPost(static_cast<const CaseStatementNode *>(node));
+    break;
+
+  // Declarations
+  case astVariableDeclaration:
+    visitVariableDeclarationPost(static_cast<const VariableDeclarationNode *>(node));
     break;
 
   default:
@@ -1207,6 +1226,26 @@ bool ConstASTVisitor::visitCaseStmt(const CaseStatementNode *node) {
 }
 
 void ConstASTVisitor::visitCaseStmtPost(const CaseStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+// Declaration node implementations for ASTVisitor
+
+bool ASTVisitor::visitVariableDeclaration(VariableDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitVariableDeclarationPost(VariableDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+// Declaration node implementations for ConstASTVisitor
+
+bool ConstASTVisitor::visitVariableDeclaration(const VariableDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitVariableDeclarationPost(const VariableDeclarationNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

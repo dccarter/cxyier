@@ -64,7 +64,10 @@ namespace cxy::ast {
     f(WhileStmt)                \
     f(SwitchStmt)               \
     f(MatchStmt)                \
-    f(CaseStmt)
+    f(CaseStmt)                 \
+                                \
+    /* Declarations */          \
+    f(VariableDeclaration)
 // clang-format on
 
 // Generate the enum with ast prefix

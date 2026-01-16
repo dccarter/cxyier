@@ -15,7 +15,8 @@ namespace cxy {
  * Usage: CXY_FLAGS(MACRO_NAME) where MACRO_NAME(name, bit_position) is applied
  * to each flag definition.
  */
-#define CXY_FLAGS(fn) fn(None, 0)
+#define CXY_FLAGS(fn) \
+  fn(Const, 1)
 
 /**
  * @brief 64-bit flags enum for AST nodes.
@@ -31,6 +32,7 @@ namespace cxy {
  * - Memory efficient - single 64-bit field per AST node
  */
 enum Flags : uint64_t {
+  flgNone = 0,
 #define CXY_FLAG_ENUM(name, bit) flg##name = (1ULL << bit),
   CXY_FLAGS(CXY_FLAG_ENUM)
 #undef CXY_FLAG_ENUM

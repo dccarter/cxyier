@@ -164,6 +164,9 @@ protected:
   bool visitMatchStmt(const MatchStatementNode *node) override;
   bool visitCaseStmt(const CaseStatementNode *node) override;
 
+  // Declaration node visitors
+  bool visitVariableDeclaration(const VariableDeclarationNode *node) override;
+
 private:
   // Helper methods
   void printNodeStart(const ASTNode *node);

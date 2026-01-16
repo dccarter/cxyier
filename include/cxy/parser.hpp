@@ -596,6 +596,20 @@ private:
   ast::ASTNode *parseYieldStatement();
 
   /**
+   * @brief Parse a variable declaration statement.
+   *
+   * variable_declaration ::=
+   *   | ('var'|'const'|'auto') name_list (type_annotation | initializer | (type_annotation initializer)) ';'?
+   *
+   * name_list ::= identifier (',' identifier)* ','?
+   * type_annotation ::= ':' type_expression
+   * initializer ::= '=' expression
+   *
+   * @return Parsed variable declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseVariableDeclaration();
+
+  /**
    * @brief Parse an integer literal token into an AST node.
    *
    * @return IntLiteralNode or nullptr on error
