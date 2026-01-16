@@ -210,30 +210,41 @@ public:
 /**
  * @brief For statement node.
  *
- * Represents Cxy for loops with syntax: `for var i: 0..5 {}` or `#for const m: T.members, m.isField){}`
- * Components: var declaration, range expression, optional condition, and body.
+ * Represents Cxy for loops with syntax: `for a, b in pairs {}` or `for item in collection, item.isValid {}`
+ * Components: variable declarations, range expression, optional condition, and body.
  */
 class ForStatementNode : public StatementNode {
 public:
-  ASTNode *variable;            ///< Variable declaration (var/const identifier)
-  ASTNode *range;               ///< Range expression to iterate over
-  ASTNode *condition = nullptr; ///< Optional condition filter
-  ASTNode *body;                ///< Loop body statement/block
+  ArenaVector<ASTNode *> variables; ///< Variable declarations (list for destructuring)
+  ASTNode *range;                   ///< Range expression to iterate over
+  ASTNode *condition = nullptr;     ///< Optional condition filter
+  ASTNode *body;                    ///< Loop body statement/block
 
-  explicit ForStatementNode(ASTNode *var, ASTNode *rangeExpr, ASTNode *bodyStmt, 
+  explicit ForStatementNode(ASTNode *rangeExpr, ASTNode *bodyStmt, 
                            Location loc, ArenaAllocator &arena, ASTNode *cond = nullptr)
-      : StatementNode(astForStmt, loc, arena), variable(var), range(rangeExpr), 
-        condition(cond), body(bodyStmt) {
-    if (variable) addChild(variable);
+      : StatementNode(astForStmt, loc, arena), 
+        variables(ArenaSTLAllocator<ASTNode *>(arena)),
+        range(rangeExpr), condition(cond), body(bodyStmt) {
     if (range) addChild(range);
     if (condition) addChild(condition);
     if (body) addChild(body);
   }
 
+  void addVariable(ASTNode *var) {
+    if (var) {
+      variables.push_back(var);
+      addChild(var);
+    }
+  }
+
   std::format_context::iterator toString(std::format_context &ctx) const override {
-    auto it = std::format_to(ctx.out(), "ForStmt({}: {}",
-                            variable ? std::format("{}", *variable) : "null",
-                            range ? std::format("{}", *range) : "null");
+    auto it = std::format_to(ctx.out(), "ForStmt([");
+    for (size_t i = 0; i < variables.size(); ++i) {
+      if (i > 0) it = std::format_to(it, ", ");
+      it = std::format_to(it, "{}", variables[i] ? std::format("{}", *variables[i]) : "null");
+    }
+    it = std::format_to(it, "] in {}",
+                       range ? std::format("{}", *range) : "null");
     
     if (condition) {
       it = std::format_to(it, ", {}", *condition);
@@ -423,9 +434,9 @@ inline IfStatementNode *createIfStatement(ASTNode *condition, ASTNode *thenStmt,
   return arena.construct<IfStatementNode>(condition, thenStmt, loc, arena, elseStmt);
 }
 
-inline ForStatementNode *createForStatement(ASTNode *variable, ASTNode *range, ASTNode *body, 
+inline ForStatementNode *createForStatement(ASTNode *range, ASTNode *body, 
                                            Location loc, ArenaAllocator &arena, ASTNode *condition = nullptr) {
-  return arena.construct<ForStatementNode>(variable, range, body, loc, arena, condition);
+  return arena.construct<ForStatementNode>(range, body, loc, arena, condition);
 }
 
 inline WhileStatementNode *createWhileStatement(ASTNode *condition, ASTNode *body, Location loc, ArenaAllocator &arena) {

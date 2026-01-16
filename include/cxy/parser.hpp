@@ -640,6 +640,20 @@ private:
   ast::ASTNode *parseWhileStatement();
 
   /**
+   * @brief Parse a for statement.
+   *
+   * for_statement ::= 'for' for_clause for_body
+   * for_clause ::= '(' for_clause_core ')' | for_clause_core
+   * for_clause_core ::= iterator_variable_list 'in' range_expression (',' condition_expression)?
+   * iterator_variable_list ::= iterator_name (',' iterator_name)* ','?
+   * iterator_name ::= identifier | '_'
+   * for_body ::= statement | block_statement
+   *
+   * @return Parsed for statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseForStatement();
+
+  /**
    * @brief Parse an integer literal token into an AST node.
    *
    * @return IntLiteralNode or nullptr on error

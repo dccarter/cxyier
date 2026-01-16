@@ -646,7 +646,38 @@ bool ASTPrinter::visitIfStmt(const IfStatementNode *node) {
 
 bool ASTPrinter::visitForStmt(const ForStatementNode *node) {
   printNodeStartInline(node);
-  return true;
+
+  // Print Variables section with label
+  increaseIndent();
+  printNewline();
+  if (isCompactMode())
+      printSpace();
+  else
+      printIndent();
+  *output_ << "(Variables";
+  for (auto *var : node->variables) {
+      *output_ << " ";
+    if (var && var->kind == astIdentifier) {
+      auto *identNode = static_cast<const IdentifierNode *>(var);
+      *output_ << identNode->name.view();
+    } else {
+      *output_ << "(Error)";
+    }
+  }
+  *output_ << ")";
+  if (isCompactMode())
+      printSpace();
+  visit(node->range);
+  if (isCompactMode())
+      printSpace();
+  visit(node->condition);
+  if (isCompactMode())
+      printSpace();
+  visit(node->body);
+
+
+  // Return true to let default visitor handle range, condition, body
+  return false;
 }
 
 bool ASTPrinter::visitWhileStmt(const WhileStatementNode *node) {

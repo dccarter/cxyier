@@ -3,6 +3,7 @@
 #include "cxy/ast/literals.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/arena_allocator.hpp"
+#include "cxy/flags.hpp"
 #include "cxy/strings.hpp"
 #include "catch2.hpp"
 
@@ -162,11 +163,12 @@ TEST_CASE("AST Printer: For statement", "[ast][printer][statements]") {
         auto *variable = createIdentifier(name, loc, fixture.arena);
         auto *range = createIntLiteral(10, loc, fixture.arena);
         auto *body = createBlockStatement(loc, fixture.arena);
-        auto *forStmt = createForStatement(variable, range, body, loc, fixture.arena);
+        auto *forStmt = createForStatement(range, body, loc, fixture.arena);
+        forStmt->addVariable(variable);
 
         std::string output = fixture.printer.print(forStmt);
         REQUIRE(output == R"((ForStmt
-  (Identifier i)
+  (Variables i)
   (Int 10)
   (BlockStmt)))");
     }
@@ -177,11 +179,13 @@ TEST_CASE("AST Printer: For statement", "[ast][printer][statements]") {
         auto *range = createIntLiteral(100, loc, fixture.arena);
         auto *condition = createBoolLiteral(true, loc, fixture.arena);
         auto *body = createBlockStatement(loc, fixture.arena);
-        auto *forStmt = createForStatement(variable, range, body, loc, fixture.arena, condition);
+        auto *forStmt = createForStatement(range, body, loc, fixture.arena, condition);
+        forStmt->addVariable(variable);
 
+        ast::ASTPrinter printer({ast::PrinterFlags::CompactMode});
         std::string output = fixture.printer.print(forStmt);
         REQUIRE(output == R"((ForStmt
-  (Identifier item)
+  (Variables item)
   (Int 100)
   (Bool true)
   (BlockStmt)))");

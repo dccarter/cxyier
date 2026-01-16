@@ -1503,6 +1503,8 @@ ast::ASTNode *Parser::parseStatement() {
     return parseIfStatement();
   case TokenKind::While:
     return parseWhileStatement();
+  case TokenKind::For:
+    return parseForStatement();
   default:
     // Fall back to expression statement
     return parseExpressionStatement();
@@ -1951,6 +1953,115 @@ ast::ASTNode *Parser::parseWhileStatement() {
 
   // Create while statement node
   return ast::createWhileStatement(condition, body, startLoc, arena_);
+}
+
+ast::ASTNode *Parser::parseForStatement() {
+  Location startLoc = current().location;
+
+  // Consume 'for' keyword
+  if (!expect(TokenKind::For)) {
+    return nullptr;
+  }
+
+  // Check for parentheses
+  bool hasParentheses = false;
+  if (check(TokenKind::LParen)) {
+    hasParentheses = true;
+    advance(); // consume '('
+  }
+
+  // Parse iterator variable list
+  std::vector<ast::ASTNode *> variables;
+  
+  do {
+    if (!check(TokenKind::Ident)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Expected identifier in for loop variable list"));
+      return nullptr;
+    }
+
+    // Create identifier for the iterator variable
+    Location varLoc = current().location;
+    InternedString varName = current().value.stringValue;
+    auto *identifier = ast::createIdentifier(varName, varLoc, arena_);
+    variables.push_back(identifier);
+    advance();
+
+    // Check for comma
+    if (check(TokenKind::Comma)) {
+      advance();
+      // Allow trailing comma before 'in'
+      if (check(TokenKind::In)) {
+        break;
+      }
+    } else {
+      break;
+    }
+  } while (true);
+
+  // Expect 'in' keyword
+  if (!expect(TokenKind::In)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected 'in' keyword in for loop"));
+    return nullptr;
+  }
+
+  // Parse range expression
+  ast::ASTNode *range = parseExpression(hasParentheses ? false : true); // withoutStructLiterals for bare form
+  if (!range) {
+    return nullptr; // Error already reported
+  }
+
+  // Check for optional condition (after comma)
+  ast::ASTNode *condition = nullptr;
+  if (check(TokenKind::Comma)) {
+    advance(); // consume ','
+    condition = parseExpression(hasParentheses ? false : true); // withoutStructLiterals for bare form
+    if (!condition) {
+      return nullptr; // Error already reported
+    }
+  }
+
+  // Close parentheses if opened
+  if (hasParentheses) {
+    if (!expect(TokenKind::RParen)) {
+      return nullptr;
+    }
+  }
+
+  // Parse for body
+  ast::ASTNode *body = nullptr;
+
+  if (hasParentheses) {
+    // With parentheses: single statement or block allowed
+    if (check(TokenKind::LBrace)) {
+      body = parseBlockStatement();
+    } else {
+      body = parseStatement();
+    }
+  } else {
+    // Without parentheses: block required
+    if (!check(TokenKind::LBrace)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Block statement required for for loop"));
+      return nullptr;
+    }
+    body = parseBlockStatement();
+  }
+
+  if (!body) {
+    return nullptr; // Error already reported
+  }
+
+  // Create for statement node
+  auto *forStmt = ast::createForStatement(range, body, startLoc, arena_, condition);
+  
+  // Add all variables to the for statement
+  for (auto *var : variables) {
+    forStmt->addVariable(var);
+  }
+
+  return forStmt;
 }
 
 } // namespace cxy
