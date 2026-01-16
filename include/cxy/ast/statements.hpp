@@ -36,7 +36,7 @@ public:
   }
 
   std::format_context::iterator toString(std::format_context &ctx) const override {
-    return std::format_to(ctx.out(), "ExprStmt({})", 
+    return std::format_to(ctx.out(), "ExprStmt({})",
                          expression ? std::format("{}", *expression) : "null");
   }
 };
@@ -89,7 +89,7 @@ public:
   }
 
   std::format_context::iterator toString(std::format_context &ctx) const override {
-    return std::format_to(ctx.out(), "DeferStmt({})", 
+    return std::format_to(ctx.out(), "DeferStmt({})",
                          statement ? std::format("{}", *statement) : "null");
   }
 };
@@ -155,7 +155,7 @@ public:
   ArenaVector<ASTNode *> statements; ///< List of statements in the block
 
   explicit BlockStatementNode(Location loc, ArenaAllocator &arena)
-      : StatementNode(astBlockStmt, loc, arena), 
+      : StatementNode(astBlockStmt, loc, arena),
         statements(ArenaSTLAllocator<ASTNode *>(arena)) {}
 
   void addStatement(ASTNode *stmt) {
@@ -187,9 +187,9 @@ public:
   ASTNode *thenStatement; ///< Statement to execute if condition is true
   ASTNode *elseStatement = nullptr; ///< Optional else statement/block
 
-  explicit IfStatementNode(ASTNode *cond, ASTNode *thenStmt, Location loc, 
+  explicit IfStatementNode(ASTNode *cond, ASTNode *thenStmt, Location loc,
                           ArenaAllocator &arena, ASTNode *elseStmt = nullptr)
-      : StatementNode(astIfStmt, loc, arena), condition(cond), 
+      : StatementNode(astIfStmt, loc, arena), condition(cond),
         thenStatement(thenStmt), elseStatement(elseStmt) {
     if (condition) addChild(condition);
     if (thenStatement) addChild(thenStatement);
@@ -220,9 +220,9 @@ public:
   ASTNode *condition = nullptr;     ///< Optional condition filter
   ASTNode *body;                    ///< Loop body statement/block
 
-  explicit ForStatementNode(ASTNode *rangeExpr, ASTNode *bodyStmt, 
+  explicit ForStatementNode(ASTNode *rangeExpr, ASTNode *bodyStmt,
                            Location loc, ArenaAllocator &arena, ASTNode *cond = nullptr)
-      : StatementNode(astForStmt, loc, arena), 
+      : StatementNode(astForStmt, loc, arena),
         variables(ArenaSTLAllocator<ASTNode *>(arena)),
         range(rangeExpr), condition(cond), body(bodyStmt) {
     if (range) addChild(range);
@@ -245,11 +245,11 @@ public:
     }
     it = std::format_to(it, "] in {}",
                        range ? std::format("{}", *range) : "null");
-    
+
     if (condition) {
       it = std::format_to(it, ", {}", *condition);
     }
-    
+
     return std::format_to(it, ", {})", body ? std::format("{}", *body) : "null");
   }
 };
@@ -379,7 +379,7 @@ public:
 
   std::format_context::iterator toString(std::format_context &ctx) const override {
     auto it = std::format_to(ctx.out(), "CaseStmt(");
-    
+
     if (isDefault) {
       it = std::format_to(it, "default");
     } else {
@@ -390,7 +390,7 @@ public:
       }
       it = std::format_to(it, "]");
     }
-    
+
     it = std::format_to(it, ", [");
     for (size_t i = 0; i < statements.size(); ++i) {
       if (i > 0) it = std::format_to(it, ", ");
@@ -429,12 +429,12 @@ inline BlockStatementNode *createBlockStatement(Location loc, ArenaAllocator &ar
   return arena.construct<BlockStatementNode>(loc, arena);
 }
 
-inline IfStatementNode *createIfStatement(ASTNode *condition, ASTNode *thenStmt, Location loc, 
+inline IfStatementNode *createIfStatement(ASTNode *condition, ASTNode *thenStmt, Location loc,
                                          ArenaAllocator &arena, ASTNode *elseStmt = nullptr) {
   return arena.construct<IfStatementNode>(condition, thenStmt, loc, arena, elseStmt);
 }
 
-inline ForStatementNode *createForStatement(ASTNode *range, ASTNode *body, 
+inline ForStatementNode *createForStatement(ASTNode *range, ASTNode *body,
                                            Location loc, ArenaAllocator &arena, ASTNode *condition = nullptr) {
   return arena.construct<ForStatementNode>(range, body, loc, arena, condition);
 }

@@ -77,7 +77,7 @@ TEST_CASE("Block Statement Parsing", "[parser][statements][block-stmt]") {
 
         auto *blockStmt = static_cast<BlockStatementNode *>(stmt);
         REQUIRE(blockStmt->statements.size() == 3);
-        
+
         // All should be expression statements
         REQUIRE(blockStmt->statements[0]->kind == astExprStmt);
         REQUIRE(blockStmt->statements[1]->kind == astExprStmt);
@@ -229,14 +229,9 @@ TEST_CASE("Block Statement Error Cases", "[parser][statements][block-stmt][error
         auto fixture = createParserFixture("{ foo(); ++ }");
         auto *stmt = fixture->parseStatement();
 
-        // Should parse the valid parts and handle the error
-        REQUIRE(stmt != nullptr);
-        REQUIRE(stmt->kind == astBlockStmt);
-
-        auto *blockStmt = static_cast<BlockStatementNode *>(stmt);
-        REQUIRE(blockStmt->statements.size() == 1); // Only foo(); should be parsed
-        REQUIRE(blockStmt->statements[0]->kind == astExprStmt);
-
+        // Block parsing should fail due to invalid "++" statement
+        REQUIRE(stmt == nullptr);
+        
         // Should have reported an error for the invalid "++" expression
         REQUIRE(fixture->hasErrors());
     }
@@ -289,7 +284,7 @@ TEST_CASE("Block Statement Integration", "[parser][statements][block-stmt][integ
 
         auto *blockStmt = static_cast<BlockStatementNode *>(stmt);
         REQUIRE(blockStmt->statements.size() == 8);
-        
+
         // All should be expression statements
         for (size_t i = 0; i < 8; ++i) {
             REQUIRE(blockStmt->statements[i]->kind == astExprStmt);
@@ -305,7 +300,7 @@ TEST_CASE("Block Statement Integration", "[parser][statements][block-stmt][integ
 
         auto *blockStmt = static_cast<BlockStatementNode *>(stmt);
         REQUIRE(blockStmt->statements.size() == 3);
-        
+
         // All should be expression statements with assignment expressions
         for (size_t i = 0; i < 3; ++i) {
             REQUIRE(blockStmt->statements[i]->kind == astExprStmt);

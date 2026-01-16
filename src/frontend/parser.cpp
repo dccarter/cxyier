@@ -1416,6 +1416,22 @@ void Parser::synchronize() {
   while (!isAtEnd() && !isSynchronizationPoint()) {
     advance();
   }
+  
+  // Only advance past separators/terminators, not structure starters
+  if (!isAtEnd() && isSeparatorToken()) {
+    advance();
+  }
+}
+
+bool Parser::isSeparatorToken() const {
+  TokenKind kind = current().kind;
+  // These are tokens we want to skip over during synchronization
+  // Separators and terminators that don't start new constructs
+  return kind == TokenKind::Comma || 
+         kind == TokenKind::Semicolon ||
+         kind == TokenKind::RBrace ||
+         kind == TokenKind::RParen ||
+         kind == TokenKind::RBracket;
 }
 
 bool Parser::isSynchronizationPoint() const {
@@ -1505,6 +1521,8 @@ ast::ASTNode *Parser::parseStatement() {
     return parseWhileStatement();
   case TokenKind::For:
     return parseForStatement();
+  case TokenKind::Switch:
+    return parseSwitchStatement();
   default:
     // Fall back to expression statement
     return parseExpressionStatement();
@@ -1972,7 +1990,7 @@ ast::ASTNode *Parser::parseForStatement() {
 
   // Parse iterator variable list
   std::vector<ast::ASTNode *> variables;
-  
+
   do {
     if (!check(TokenKind::Ident)) {
       reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
@@ -2055,13 +2073,135 @@ ast::ASTNode *Parser::parseForStatement() {
 
   // Create for statement node
   auto *forStmt = ast::createForStatement(range, body, startLoc, arena_, condition);
-  
+
   // Add all variables to the for statement
   for (auto *var : variables) {
     forStmt->addVariable(var);
   }
 
   return forStmt;
+}
+
+ast::ASTNode *Parser::parseSwitchStatement() {
+  Location startLoc = current().location;
+
+  // Consume 'switch' keyword
+  if (!expect(TokenKind::Switch)) {
+    return nullptr;
+  }
+
+  // Parse discriminant (with or without parentheses)
+  bool hasParentheses = false;
+  ast::ASTNode *discriminant = nullptr;
+
+  if (check(TokenKind::LParen)) {
+    hasParentheses = true;
+    advance(); // consume '('
+  }
+
+  // Parse discriminant expression or variable declaration
+  if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
+    discriminant = parseVariableDeclaration(true); // single variable only
+  } else {
+    discriminant = parseExpression(hasParentheses? false : true); // withoutStructLiterals = true
+  }
+
+  if (!discriminant) {
+    return nullptr; // Error already reported
+  }
+
+  // Close parentheses if opened
+  if (hasParentheses) {
+    if (!expect(TokenKind::RParen)) {
+      return nullptr;
+    }
+  }
+
+  // Expect opening brace for switch body
+  if (!expect(TokenKind::LBrace)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected '{' to open switch body"));
+    return nullptr;
+  }
+
+  // Create switch statement node
+  auto *switchStmt = ast::createSwitchStatement(discriminant, startLoc, arena_);
+
+  // Parse case list
+  while (!check(TokenKind::RBrace) && !check(TokenKind::EoF)) {
+    auto *caseStmt = parseCaseStatement();
+    if (!caseStmt) {
+      return nullptr; // Error already reported
+    }
+    switchStmt->addCase(caseStmt);
+  }
+
+  // Expect closing brace
+  if (!expect(TokenKind::RBrace)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected '}' to close switch body"));
+    return nullptr;
+  }
+
+  return switchStmt;
+}
+
+ast::ASTNode *Parser::parseCaseStatement() {
+  Location startLoc = current().location;
+  bool isDefault = false;
+
+  // Check for default case
+  if (check(TokenKind::Elipsis)) {
+    advance(); // consume '...'
+    isDefault = true;
+  }
+
+  // Create case statement node
+  auto *caseStmt = ast::createCaseStatement(startLoc, arena_, isDefault);
+
+  if (!isDefault) {
+    // Parse case values (expression list)
+    do {
+      auto *value = parseExpression();
+      if (!value) {
+        return nullptr; // Error already reported
+      }
+      caseStmt->addValue(value);
+
+      // Check for comma
+      if (check(TokenKind::Comma)) {
+        advance();
+        // Allow trailing comma before '=>'
+        if (check(TokenKind::FatArrow)) {
+          break;
+        }
+      } else {
+        break;
+      }
+    } while (true);
+  }
+
+  // Expect '=>' arrow
+  if (!expect(TokenKind::FatArrow)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected '=>' after case pattern"));
+    return nullptr;
+  }
+
+  // Parse case body (single statement or block)
+  ast::ASTNode *body = nullptr;
+  if (check(TokenKind::LBrace)) {
+    body = parseBlockStatement();
+  } else {
+    body = parseStatement();
+  }
+
+  if (!body) {
+    return nullptr; // Error already reported
+  }
+
+  caseStmt->addStatement(body);
+  return caseStmt;
 }
 
 } // namespace cxy

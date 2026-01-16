@@ -654,6 +654,30 @@ private:
   ast::ASTNode *parseForStatement();
 
   /**
+   * @brief Parse a switch statement.
+   *
+   * switch_statement ::= 'switch' switch_clause switch_body
+   * switch_clause ::= '(' switch_clause_core ')' | switch_clause_core
+   * switch_clause_core ::= (declaration_keyword identifier '=')? expression
+   * switch_body ::= '{' case_list '}'
+   *
+   * @return Parsed switch statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseSwitchStatement();
+
+  /**
+   * @brief Parse a case statement for switch statements.
+   *
+   * case_statement ::= case_pattern '=>' case_body | default_case '=>' case_body
+   * case_pattern ::= expression (',' expression)* ','?
+   * default_case ::= '...'
+   * case_body ::= statement | block_statement
+   *
+   * @return Parsed case statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseCaseStatement();
+
+  /**
    * @brief Parse an integer literal token into an AST node.
    *
    * @return IntLiteralNode or nullptr on error
@@ -711,6 +735,16 @@ private:
    * @return True if we should stop error recovery here
    */
   bool isSynchronizationPoint() const;
+
+  /**
+   * @brief Check if current token is a separator/terminator.
+   *
+   * Used by synchronize() to determine which tokens to skip over.
+   * Separators and terminators don't start new constructs.
+   *
+   * @return True if current token should be skipped during synchronization
+   */
+  bool isSeparatorToken() const;
 
   /**
    * @brief Check if current token can start a statement.
