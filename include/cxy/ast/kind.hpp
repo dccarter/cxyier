@@ -65,6 +65,7 @@ namespace cxy::ast {
     f(SwitchStmt)               \
     f(MatchStmt)                \
     f(CaseStmt)                 \
+    f(MatchCase)                \
                                 \
     /* Declarations */          \
     f(VariableDeclaration)

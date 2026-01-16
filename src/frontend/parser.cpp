@@ -1523,6 +1523,8 @@ ast::ASTNode *Parser::parseStatement() {
     return parseForStatement();
   case TokenKind::Switch:
     return parseSwitchStatement();
+  case TokenKind::Match:
+    return parseMatchStatement();
   default:
     // Fall back to expression statement
     return parseExpressionStatement();
@@ -2202,6 +2204,141 @@ ast::ASTNode *Parser::parseCaseStatement() {
 
   caseStmt->addStatement(body);
   return caseStmt;
+}
+
+ast::ASTNode *Parser::parseMatchStatement() {
+  Location startLoc = current().location;
+
+  // Consume 'match' keyword
+  if (!expect(TokenKind::Match)) {
+    return nullptr;
+  }
+
+  // Parse discriminant (with or without parentheses)
+  bool hasParentheses = false;
+  ast::ASTNode *discriminant = nullptr;
+
+  if (check(TokenKind::LParen)) {
+    hasParentheses = true;
+    advance(); // consume '('
+  }
+
+  // Parse discriminant expression
+  discriminant = parseExpression(hasParentheses? false : true); // withoutStructLiterals = true
+  if (!discriminant) {
+    return nullptr; // Error already reported
+  }
+
+  // Close parentheses if opened
+  if (hasParentheses) {
+    if (!expect(TokenKind::RParen)) {
+      return nullptr;
+    }
+  }
+
+  // Expect opening brace for match body
+  if (!expect(TokenKind::LBrace)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected '{' to open match body"));
+    return nullptr;
+  }
+
+  // Create match statement node
+  auto *matchStmt = ast::createMatchStatement(discriminant, startLoc, arena_);
+
+  // Parse match case list
+  while (!check(TokenKind::RBrace) && !check(TokenKind::EoF)) {
+    auto *matchCase = parseMatchCaseStatement();
+    if (!matchCase) {
+      return nullptr; // Error already reported
+    }
+    matchStmt->addPattern(matchCase);
+  }
+
+  // Expect closing brace
+  if (!expect(TokenKind::RBrace)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected '}' to close match body"));
+    return nullptr;
+  }
+
+  return matchStmt;
+}
+
+ast::ASTNode *Parser::parseMatchCaseStatement() {
+  Location startLoc = current().location;
+  bool isDefault = false;
+
+  // Check for default case
+  if (check(TokenKind::Elipsis)) {
+    advance(); // consume '...'
+    isDefault = true;
+  }
+
+  // Create match case node
+  auto *matchCase = ast::createMatchCase(startLoc, arena_, isDefault);
+
+  if (!isDefault) {
+    // Parse type patterns (expression list)
+    do {
+      auto *type = parseTypeExpression();
+      if (!type) {
+        return nullptr; // Error already reported
+      }
+      matchCase->addType(type);
+
+      // Check for comma
+      if (check(TokenKind::Comma)) {
+        advance();
+        // Allow trailing comma before 'as' or '=>'
+        if (check(TokenKind::As) || check(TokenKind::FatArrow)) {
+          break;
+        }
+      } else {
+        break;
+      }
+    } while (true);
+  }
+
+  // Check for optional variable binding (as identifier)
+  if (check(TokenKind::As)) {
+    advance(); // consume 'as'
+    
+    if (!check(TokenKind::Ident)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Expected identifier after 'as'"));
+      return nullptr;
+    }
+    
+    auto *binding = parseIdentifierExpression();
+    if (!binding) {
+      return nullptr; // Error already reported
+    }
+    
+    matchCase->setBinding(binding);
+  }
+
+  // Expect '=>' arrow
+  if (!expect(TokenKind::FatArrow)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected '=>' after match pattern"));
+    return nullptr;
+  }
+
+  // Parse case body (single statement or block)
+  ast::ASTNode *body = nullptr;
+  if (check(TokenKind::LBrace)) {
+    body = parseBlockStatement();
+  } else {
+    body = parseStatement();
+  }
+
+  if (!body) {
+    return nullptr; // Error already reported
+  }
+
+  matchCase->addStatement(body);
+  return matchCase;
 }
 
 } // namespace cxy

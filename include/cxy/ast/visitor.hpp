@@ -54,6 +54,7 @@ class WhileStatementNode;
 class SwitchStatementNode;
 class MatchStatementNode;
 class CaseStatementNode;
+class MatchCaseNode;
 
 // Declaration node forward declarations
 class DeclarationNode;
@@ -210,6 +211,9 @@ public:
 
   virtual bool visitCaseStmt(CaseStatementNode *node);
   virtual void visitCaseStmtPost(CaseStatementNode *node);
+
+  virtual bool visitMatchCase(MatchCaseNode *node);
+  virtual void visitMatchCasePost(MatchCaseNode *node);
 
   // Declaration node visits
   virtual bool visitVariableDeclaration(VariableDeclarationNode *node);
@@ -368,6 +372,9 @@ public:
 
   virtual bool visitCaseStmt(const CaseStatementNode *node);
   virtual void visitCaseStmtPost(const CaseStatementNode *node);
+
+  virtual bool visitMatchCase(const MatchCaseNode *node);
+  virtual void visitMatchCasePost(const MatchCaseNode *node);
 
   // Declaration node visits
   virtual bool visitVariableDeclaration(const VariableDeclarationNode *node);

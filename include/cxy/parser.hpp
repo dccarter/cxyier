@@ -678,6 +678,35 @@ private:
   ast::ASTNode *parseCaseStatement();
 
   /**
+   * @brief Parse a match statement with type pattern matching.
+   *
+   * match_statement ::= 'match' match_clause match_body
+   * match_clause ::= '(' expression ')' | expression
+   * match_body ::= '{' match_case_list '}'
+   * match_case_list ::= match_case*
+   * match_case ::= match_pattern '=>' case_body
+   * match_pattern ::= type_pattern (',' type_pattern)* ('as' identifier)?
+   *                 | '...' ('as' identifier)?
+   * type_pattern ::= type
+   * case_body ::= statement | block_statement
+   *
+   * @return Parsed match statement AST node, or nullptr on error
+   */
+  ast::ASTNode *parseMatchStatement();
+
+  /**
+   * @brief Parse a match case statement for match statements.
+   *
+   * match_case ::= match_pattern '=>' case_body
+   * match_pattern ::= type_pattern (',' type_pattern)* ('as' identifier)?
+   *                 | '...' ('as' identifier)?
+   * case_body ::= statement | block_statement
+   *
+   * @return Parsed match case AST node, or nullptr on error
+   */
+  ast::ASTNode *parseMatchCaseStatement();
+
+  /**
    * @brief Parse an integer literal token into an AST node.
    *
    * @return IntLiteralNode or nullptr on error

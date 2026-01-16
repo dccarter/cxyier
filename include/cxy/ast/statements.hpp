@@ -455,4 +455,70 @@ inline CaseStatementNode *createCaseStatement(Location loc, ArenaAllocator &aren
   return arena.construct<CaseStatementNode>(loc, arena, isDefault);
 }
 
+/**
+ * @brief Match case statement node.
+ *
+ * Represents a single case in a match statement with type patterns and optional variable binding.
+ * Includes the type pattern(s), optional binding variable, and the associated statements.
+ */
+class MatchCaseNode : public StatementNode {
+public:
+  ArenaVector<ASTNode *> types;       ///< Type patterns (empty for default case)
+  ASTNode *binding = nullptr;         ///< Optional variable binding (as identifier)
+  ArenaVector<ASTNode *> statements;  ///< Statements to execute for this case
+  bool isDefault = false;             ///< true if this is the default case
+
+  explicit MatchCaseNode(Location loc, ArenaAllocator &arena, bool defaultCase = false)
+      : StatementNode(astMatchCase, loc, arena), isDefault(defaultCase),
+        types(ArenaSTLAllocator<ASTNode *>(arena)),
+        statements(ArenaSTLAllocator<ASTNode *>(arena)) {}
+
+  void addType(ASTNode *type) {
+    if (type && !isDefault) {
+      types.push_back(type);
+      addChild(type);
+    }
+  }
+
+  void setBinding(ASTNode *bindingVar) {
+    if (bindingVar) {
+      binding = bindingVar;
+      addChild(bindingVar);
+    }
+  }
+
+  void addStatement(ASTNode *stmt) {
+    if (stmt) {
+      statements.push_back(stmt);
+      addChild(stmt);
+    }
+  }
+
+  std::format_context::iterator toString(std::format_context &ctx) const override {
+    auto it = std::format_to(ctx.out(), "(MatchCase");
+
+    if (isDefault) {
+      it = std::format_to(it, " default");
+    } else {
+      for (size_t i = 0; i < types.size(); ++i) {
+        it = std::format_to(it, " {}", *types[i]);
+      }
+    }
+
+    if (binding) {
+      it = std::format_to(it, " {}", *binding);
+    }
+
+    for (size_t i = 0; i < statements.size(); ++i) {
+      it = std::format_to(it, " {}", *statements[i]);
+    }
+
+    return std::format_to(it, ")");
+  }
+};
+
+inline MatchCaseNode *createMatchCase(Location loc, ArenaAllocator &arena, bool isDefault = false) {
+  return arena.construct<MatchCaseNode>(loc, arena, isDefault);
+}
+
 } // namespace cxy::ast

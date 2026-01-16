@@ -703,6 +703,14 @@ bool ASTPrinter::visitCaseStmt(const CaseStatementNode *node) {
   return true; // Continue to values and statement children
 }
 
+bool ASTPrinter::visitMatchCase(const MatchCaseNode *node) {
+  printNodeStartInline(node);
+  if (node->isDefault) {
+    *output_ << " default";
+  }
+  return true; // Continue to types, binding and statement children
+}
+
 bool ASTPrinter::visitVariableDeclaration(const VariableDeclarationNode *node) {
   printNodeStartInline(node);
   return true;

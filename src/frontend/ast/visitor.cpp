@@ -134,6 +134,8 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitMatchStmt(static_cast<MatchStatementNode *>(node));
   case astCaseStmt:
     return visitCaseStmt(static_cast<CaseStatementNode *>(node));
+  case astMatchCase:
+    return visitMatchCase(static_cast<MatchCaseNode *>(node));
 
   // Declarations
   case astVariableDeclaration:
@@ -281,6 +283,9 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
   case astCaseStmt:
     visitCaseStmtPost(static_cast<CaseStatementNode *>(node));
     break;
+  case astMatchCase:
+    visitMatchCasePost(static_cast<MatchCaseNode *>(node));
+    break;
 
   // Declarations
   case astVariableDeclaration:
@@ -404,6 +409,8 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitMatchStmt(static_cast<const MatchStatementNode *>(node));
   case astCaseStmt:
     return visitCaseStmt(static_cast<const CaseStatementNode *>(node));
+  case astMatchCase:
+    return visitMatchCase(static_cast<const MatchCaseNode *>(node));
 
   // Declarations
   case astVariableDeclaration:
@@ -550,6 +557,9 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
   case astCaseStmt:
     visitCaseStmtPost(static_cast<const CaseStatementNode *>(node));
+    break;
+  case astMatchCase:
+    visitMatchCasePost(static_cast<const MatchCaseNode *>(node));
     break;
 
   // Declarations
@@ -1239,6 +1249,16 @@ void ASTVisitor::visitVariableDeclarationPost(VariableDeclarationNode *node) {
   visitNodePost(static_cast<ASTNode *>(node));
 }
 
+// Match case implementations for ASTVisitor
+
+bool ASTVisitor::visitMatchCase(MatchCaseNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitMatchCasePost(MatchCaseNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
 // Declaration node implementations for ConstASTVisitor
 
 bool ConstASTVisitor::visitVariableDeclaration(const VariableDeclarationNode *node) {
@@ -1246,6 +1266,16 @@ bool ConstASTVisitor::visitVariableDeclaration(const VariableDeclarationNode *no
 }
 
 void ConstASTVisitor::visitVariableDeclarationPost(const VariableDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+// Match case implementations for ConstASTVisitor
+
+bool ConstASTVisitor::visitMatchCase(const MatchCaseNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitMatchCasePost(const MatchCaseNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

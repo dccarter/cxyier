@@ -53,6 +53,7 @@ add_executable(cxyier_tests
     parser/statements/test_while_statements.cpp
     parser/statements/test_for_statements.cpp
     parser/statements/test_switch_statements.cpp
+    parser/statements/test_match_statements.cpp
     declarations/test_variable_declarations.cpp
     types/test_type_infrastructure.cpp
     types/test_primitive_types.cpp

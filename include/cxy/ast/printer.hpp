@@ -163,6 +163,7 @@ protected:
   bool visitSwitchStmt(const SwitchStatementNode *node) override;
   bool visitMatchStmt(const MatchStatementNode *node) override;
   bool visitCaseStmt(const CaseStatementNode *node) override;
+  bool visitMatchCase(const MatchCaseNode *node) override;
 
   // Declaration node visitors
   bool visitVariableDeclaration(const VariableDeclarationNode *node) override;
