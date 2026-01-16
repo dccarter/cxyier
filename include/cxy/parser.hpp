@@ -5,6 +5,7 @@
 #include "cxy/diagnostics.hpp"
 #include "cxy/lexer.hpp"
 #include "cxy/token.hpp"
+#include "cxy/types/registry.hpp"
 
 #include <string>
 #include <vector>
@@ -54,17 +55,18 @@ public:
 class Parser {
 public:
   /**
-   * @brief Construct a parser with the given lexer and arena allocator.
+   * @brief Construct a parser for the given lexer and dependencies.
    *
    * @param lexer Token source for parsing
    * @param arena Memory allocator for AST nodes
    * @param sourceManager Source manager for reading token text
    * @param interner String interner for caching identifier and string values
    * @param diagnostics Diagnostic logger for error reporting
+   * @param typeRegistry Type registry for assigning types to AST nodes
    */
   explicit Parser(Lexer &lexer, ArenaAllocator &arena,
                   SourceManager &sourceManager, StringInterner &interner,
-                  DiagnosticLogger &diagnostics);
+                  DiagnosticLogger &diagnostics, TypeRegistry &typeRegistry);
 
   /**
    * @brief Initialize the parser by preloading the token buffer.
@@ -502,6 +504,7 @@ private:
   SourceManager &sourceManager_;  ///< Source manager for reading token text
   StringInterner &interner_;      ///< String interner for caching strings
   DiagnosticLogger &diagnostics_; ///< Diagnostic logger for error reporting
+  TypeRegistry &typeRegistry_;    ///< Type registry for AST node type assignment
 
   // Error tracking
   std::vector<ParseError> errors_; ///< Accumulated parse errors

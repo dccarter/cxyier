@@ -145,10 +145,10 @@ private:
 
   // Phase 2: Number parsing helpers
   std::string_view parseTypeSuffix();
-  IntegerType parseIntegerTypeSuffix(const std::string_view &suffix);
+  IntegerKind parseIntegerTypeSuffix(const std::string_view &suffix);
 
   // Phase 3: Float parsing helpers
-  FloatType parseFloatTypeSuffix(const std::string_view &suffix);
+  FloatKind parseFloatTypeSuffix(const std::string_view &suffix);
 
   // Phase 4: String/Character parsing helpers
   char parseBasicEscapeSequence(); // For basic escapes only

@@ -9,6 +9,7 @@
 #include "cxy/parser.hpp"
 #include "cxy/strings.hpp"
 #include "cxy/token.hpp"
+#include "cxy/types/registry.hpp"
 
 #include "ast_test_utils.hpp"
 
@@ -51,7 +52,7 @@ public:
       : source_(source), filename_(filename), arena_(1024 * 1024), // 1MB arena
         stringPool_(arena_), logger_(), sourceManager_(),
         lexer_(filename_, source_, logger_, stringPool_),
-        parser_(lexer_, arena_, sourceManager_, stringPool_, logger_) {
+        typeRegistry_(), parser_(lexer_, arena_, sourceManager_, stringPool_, logger_, typeRegistry_) {
     // Configure logger to use in-memory sink to avoid console noise during
     // tests while still capturing diagnostic messages for test validation
     logger_.removeAllSinks();
@@ -176,6 +177,7 @@ private:
   DiagnosticLogger logger_;
   SourceManager sourceManager_;
   Lexer lexer_;
+  TypeRegistry typeRegistry_;
   Parser parser_;
 };
 

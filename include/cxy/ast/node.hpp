@@ -9,10 +9,12 @@
 #include <format>
 #include <string>
 
-namespace cxy::ast {
+// Forward declaration for semantic type system
+namespace cxy {
+  class Type;
+}
 
-// Forward declaration for type system integration
-class Type;
+namespace cxy::ast {
 
 /**
  * @brief Base class for all AST nodes in the Cxy compiler.
@@ -43,7 +45,7 @@ public:
   ArenaVector<ASTNode *> attrs;
 
   // Progressive enhancement fields (filled by semantic passes)
-  Type *type = nullptr;  ///< Type information (null initially)
+  const cxy::Type *type = nullptr;  ///< Semantic type information (from type system)
   Flags flags = flgNone; ///< Compiler pass flags
 
   // Optional metadata for pass-specific information

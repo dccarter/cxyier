@@ -39,6 +39,22 @@ class ClosureExpressionNode;
 class RangeExpressionNode;
 class SpreadExpressionNode;
 
+// Statement node forward declarations
+class StatementNode;
+class ExpressionStatementNode;
+class BreakStatementNode;
+class ContinueStatementNode;
+class DeferStatementNode;
+class ReturnStatementNode;
+class YieldStatementNode;
+class BlockStatementNode;
+class IfStatementNode;
+class ForStatementNode;
+class WhileStatementNode;
+class SwitchStatementNode;
+class MatchStatementNode;
+class CaseStatementNode;
+
 /**
  * @brief Base visitor class for AST traversal.
  *
@@ -150,6 +166,46 @@ public:
 
   virtual bool visitSpread(SpreadExpressionNode *node);
   virtual void visitSpreadPost(SpreadExpressionNode *node);
+
+  // Statement node visits
+  virtual bool visitExprStmt(ExpressionStatementNode *node);
+  virtual void visitExprStmtPost(ExpressionStatementNode *node);
+
+  virtual bool visitBreakStmt(BreakStatementNode *node);
+  virtual void visitBreakStmtPost(BreakStatementNode *node);
+
+  virtual bool visitContinueStmt(ContinueStatementNode *node);
+  virtual void visitContinueStmtPost(ContinueStatementNode *node);
+
+  virtual bool visitDeferStmt(DeferStatementNode *node);
+  virtual void visitDeferStmtPost(DeferStatementNode *node);
+
+  virtual bool visitReturnStmt(ReturnStatementNode *node);
+  virtual void visitReturnStmtPost(ReturnStatementNode *node);
+
+  virtual bool visitYieldStmt(YieldStatementNode *node);
+  virtual void visitYieldStmtPost(YieldStatementNode *node);
+
+  virtual bool visitBlockStmt(BlockStatementNode *node);
+  virtual void visitBlockStmtPost(BlockStatementNode *node);
+
+  virtual bool visitIfStmt(IfStatementNode *node);
+  virtual void visitIfStmtPost(IfStatementNode *node);
+
+  virtual bool visitForStmt(ForStatementNode *node);
+  virtual void visitForStmtPost(ForStatementNode *node);
+
+  virtual bool visitWhileStmt(WhileStatementNode *node);
+  virtual void visitWhileStmtPost(WhileStatementNode *node);
+
+  virtual bool visitSwitchStmt(SwitchStatementNode *node);
+  virtual void visitSwitchStmtPost(SwitchStatementNode *node);
+
+  virtual bool visitMatchStmt(MatchStatementNode *node);
+  virtual void visitMatchStmtPost(MatchStatementNode *node);
+
+  virtual bool visitCaseStmt(CaseStatementNode *node);
+  virtual void visitCaseStmtPost(CaseStatementNode *node);
 
 private:
   // Internal dispatch method
@@ -265,7 +321,47 @@ public:
   virtual bool visitSpread(const SpreadExpressionNode *node);
   virtual void visitSpreadPost(const SpreadExpressionNode *node);
 
-private:
+  // Statement node visits
+  virtual bool visitExprStmt(const ExpressionStatementNode *node);
+  virtual void visitExprStmtPost(const ExpressionStatementNode *node);
+
+  virtual bool visitBreakStmt(const BreakStatementNode *node);
+  virtual void visitBreakStmtPost(const BreakStatementNode *node);
+
+  virtual bool visitContinueStmt(const ContinueStatementNode *node);
+  virtual void visitContinueStmtPost(const ContinueStatementNode *node);
+
+  virtual bool visitDeferStmt(const DeferStatementNode *node);
+  virtual void visitDeferStmtPost(const DeferStatementNode *node);
+
+  virtual bool visitReturnStmt(const ReturnStatementNode *node);
+  virtual void visitReturnStmtPost(const ReturnStatementNode *node);
+
+  virtual bool visitYieldStmt(const YieldStatementNode *node);
+  virtual void visitYieldStmtPost(const YieldStatementNode *node);
+
+  virtual bool visitBlockStmt(const BlockStatementNode *node);
+  virtual void visitBlockStmtPost(const BlockStatementNode *node);
+
+  virtual bool visitIfStmt(const IfStatementNode *node);
+  virtual void visitIfStmtPost(const IfStatementNode *node);
+
+  virtual bool visitForStmt(const ForStatementNode *node);
+  virtual void visitForStmtPost(const ForStatementNode *node);
+
+  virtual bool visitWhileStmt(const WhileStatementNode *node);
+  virtual void visitWhileStmtPost(const WhileStatementNode *node);
+
+  virtual bool visitSwitchStmt(const SwitchStatementNode *node);
+  virtual void visitSwitchStmtPost(const SwitchStatementNode *node);
+
+  virtual bool visitMatchStmt(const MatchStatementNode *node);
+  virtual void visitMatchStmtPost(const MatchStatementNode *node);
+
+  virtual bool visitCaseStmt(const CaseStatementNode *node);
+  virtual void visitCaseStmtPost(const CaseStatementNode *node);
+
+protected:
   // Internal dispatch method
   bool dispatchVisit(const ASTNode *node);
   void dispatchVisitPost(const ASTNode *node);

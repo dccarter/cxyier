@@ -12,7 +12,7 @@ namespace cxy {
 /**
  * @brief Enumeration for integer literal types based on suffixes.
  */
-enum class IntegerType : uint8_t {
+enum class IntegerKind : uint8_t {
   Auto, // No suffix, infer from value
   I8,   // Explicit i8 suffix
   I16,  // Explicit i16 suffix
@@ -29,7 +29,7 @@ enum class IntegerType : uint8_t {
 /**
  * @brief Enumeration for floating-point literal types based on suffixes.
  */
-enum class FloatType : uint8_t {
+enum class FloatKind : uint8_t {
   Auto, // No suffix, defaults to f64
   F32,  // f suffix
   F64   // d suffix or no suffix (default)
@@ -389,18 +389,18 @@ struct Token {
 
     struct {
       __uint128_t value;
-      IntegerType type;
+      IntegerKind type;
     } intValue; ///< For integer literals with type info
 
     struct {
       double value;
-      FloatType type;
+      FloatKind type;
     } floatValue; ///< For floating-point literals with type info
 
     /**
      * @brief Default constructor initializes to zero.
      */
-    Value() : intValue{0, IntegerType::Auto} {}
+    Value() : intValue{0, IntegerKind::Auto} {}
 
     /**
      * @brief Constructor for boolean values.
@@ -415,13 +415,13 @@ struct Token {
     /**
      * @brief Constructor for integer values with type.
      */
-    explicit Value(__uint128_t i, IntegerType t = IntegerType::Auto)
+    explicit Value(__uint128_t i, IntegerKind t = IntegerKind::Auto)
         : intValue{i, t} {}
 
     /**
      * @brief Constructor for floating-point values with type.
      */
-    explicit Value(double f, FloatType t = FloatType::Auto)
+    explicit Value(double f, FloatKind t = FloatKind::Auto)
         : floatValue{f, t} {}
 
     /**
@@ -475,7 +475,7 @@ struct Token {
    * @param type The integer type from suffix
    */
   Token(TokenKind k, Location loc, __uint128_t val,
-        IntegerType type = IntegerType::Auto)
+        IntegerKind type = IntegerKind::Auto)
       : kind(k), location(loc), value(val, type), hasValue(true) {}
 
   /**
@@ -486,7 +486,7 @@ struct Token {
    * @param val The floating-point value
    * @param type The float type from suffix
    */
-  Token(TokenKind k, Location loc, double val, FloatType type = FloatType::Auto)
+  Token(TokenKind k, Location loc, double val, FloatKind type = FloatKind::Auto)
       : kind(k), location(loc), value(val, type), hasValue(true) {}
 
   /**
@@ -569,9 +569,9 @@ struct Token {
    * @brief Get the integer type (for IntLiteral tokens).
    * @return The integer type from suffix, or Auto if not applicable
    */
-  IntegerType getIntType() const {
+  IntegerKind getIntType() const {
     return hasValue && kind == TokenKind::IntLiteral ? value.intValue.type
-                                                     : IntegerType::Auto;
+                                                     : IntegerKind::Auto;
   }
 
   /**
@@ -587,9 +587,9 @@ struct Token {
    * @brief Get the floating-point type (for FloatLiteral tokens).
    * @return The float type from suffix, or Auto if not applicable
    */
-  FloatType getFloatType() const {
+  FloatKind getFloatType() const {
     return hasValue && kind == TokenKind::FloatLiteral ? value.floatValue.type
-                                                       : FloatType::Auto;
+                                                       : FloatKind::Auto;
   }
 
   /**

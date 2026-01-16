@@ -525,12 +525,12 @@ Token Lexer::lexNumber() {
   }
 
   // Parse type suffix
-  IntegerType type = IntegerType::Auto;
+  IntegerKind type = IntegerKind::Auto;
   std::string_view suffix = parseTypeSuffix();
 
   if (!suffix.empty()) {
     type = parseIntegerTypeSuffix(suffix);
-    if (type == IntegerType::Auto) {
+    if (type == IntegerKind::Auto) {
       reportError(LexError::InvalidNumber,
                   "Invalid integer type suffix: " + std::string(suffix));
     }
@@ -657,12 +657,12 @@ Token Lexer::lexFloat(const Position &start, int base, __uint128_t integerPart,
   }
 
   // Parse float type suffix
-  FloatType type = FloatType::Auto;
+  FloatKind type = FloatKind::Auto;
   std::string_view suffix = parseTypeSuffix();
 
   if (!suffix.empty()) {
     type = parseFloatTypeSuffix(suffix);
-    if (type == FloatType::Auto) {
+    if (type == FloatKind::Auto) {
       reportError(LexError::InvalidNumber,
                   "Invalid float type suffix: " + std::string(suffix));
     }
@@ -928,57 +928,57 @@ std::string_view Lexer::parseTypeSuffix() {
   return std::string_view();
 }
 
-IntegerType Lexer::parseIntegerTypeSuffix(const std::string_view &suffix) {
+IntegerKind Lexer::parseIntegerTypeSuffix(const std::string_view &suffix) {
   // Modern suffixes (preferred)
   if (suffix == "i8")
-    return IntegerType::I8;
+    return IntegerKind::I8;
   if (suffix == "u8")
-    return IntegerType::U8;
+    return IntegerKind::U8;
   if (suffix == "i16")
-    return IntegerType::I16;
+    return IntegerKind::I16;
   if (suffix == "u16")
-    return IntegerType::U16;
+    return IntegerKind::U16;
   if (suffix == "i32")
-    return IntegerType::I32;
+    return IntegerKind::I32;
   if (suffix == "u32")
-    return IntegerType::U32;
+    return IntegerKind::U32;
   if (suffix == "i64")
-    return IntegerType::I64;
+    return IntegerKind::I64;
   if (suffix == "u64")
-    return IntegerType::U64;
+    return IntegerKind::U64;
   if (suffix == "i128")
-    return IntegerType::I128;
+    return IntegerKind::I128;
   if (suffix == "u128")
-    return IntegerType::U128;
+    return IntegerKind::U128;
 
   // Legacy C-style suffixes (for compatibility)
   if (suffix == "u" || suffix == "U")
-    return IntegerType::U32;
+    return IntegerKind::U32;
   if (suffix == "l" || suffix == "L")
-    return IntegerType::I64;
+    return IntegerKind::I64;
   if (suffix == "ul" || suffix == "uL" || suffix == "Ul" || suffix == "UL" ||
       suffix == "lu" || suffix == "lU" || suffix == "Lu" || suffix == "LU")
-    return IntegerType::U64;
+    return IntegerKind::U64;
   if (suffix == "ll" || suffix == "LL")
-    return IntegerType::I64;
+    return IntegerKind::I64;
   if (suffix == "ull" || suffix == "uLL" || suffix == "Ull" ||
       suffix == "ULL" || suffix == "llu" || suffix == "llU" ||
       suffix == "LLu" || suffix == "LLU")
-    return IntegerType::U64;
+    return IntegerKind::U64;
 
   // Unknown suffix
-  return IntegerType::Auto;
+  return IntegerKind::Auto;
 }
 
 // Phase 3: Float type suffix parsing
-FloatType Lexer::parseFloatTypeSuffix(const std::string_view &suffix) {
+FloatKind Lexer::parseFloatTypeSuffix(const std::string_view &suffix) {
   if (suffix == "f" || suffix == "F")
-    return FloatType::F32;
+    return FloatKind::F32;
   if (suffix == "d" || suffix == "D")
-    return FloatType::F64;
+    return FloatKind::F64;
 
   // Unknown suffix
-  return FloatType::Auto;
+  return FloatKind::Auto;
 }
 
 // Phase 4: String/Character parsing helpers

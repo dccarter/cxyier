@@ -201,7 +201,7 @@ TEST_CASE("Lexer can parse decimal integers", "[lexer][phase2]") {
   REQUIRE(tokens.size() == 4); // 3 integers + EOF
   CHECK(tokens[0].kind == TokenKind::IntLiteral);
   CHECK(tokens[0].getIntValue() == 42);
-  CHECK(tokens[0].getIntType() == IntegerType::Auto);
+  CHECK(tokens[0].getIntType() == IntegerKind::Auto);
 
   CHECK(tokens[1].kind == TokenKind::IntLiteral);
   CHECK(tokens[1].getIntValue() == 0);
@@ -291,42 +291,42 @@ TEST_CASE("Lexer can parse modern type suffixes", "[lexer][phase2]") {
   // i8
   CHECK(tokens[0].kind == TokenKind::IntLiteral);
   CHECK(tokens[0].getIntValue() == 42);
-  CHECK(tokens[0].getIntType() == IntegerType::I8);
+  CHECK(tokens[0].getIntType() == IntegerKind::I8);
 
   // u8
   CHECK(tokens[1].kind == TokenKind::IntLiteral);
   CHECK(tokens[1].getIntValue() == 255);
-  CHECK(tokens[1].getIntType() == IntegerType::U8);
+  CHECK(tokens[1].getIntType() == IntegerKind::U8);
 
   // i16
   CHECK(tokens[2].kind == TokenKind::IntLiteral);
   CHECK(tokens[2].getIntValue() == 1000);
-  CHECK(tokens[2].getIntType() == IntegerType::I16);
+  CHECK(tokens[2].getIntType() == IntegerKind::I16);
 
   // u16
   CHECK(tokens[3].kind == TokenKind::IntLiteral);
   CHECK(tokens[3].getIntValue() == 65535);
-  CHECK(tokens[3].getIntType() == IntegerType::U16);
+  CHECK(tokens[3].getIntType() == IntegerKind::U16);
 
   // i32
   CHECK(tokens[4].kind == TokenKind::IntLiteral);
   CHECK(tokens[4].getIntValue() == 42);
-  CHECK(tokens[4].getIntType() == IntegerType::I32);
+  CHECK(tokens[4].getIntType() == IntegerKind::I32);
 
   // u32
   CHECK(tokens[5].kind == TokenKind::IntLiteral);
   CHECK(tokens[5].getIntValue() == 4000000000ULL);
-  CHECK(tokens[5].getIntType() == IntegerType::U32);
+  CHECK(tokens[5].getIntType() == IntegerKind::U32);
 
   // i64
   CHECK(tokens[6].kind == TokenKind::IntLiteral);
   CHECK(tokens[6].getIntValue() == 42);
-  CHECK(tokens[6].getIntType() == IntegerType::I64);
+  CHECK(tokens[6].getIntType() == IntegerKind::I64);
 
   // u64
   CHECK(tokens[7].kind == TokenKind::IntLiteral);
   CHECK(tokens[7].getIntValue() == 18446744073709551615ULL);
-  CHECK(tokens[7].getIntType() == IntegerType::U64);
+  CHECK(tokens[7].getIntType() == IntegerKind::U64);
 
   CHECK(tokens[8].kind == TokenKind::EoF);
 }
@@ -340,27 +340,27 @@ TEST_CASE("Lexer can parse legacy C-style suffixes", "[lexer][phase2]") {
   // u -> U32
   CHECK(tokens[0].kind == TokenKind::IntLiteral);
   CHECK(tokens[0].getIntValue() == 42);
-  CHECK(tokens[0].getIntType() == IntegerType::U32);
+  CHECK(tokens[0].getIntType() == IntegerKind::U32);
 
   // l -> I64
   CHECK(tokens[1].kind == TokenKind::IntLiteral);
   CHECK(tokens[1].getIntValue() == 42);
-  CHECK(tokens[1].getIntType() == IntegerType::I64);
+  CHECK(tokens[1].getIntType() == IntegerKind::I64);
 
   // ul -> U64
   CHECK(tokens[2].kind == TokenKind::IntLiteral);
   CHECK(tokens[2].getIntValue() == 42);
-  CHECK(tokens[2].getIntType() == IntegerType::U64);
+  CHECK(tokens[2].getIntType() == IntegerKind::U64);
 
   // ll -> I64
   CHECK(tokens[3].kind == TokenKind::IntLiteral);
   CHECK(tokens[3].getIntValue() == 42);
-  CHECK(tokens[3].getIntType() == IntegerType::I64);
+  CHECK(tokens[3].getIntType() == IntegerKind::I64);
 
   // ull -> U64
   CHECK(tokens[4].kind == TokenKind::IntLiteral);
   CHECK(tokens[4].getIntValue() == 42);
-  CHECK(tokens[4].getIntType() == IntegerType::U64);
+  CHECK(tokens[4].getIntType() == IntegerKind::U64);
 
   CHECK(tokens[5].kind == TokenKind::EoF);
 }
@@ -373,11 +373,11 @@ TEST_CASE("Lexer can parse 128-bit integers", "[lexer][phase2]") {
 
   CHECK(tokens[0].kind == TokenKind::IntLiteral);
   CHECK(tokens[0].getIntValue() == 42);
-  CHECK(tokens[0].getIntType() == IntegerType::I128);
+  CHECK(tokens[0].getIntType() == IntegerKind::I128);
 
   CHECK(tokens[1].kind == TokenKind::IntLiteral);
   CHECK(tokens[1].getIntValue() == 42);
-  CHECK(tokens[1].getIntType() == IntegerType::U128);
+  CHECK(tokens[1].getIntType() == IntegerKind::U128);
 
   CHECK(tokens[2].kind == TokenKind::EoF);
 }
@@ -418,19 +418,19 @@ TEST_CASE("Lexer can tokenize complex expressions with Phase 2 integers",
 
   CHECK(tokens[0].kind == TokenKind::IntLiteral);
   CHECK(tokens[0].getIntValue() == 0xFF);
-  CHECK(tokens[0].getIntType() == IntegerType::Auto);
+  CHECK(tokens[0].getIntType() == IntegerKind::Auto);
 
   CHECK(tokens[1].kind == TokenKind::Plus);
 
   CHECK(tokens[2].kind == TokenKind::IntLiteral);
   CHECK(tokens[2].getIntValue() == 42);
-  CHECK(tokens[2].getIntType() == IntegerType::U32);
+  CHECK(tokens[2].getIntType() == IntegerKind::U32);
 
   CHECK(tokens[3].kind == TokenKind::Minus);
 
   CHECK(tokens[4].kind == TokenKind::IntLiteral);
   CHECK(tokens[4].getIntValue() == 0b1010);
-  CHECK(tokens[4].getIntType() == IntegerType::I16);
+  CHECK(tokens[4].getIntType() == IntegerKind::I16);
 
   CHECK(tokens[5].kind == TokenKind::EoF);
 }
@@ -446,7 +446,7 @@ TEST_CASE("Lexer can parse basic decimal floats", "[lexer][phase3]") {
   REQUIRE(tokens.size() == 5); // 4 floats + EOF
   CHECK(tokens[0].kind == TokenKind::FloatLiteral);
   CHECK(tokens[0].getFloatValue() == 3.14);
-  CHECK(tokens[0].getFloatType() == FloatType::Auto);
+  CHECK(tokens[0].getFloatType() == FloatKind::Auto);
 
   CHECK(tokens[1].kind == TokenKind::FloatLiteral);
   CHECK(tokens[1].getFloatValue() == 0.5);
@@ -523,22 +523,22 @@ TEST_CASE("Lexer can parse float type suffixes", "[lexer][phase3]") {
   // f suffix -> F32
   CHECK(tokens[0].kind == TokenKind::FloatLiteral);
   CHECK(tokens[0].getFloatValue() == Catch::Approx(3.14));
-  CHECK(tokens[0].getFloatType() == FloatType::F32);
+  CHECK(tokens[0].getFloatType() == FloatKind::F32);
 
   // d suffix -> F64
   CHECK(tokens[1].kind == TokenKind::FloatLiteral);
   CHECK(tokens[1].getFloatValue() == 2.0);
-  CHECK(tokens[1].getFloatType() == FloatType::F64);
+  CHECK(tokens[1].getFloatType() == FloatKind::F64);
 
   // F suffix -> F32
   CHECK(tokens[2].kind == TokenKind::FloatLiteral);
   CHECK(tokens[2].getFloatValue() == 1.5);
-  CHECK(tokens[2].getFloatType() == FloatType::F32);
+  CHECK(tokens[2].getFloatType() == FloatKind::F32);
 
   // D suffix -> F64
   CHECK(tokens[3].kind == TokenKind::FloatLiteral);
   CHECK(tokens[3].getFloatValue() == 0.5);
-  CHECK(tokens[3].getFloatType() == FloatType::F64);
+  CHECK(tokens[3].getFloatType() == FloatKind::F64);
 
   CHECK(tokens[4].kind == TokenKind::EoF);
 }
@@ -579,7 +579,7 @@ TEST_CASE("Lexer distinguishes integers from floats correctly",
   // Float (has float suffix)
   CHECK(tokens[2].kind == TokenKind::FloatLiteral);
   CHECK(tokens[2].getFloatValue() == 42.0);
-  CHECK(tokens[2].getFloatType() == FloatType::F32);
+  CHECK(tokens[2].getFloatType() == FloatKind::F32);
 
   // Float (has decimal point, invalid integer suffix should be error)
   CHECK(tokens[3].kind == TokenKind::FloatLiteral);
@@ -598,19 +598,19 @@ TEST_CASE("Lexer can tokenize complex expressions with Phase 3 floats",
 
   CHECK(tokens[0].kind == TokenKind::FloatLiteral);
   CHECK(tokens[0].getFloatValue() == Catch::Approx(3.14f));
-  CHECK(tokens[0].getFloatType() == FloatType::F32);
+  CHECK(tokens[0].getFloatType() == FloatKind::F32);
 
   CHECK(tokens[1].kind == TokenKind::Mult);
 
   CHECK(tokens[2].kind == TokenKind::FloatLiteral);
   CHECK(tokens[2].getFloatValue() == 2.0);
-  CHECK(tokens[2].getFloatType() == FloatType::Auto);
+  CHECK(tokens[2].getFloatType() == FloatKind::Auto);
 
   CHECK(tokens[3].kind == TokenKind::Plus);
 
   CHECK(tokens[4].kind == TokenKind::FloatLiteral);
   CHECK(tokens[4].getFloatValue() == 1e-5);
-  CHECK(tokens[4].getFloatType() == FloatType::Auto);
+  CHECK(tokens[4].getFloatType() == FloatKind::Auto);
 
   CHECK(tokens[5].kind == TokenKind::EoF);
 }

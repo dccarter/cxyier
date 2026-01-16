@@ -2,12 +2,15 @@
 #include "cxy/ast/attributes.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
+#include "cxy/ast/kind.hpp"
 #include "cxy/ast/literals.hpp"
+#include "cxy/ast/statements.hpp"
 #include "cxy/ast/types.hpp"
 #include "cxy/flags.hpp"
 #include "cxy/token.hpp"
 #include <format>
 #include <fstream>
+#include <iostream>
 
 namespace cxy::ast {
 
@@ -60,7 +63,23 @@ void ASTPrinter::visit(const ASTNode *node) {
   }
 
   // Call the base visitor implementation for actual printing
-  ConstASTVisitor::visit(node);
+  bool needsIndent = needsIndent_;
+  bool isFirstChild = isFirstChild_;
+
+  if (dispatchVisit(node)) {
+    // Visit children if the node visit returned true
+    increaseIndent();
+    isFirstChild_ = !isCompactMode();
+    for (const ASTNode *child : node->children) {
+      visit(child);
+    }
+    decreaseIndent();
+  }
+
+  dispatchVisitPost(node);
+
+  needsIndent_= needsIndent;
+  isFirstChild_ = isFirstChild;
 }
 
 bool ASTPrinter::visitNode(const ASTNode *node) {
@@ -77,12 +96,7 @@ void ASTPrinter::visitNodePost(const ASTNode *node) {
   currentDepth_--;
 
   // Only handle non-inline nodes (inline nodes handle their own closing)
-  if (!shouldPrintInline(node) && !isCompactMode()) {
-    // Print attributes before closing for non-inline nodes
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    decreaseIndent();
+  if (!shouldPrintInline(node)) {
     printNodeEnd();
   }
   isFirstChild_ = false;
@@ -90,60 +104,31 @@ void ASTPrinter::visitNodePost(const ASTNode *node) {
 
 bool ASTPrinter::visitNoop(const ASTNode *node) {
   printNodeStartInline(node);
-  if (shouldPrintInline(node) || isCompactMode()) {
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    *output_ << ")";
-  }
+  *output_ << ")";
   return false; // No children for noop
 }
 
 bool ASTPrinter::visitBool(const BoolLiteralNode *node) {
   printNodeStartInline(node);
-  *output_ << " " << (node->value ? "true" : "false");
-  if (shouldPrintInline(node) || isCompactMode()) {
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    *output_ << ")";
-  }
-  return false; // No children for literals
+  *output_ << " " << (node->value ? "true" : "false") << ")";
+  return false;
 }
 
 bool ASTPrinter::visitInt(const IntLiteralNode *node) {
   printNodeStartInline(node);
-  *output_ << " " << static_cast<long long>(node->value);
-  if (shouldPrintInline(node) || isCompactMode()) {
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    *output_ << ")";
-  }
+  *output_ << " " << static_cast<long long>(node->value) << ")";
   return false;
 }
 
 bool ASTPrinter::visitFloat(const FloatLiteralNode *node) {
   printNodeStartInline(node);
-  *output_ << " " << node->value;
-  if (shouldPrintInline(node) || isCompactMode()) {
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    *output_ << ")";
-  }
+  *output_ << " " << node->value << ")";
   return false;
 }
 
 bool ASTPrinter::visitString(const StringLiteralNode *node) {
   printNodeStartInline(node);
-  *output_ << " \"" << node->value.view() << "\"";
-  if (shouldPrintInline(node) || isCompactMode()) {
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    *output_ << ")";
-  }
+  *output_ << " \"" << node->value.view() << "\")";
   return false;
 }
 
@@ -154,35 +139,19 @@ bool ASTPrinter::visitChar(const CharLiteralNode *node) {
   } else {
     *output_ << std::format(" '\\u{{{:04x}}}'", node->value);
   }
-  if (shouldPrintInline(node) || isCompactMode()) {
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    *output_ << ")";
-  }
+  *output_ << ")";
   return false;
 }
 
 bool ASTPrinter::visitNull(const NullLiteralNode *node) {
   printNodeStartInline(node);
-  if (shouldPrintInline(node) || isCompactMode()) {
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    *output_ << ")";
-  }
+  *output_ << ")";
   return false;
 }
 
 bool ASTPrinter::visitIdentifier(const IdentifierNode *node) {
   printNodeStartInline(node);
-  *output_ << " " << node->name.view();
-  if (shouldPrintInline(node) || isCompactMode()) {
-    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
-      printAttributes(node);
-    }
-    *output_ << ")";
-  }
+  *output_ << " " << node->name.view() << ")";
   return false;
 }
 
@@ -339,6 +308,7 @@ void ASTPrinter::printNodeEnd() {
 
 void ASTPrinter::printNodeStart(const ASTNode *node) {
   if (needsIndent_) {
+    printNewline();
     printIndent();
   } else if (!isFirstChild_) {
     printSpace();
@@ -383,6 +353,7 @@ void ASTPrinter::printNodeEndInlineWithAttributes(const ASTNode *node) {
 void ASTPrinter::printNodeStartInline(const ASTNode *node) {
   if (shouldPrintInline(node) || isCompactMode()) {
     if (needsIndent_) {
+      printNewline();
       printIndent();
     } else if (!isFirstChild_) {
       printSpace();
@@ -405,6 +376,10 @@ void ASTPrinter::printNodeStartInline(const ASTNode *node) {
 
     if (config_.hasFlag(PrinterFlags::IncludeMetadata)) {
       printMetadata(node);
+    }
+
+    if (config_.hasFlag(PrinterFlags::IncludeAttributes)) {
+      printAttributes(node);
     }
 
     needsIndent_ = false;
@@ -539,7 +514,6 @@ void ASTPrinter::printAttributeArgument(const ASTNode *arg) {
 
 void ASTPrinter::printIndent() {
   if (!isCompactMode()) {
-    printNewline();
     for (uint32_t i = 0; i < indentLevel_ * config_.indentSize; ++i) {
       *output_ << " ";
     }
@@ -574,10 +548,6 @@ bool ASTPrinter::shouldPrintNode(const ASTNode *node) const {
 }
 
 bool ASTPrinter::shouldPrintInline(const ASTNode *node) const {
-  if (isCompactMode()) {
-    return true;
-  }
-
   // Print literals and simple nodes inline
   switch (node->kind) {
   case astBool:
@@ -629,6 +599,76 @@ void printASTToFile(const ASTNode *root, const std::string &filename,
 
   ASTPrinter printer(config);
   printer.print(root, file);
+}
+
+// Statement visitor implementations
+
+bool ASTPrinter::visitExprStmt(const ExpressionStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitBreakStmt(const BreakStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitContinueStmt(const ContinueStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitDeferStmt(const DeferStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitReturnStmt(const ReturnStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitYieldStmt(const YieldStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitBlockStmt(const BlockStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitIfStmt(const IfStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitForStmt(const ForStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitWhileStmt(const WhileStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitSwitchStmt(const SwitchStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitMatchStmt(const MatchStatementNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitCaseStmt(const CaseStatementNode *node) {
+  printNodeStartInline(node);
+  if (node->isDefault) {
+    *output_ << " default";
+  }
+  return true; // Continue to values and statement children
 }
 
 } // namespace cxy::ast

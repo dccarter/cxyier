@@ -12,6 +12,9 @@ add_library(cxy_memory STATIC
     frontend/ast/visitor.cpp
     frontend/ast/printer.cpp
     frontend/parser.cpp
+    types/type.cpp
+    types/primitive.cpp
+    types/utilities.cpp
 )
 
 target_include_directories(cxy_memory PUBLIC

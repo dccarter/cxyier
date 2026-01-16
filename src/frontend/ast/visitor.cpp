@@ -3,6 +3,7 @@
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/literals.hpp"
+#include "cxy/ast/statements.hpp"
 #include "cxy/ast/types.hpp"
 
 namespace cxy::ast {
@@ -104,6 +105,34 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitRange(static_cast<RangeExpressionNode *>(node));
   case astSpreadExpr:
     return visitSpread(static_cast<SpreadExpressionNode *>(node));
+
+  // Statements
+  case astExprStmt:
+    return visitExprStmt(static_cast<ExpressionStatementNode *>(node));
+  case astBreakStmt:
+    return visitBreakStmt(static_cast<BreakStatementNode *>(node));
+  case astContinueStmt:
+    return visitContinueStmt(static_cast<ContinueStatementNode *>(node));
+  case astDeferStmt:
+    return visitDeferStmt(static_cast<DeferStatementNode *>(node));
+  case astReturnStmt:
+    return visitReturnStmt(static_cast<ReturnStatementNode *>(node));
+  case astYieldStmt:
+    return visitYieldStmt(static_cast<YieldStatementNode *>(node));
+  case astBlockStmt:
+    return visitBlockStmt(static_cast<BlockStatementNode *>(node));
+  case astIfStmt:
+    return visitIfStmt(static_cast<IfStatementNode *>(node));
+  case astForStmt:
+    return visitForStmt(static_cast<ForStatementNode *>(node));
+  case astWhileStmt:
+    return visitWhileStmt(static_cast<WhileStatementNode *>(node));
+  case astSwitchStmt:
+    return visitSwitchStmt(static_cast<SwitchStatementNode *>(node));
+  case astMatchStmt:
+    return visitMatchStmt(static_cast<MatchStatementNode *>(node));
+  case astCaseStmt:
+    return visitCaseStmt(static_cast<CaseStatementNode *>(node));
 
   default:
     // Fallback to generic visitNode for unknown types
@@ -207,6 +236,47 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
     visitSpreadPost(static_cast<SpreadExpressionNode *>(node));
     break;
 
+  // Statements
+  case astExprStmt:
+    visitExprStmtPost(static_cast<ExpressionStatementNode *>(node));
+    break;
+  case astBreakStmt:
+    visitBreakStmtPost(static_cast<BreakStatementNode *>(node));
+    break;
+  case astContinueStmt:
+    visitContinueStmtPost(static_cast<ContinueStatementNode *>(node));
+    break;
+  case astDeferStmt:
+    visitDeferStmtPost(static_cast<DeferStatementNode *>(node));
+    break;
+  case astReturnStmt:
+    visitReturnStmtPost(static_cast<ReturnStatementNode *>(node));
+    break;
+  case astYieldStmt:
+    visitYieldStmtPost(static_cast<YieldStatementNode *>(node));
+    break;
+  case astBlockStmt:
+    visitBlockStmtPost(static_cast<BlockStatementNode *>(node));
+    break;
+  case astIfStmt:
+    visitIfStmtPost(static_cast<IfStatementNode *>(node));
+    break;
+  case astForStmt:
+    visitForStmtPost(static_cast<ForStatementNode *>(node));
+    break;
+  case astWhileStmt:
+    visitWhileStmtPost(static_cast<WhileStatementNode *>(node));
+    break;
+  case astSwitchStmt:
+    visitSwitchStmtPost(static_cast<SwitchStatementNode *>(node));
+    break;
+  case astMatchStmt:
+    visitMatchStmtPost(static_cast<MatchStatementNode *>(node));
+    break;
+  case astCaseStmt:
+    visitCaseStmtPost(static_cast<CaseStatementNode *>(node));
+    break;
+
   default:
     // Fallback to generic visitNodePost for unknown types
     visitNodePost(node);
@@ -296,6 +366,34 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitRange(static_cast<const RangeExpressionNode *>(node));
   case astSpreadExpr:
     return visitSpread(static_cast<const SpreadExpressionNode *>(node));
+
+  // Statements
+  case astExprStmt:
+    return visitExprStmt(static_cast<const ExpressionStatementNode *>(node));
+  case astBreakStmt:
+    return visitBreakStmt(static_cast<const BreakStatementNode *>(node));
+  case astContinueStmt:
+    return visitContinueStmt(static_cast<const ContinueStatementNode *>(node));
+  case astDeferStmt:
+    return visitDeferStmt(static_cast<const DeferStatementNode *>(node));
+  case astReturnStmt:
+    return visitReturnStmt(static_cast<const ReturnStatementNode *>(node));
+  case astYieldStmt:
+    return visitYieldStmt(static_cast<const YieldStatementNode *>(node));
+  case astBlockStmt:
+    return visitBlockStmt(static_cast<const BlockStatementNode *>(node));
+  case astIfStmt:
+    return visitIfStmt(static_cast<const IfStatementNode *>(node));
+  case astForStmt:
+    return visitForStmt(static_cast<const ForStatementNode *>(node));
+  case astWhileStmt:
+    return visitWhileStmt(static_cast<const WhileStatementNode *>(node));
+  case astSwitchStmt:
+    return visitSwitchStmt(static_cast<const SwitchStatementNode *>(node));
+  case astMatchStmt:
+    return visitMatchStmt(static_cast<const MatchStatementNode *>(node));
+  case astCaseStmt:
+    return visitCaseStmt(static_cast<const CaseStatementNode *>(node));
 
   default:
     // Fallback to generic visitNode for unknown types
@@ -397,6 +495,47 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
   case astSpreadExpr:
     visitSpreadPost(static_cast<const SpreadExpressionNode *>(node));
+    break;
+
+  // Statements
+  case astExprStmt:
+    visitExprStmtPost(static_cast<const ExpressionStatementNode *>(node));
+    break;
+  case astBreakStmt:
+    visitBreakStmtPost(static_cast<const BreakStatementNode *>(node));
+    break;
+  case astContinueStmt:
+    visitContinueStmtPost(static_cast<const ContinueStatementNode *>(node));
+    break;
+  case astDeferStmt:
+    visitDeferStmtPost(static_cast<const DeferStatementNode *>(node));
+    break;
+  case astReturnStmt:
+    visitReturnStmtPost(static_cast<const ReturnStatementNode *>(node));
+    break;
+  case astYieldStmt:
+    visitYieldStmtPost(static_cast<const YieldStatementNode *>(node));
+    break;
+  case astBlockStmt:
+    visitBlockStmtPost(static_cast<const BlockStatementNode *>(node));
+    break;
+  case astIfStmt:
+    visitIfStmtPost(static_cast<const IfStatementNode *>(node));
+    break;
+  case astForStmt:
+    visitForStmtPost(static_cast<const ForStatementNode *>(node));
+    break;
+  case astWhileStmt:
+    visitWhileStmtPost(static_cast<const WhileStatementNode *>(node));
+    break;
+  case astSwitchStmt:
+    visitSwitchStmtPost(static_cast<const SwitchStatementNode *>(node));
+    break;
+  case astMatchStmt:
+    visitMatchStmtPost(static_cast<const MatchStatementNode *>(node));
+    break;
+  case astCaseStmt:
+    visitCaseStmtPost(static_cast<const CaseStatementNode *>(node));
     break;
 
   default:
@@ -856,6 +995,218 @@ bool ConstASTVisitor::visitField(const FieldExpressionNode *node) {
 }
 
 void ConstASTVisitor::visitFieldPost(const FieldExpressionNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+// Statement visitor implementations - ASTVisitor
+
+bool ASTVisitor::visitExprStmt(ExpressionStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitExprStmtPost(ExpressionStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitBreakStmt(BreakStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitBreakStmtPost(BreakStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitContinueStmt(ContinueStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitContinueStmtPost(ContinueStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitDeferStmt(DeferStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitDeferStmtPost(DeferStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitReturnStmt(ReturnStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitReturnStmtPost(ReturnStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitYieldStmt(YieldStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitYieldStmtPost(YieldStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitBlockStmt(BlockStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitBlockStmtPost(BlockStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitIfStmt(IfStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitIfStmtPost(IfStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitForStmt(ForStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitForStmtPost(ForStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitWhileStmt(WhileStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitWhileStmtPost(WhileStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitSwitchStmt(SwitchStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitSwitchStmtPost(SwitchStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitMatchStmt(MatchStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitMatchStmtPost(MatchStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitCaseStmt(CaseStatementNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitCaseStmtPost(CaseStatementNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+// Statement visitor implementations - ConstASTVisitor
+
+bool ConstASTVisitor::visitExprStmt(const ExpressionStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitExprStmtPost(const ExpressionStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitBreakStmt(const BreakStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitBreakStmtPost(const BreakStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitContinueStmt(const ContinueStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitContinueStmtPost(const ContinueStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitDeferStmt(const DeferStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitDeferStmtPost(const DeferStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitReturnStmt(const ReturnStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitReturnStmtPost(const ReturnStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitYieldStmt(const YieldStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitYieldStmtPost(const YieldStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitBlockStmt(const BlockStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitBlockStmtPost(const BlockStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitIfStmt(const IfStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitIfStmtPost(const IfStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitForStmt(const ForStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitForStmtPost(const ForStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitWhileStmt(const WhileStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitWhileStmtPost(const WhileStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitSwitchStmt(const SwitchStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitSwitchStmtPost(const SwitchStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitMatchStmt(const MatchStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitMatchStmtPost(const MatchStatementNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitCaseStmt(const CaseStatementNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitCaseStmtPost(const CaseStatementNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

@@ -43,6 +43,10 @@ add_executable(cxyier_tests
     parser/expressions/test_macro_calls.cpp
     parser/test_expression_integration.cpp
     parser/debug_test.cpp
+    parser/test_type_integration.cpp
+    types/test_type_infrastructure.cpp
+    types/test_primitive_types.cpp
+    ast_printer_statements_test.cpp
 )
 
 # Link libraries (using single-header versions and our memory library)

@@ -24,8 +24,8 @@ TEST_CASE("AST Printer - Basic Literals", "[ast][printer]") {
 
     ASTPrinter printer({PrinterFlags::None});
 
-    REQUIRE(printer.print(trueNode) == "(Bool true)");
-    REQUIRE(printer.print(falseNode) == "(Bool false)");
+    REQUIRE_AST_MATCHES(trueNode, "(Bool true)");
+    REQUIRE_AST_MATCHES(falseNode, "(Bool false)");
   }
 
   SECTION("Integer literals") {
@@ -34,8 +34,8 @@ TEST_CASE("AST Printer - Basic Literals", "[ast][printer]") {
 
     ASTPrinter printer({PrinterFlags::None});
 
-    REQUIRE(printer.print(intNode) == "(Int 42)");
-    REQUIRE(printer.print(negativeNode) == "(Int -123)");
+    REQUIRE_AST_MATCHES(intNode, "(Int 42)");
+    REQUIRE_AST_MATCHES(negativeNode, "(Int -123)");
   }
 
   SECTION("Float literals") {
@@ -43,7 +43,7 @@ TEST_CASE("AST Printer - Basic Literals", "[ast][printer]") {
 
     ASTPrinter printer({PrinterFlags::None});
 
-    REQUIRE(printer.print(floatNode) == "(Float 3.14)");
+    REQUIRE_AST_MATCHES(floatNode, "(Float 3.14)");
   }
 
   SECTION("String literals") {
@@ -52,7 +52,7 @@ TEST_CASE("AST Printer - Basic Literals", "[ast][printer]") {
 
     ASTPrinter printer({PrinterFlags::None});
 
-    REQUIRE(printer.print(stringNode) == R"((String "hello world"))");
+    REQUIRE_AST_MATCHES(stringNode, R"((String "hello world"))");
   }
 
   SECTION("Character literals") {
@@ -61,8 +61,8 @@ TEST_CASE("AST Printer - Basic Literals", "[ast][printer]") {
 
     ASTPrinter printer({PrinterFlags::None});
 
-    REQUIRE(printer.print(charNode) == "(Char 'A')");
-    REQUIRE(printer.print(unicodeNode) == "(Char '\\u{1f680}')");
+    REQUIRE_AST_MATCHES(charNode, "(Char 'A')");
+    REQUIRE_AST_MATCHES(unicodeNode, "(Char '\\u{1f680}')");
   }
 
   SECTION("Null literal") {
@@ -70,7 +70,7 @@ TEST_CASE("AST Printer - Basic Literals", "[ast][printer]") {
 
     ASTPrinter printer({PrinterFlags::None});
 
-    REQUIRE(printer.print(nullNode) == "(Null)");
+    REQUIRE_AST_MATCHES(nullNode, "(Null)");
   }
 }
 
@@ -85,7 +85,7 @@ TEST_CASE("AST Printer - Identifiers", "[ast][printer]") {
 
     ASTPrinter printer({PrinterFlags::None});
 
-    REQUIRE(printer.print(identNode) == "(Identifier variable)");
+    REQUIRE_AST_MATCHES(identNode, "(Identifier variable)");
   }
 
   SECTION("Qualified path") {
@@ -638,7 +638,7 @@ TEST_CASE("AST Printer - Node Attributes", "[ast][printer][attributes]") {
 
     // With IncludeAttributes flag - attributes shown
     ASTPrinter printerWithAttrs({PrinterFlags::IncludeAttributes});
-    REQUIRE(printerWithAttrs.print(node) == "(Int 42 [Test])");
+    REQUIRE(printerWithAttrs.print(node) == "(Int [Test] 42)");
   }
 
   SECTION("Node with multiple attributes") {
@@ -652,7 +652,7 @@ TEST_CASE("AST Printer - Node Attributes", "[ast][printer][attributes]") {
     node->addAttribute(attr3);
 
     ASTPrinter printer({PrinterFlags::IncludeAttributes});
-    REQUIRE(printer.print(node) == "(Float 3.14 [Test1 Test2 Test3])");
+    REQUIRE(printer.print(node) == "(Float [Test1 Test2 Test3] 3.14)");
   }
 
   SECTION("Attribute management methods") {
@@ -747,6 +747,53 @@ TEST_CASE("AST Printer - Node Attributes", "[ast][printer][attributes]") {
     node->addAttribute(attr);
 
     ASTPrinter printer({PrinterFlags::IncludeAttributes});
-    REQUIRE(printer.print(node) == "(Identifier myVar [deprecated])");
+    REQUIRE(printer.print(node) == "(Identifier [deprecated] myVar)");
+  }
+
+  SECTION("Non-inline node with attributes") {
+    // Create a binary expression (non-inline node)
+    InternedString nameA = interner.intern("left");
+    InternedString nameB = interner.intern("right");
+    auto *leftNode = createIdentifier(nameA, loc, arena);
+    auto *rightNode = createIdentifier(nameB, loc, arena);
+    auto *binaryNode = createBinaryExpr(leftNode, TokenKind::Plus, rightNode, loc, arena);
+
+    // Add attributes to the binary expression
+    auto *attr1 = createAttribute(interner.intern("optimized"), loc, arena);
+    auto *attr2 = createAttribute(interner.intern("inlined"), loc, arena);
+    binaryNode->addAttribute(attr1);
+    binaryNode->addAttribute(attr2);
+
+    // For non-inline nodes, attributes should appear after the node name
+    // in multi-line format
+    ASTPrinter printer({PrinterFlags::IncludeAttributes});
+    REQUIRE(printer.print(binaryNode) == R"((BinaryExpr [optimized inlined] +
+  (Identifier left)
+  (Identifier right)))");
+  }
+
+  SECTION("Non-inline node attributes: compact vs non-compact mode") {
+    // Create a binary expression (non-inline node)
+    InternedString nameA = interner.intern("x");
+    InternedString nameB = interner.intern("y");
+    auto *leftNode = createIdentifier(nameA, loc, arena);
+    auto *rightNode = createIdentifier(nameB, loc, arena);
+    auto *binaryNode = createBinaryExpr(leftNode, TokenKind::Plus, rightNode, loc, arena);
+    
+    // Add attributes
+    auto *attr1 = createAttribute(interner.intern("fast"), loc, arena);
+    auto *attr2 = createAttribute(interner.intern("safe"), loc, arena);
+    binaryNode->addAttribute(attr1);
+    binaryNode->addAttribute(attr2);
+
+    // Test compact mode - everything on one line
+    ASTPrinter compactPrinter({PrinterFlags::IncludeAttributes | PrinterFlags::CompactMode});
+    REQUIRE(compactPrinter.print(binaryNode) == "(BinaryExpr [fast safe] + (Identifier x) (Identifier y))");
+
+    // Test non-compact mode - multi-line with proper indentation  
+    ASTPrinter normalPrinter({PrinterFlags::IncludeAttributes});
+    REQUIRE(normalPrinter.print(binaryNode) == R"((BinaryExpr [fast safe] +
+  (Identifier x)
+  (Identifier y)))");
   }
 }

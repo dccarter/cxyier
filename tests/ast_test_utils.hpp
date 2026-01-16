@@ -291,11 +291,11 @@ public:
   /**
    * @brief Quick debug print of AST without extra formatting.
    */
-  static std::string debug(const ASTNode *ast) {
+  static std::string debug(const ASTNode *ast, PrinterFlags flags = PrinterFlags::None) {
     if (!ast)
       return "(null)";
 
-    ASTPrinter printer({PrinterFlags::None});
+    ASTPrinter printer({flags});
     return printer.print(ast);
   }
 
@@ -316,24 +316,40 @@ public:
 } // namespace cxy::ast::testing
 
 // Convenient test macros
-#define REQUIRE_AST_MATCHES(ast_node, expected_str)                            \
+#define REQUIRE_AST_MATCHES_FLAGS(ast_node, expected_str, flags)               \
   do {                                                                         \
-    auto actual_result = cxy::ast::testing::ASTTestUtils::debug(ast_node);     \
-    auto normalized_actual =                                                   \
-        cxy::ast::testing::normalizeSerial(actual_result);                     \
-    auto normalized_expected =                                                 \
-        cxy::ast::testing::normalizeSerial(expected_str);                      \
-    REQUIRE(normalized_actual == normalized_expected);                         \
+    REQUIRE(cxy::ast::testing::ASTTestUtils::matches(                          \
+        ast_node, expected_str, {flags}));                                     \
   } while (0)
 
-#define REQUIRE_AST_STRUCTURALLY_MATCHES(ast_node, expected_str)               \
+#define CHECK_AST_MATCHES_FLAGS(ast_node, expected_str, flags)                 \
+  do {                                                                         \
+    CHECK(cxy::ast::testing::ASTTestUtils::matches(                            \
+        ast_node, expected_str, {flags}));                                     \
+  } while (0)
+
+#define REQUIRE_AST_STRUCTURALLY_MATCHES_FLAGS(ast_node, expected_str, flags)  \
   do {                                                                         \
     REQUIRE(cxy::ast::testing::ASTTestUtils::structurallyMatches(              \
-        ast_node, expected_str));                                              \
+        ast_node, expected_str, {flags}));                                     \
   } while (0)
 
-#define CHECK_AST_MATCHES(ast, expected)                                       \
-  CHECK(cxy::ast::testing::ASTTestUtils::matches(ast, expected))
+#define CHECK_AST_STRUCTURALLY_MATCHES_FLAGS(ast_node, expected_str, flags)    \
+  do {                                                                         \
+    CHECK(cxy::ast::testing::ASTTestUtils::structurallyMatches(                \
+        ast_node, expected_str, {flags}));                                     \
+  } while (0)
 
-#define CHECK_AST_STRUCTURALLY_MATCHES(ast, expected)                          \
-  CHECK(cxy::ast::testing::ASTTestUtils::structurallyMatches(ast, expected))
+#define REQUIRE_AST_MATCHES(ast_node, expected_str)                            \
+  REQUIRE_AST_MATCHES_FLAGS(ast_node, expected_str, cxy::ast::PrinterFlags::None)
+
+#define CHECK_AST_MATCHES(ast_node, expected_str)                              \
+  CHECK_AST_MATCHES_FLAGS(ast_node, expected_str, cxy::ast::PrinterFlags::None)
+
+#define REQUIRE_AST_STRUCTURALLY_MATCHES(ast_node, expected_str)               \
+  REQUIRE_AST_STRUCTURALLY_MATCHES_FLAGS(ast_node, expected_str, cxy::ast::PrinterFlags::None)
+
+#define CHECK_AST_STRUCTURALLY_MATCHES(ast_node, expected_str)                 \
+  CHECK_AST_STRUCTURALLY_MATCHES_FLAGS(ast_node, expected_str, cxy::ast::PrinterFlags::None)
+
+

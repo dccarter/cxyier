@@ -16,6 +16,21 @@ class FloatLiteralNode;
 class StringLiteralNode;
 class CharLiteralNode;
 class IdentifierNode;
+
+// Statement node forward declarations
+class ExpressionStatementNode;
+class BreakStatementNode;
+class ContinueStatementNode;
+class DeferStatementNode;
+class ReturnStatementNode;
+class YieldStatementNode;
+class BlockStatementNode;
+class IfStatementNode;
+class ForStatementNode;
+class WhileStatementNode;
+class SwitchStatementNode;
+class MatchStatementNode;
+class CaseStatementNode;
 } // namespace cxy::ast
 
 namespace cxy::ast {
@@ -133,6 +148,21 @@ protected:
   bool visitClosure(const ClosureExpressionNode *node) override;
   bool visitRange(const RangeExpressionNode *node) override;
   bool visitSpread(const SpreadExpressionNode *node) override;
+
+  // Statement node visitors
+  bool visitExprStmt(const ExpressionStatementNode *node) override;
+  bool visitBreakStmt(const BreakStatementNode *node) override;
+  bool visitContinueStmt(const ContinueStatementNode *node) override;
+  bool visitDeferStmt(const DeferStatementNode *node) override;
+  bool visitReturnStmt(const ReturnStatementNode *node) override;
+  bool visitYieldStmt(const YieldStatementNode *node) override;
+  bool visitBlockStmt(const BlockStatementNode *node) override;
+  bool visitIfStmt(const IfStatementNode *node) override;
+  bool visitForStmt(const ForStatementNode *node) override;
+  bool visitWhileStmt(const WhileStatementNode *node) override;
+  bool visitSwitchStmt(const SwitchStatementNode *node) override;
+  bool visitMatchStmt(const MatchStatementNode *node) override;
+  bool visitCaseStmt(const CaseStatementNode *node) override;
 
 private:
   // Helper methods

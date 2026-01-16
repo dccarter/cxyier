@@ -49,7 +49,22 @@ namespace cxy::ast {
     f(MacroCallExpr)            \
     f(ClosureExpr)              \
     f(RangeExpr)                \
-    f(SpreadExpr)
+    f(SpreadExpr)               \
+                                \
+    /* Statements */            \
+    f(ExprStmt)                 \
+    f(BreakStmt)                \
+    f(ContinueStmt)             \
+    f(DeferStmt)                \
+    f(ReturnStmt)               \
+    f(YieldStmt)                \
+    f(BlockStmt)                \
+    f(IfStmt)                   \
+    f(ForStmt)                  \
+    f(WhileStmt)                \
+    f(SwitchStmt)               \
+    f(MatchStmt)                \
+    f(CaseStmt)
 // clang-format on
 
 // Generate the enum with ast prefix

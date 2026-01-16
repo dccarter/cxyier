@@ -3,6 +3,7 @@
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/literals.hpp"
 #include "cxy/ast/types.hpp"
+#include "cxy/types/primitive.hpp"
 
 #include <cmath>
 #include <format>
@@ -12,9 +13,9 @@ namespace cxy {
 
 Parser::Parser(Lexer &lexer, ArenaAllocator &arena,
                SourceManager &sourceManager, StringInterner &interner,
-               DiagnosticLogger &diagnostics)
+               DiagnosticLogger &diagnostics, TypeRegistry &typeRegistry)
     : lexer_(lexer), arena_(arena), sourceManager_(sourceManager),
-      interner_(interner), diagnostics_(diagnostics) {
+      interner_(interner), diagnostics_(diagnostics), typeRegistry_(typeRegistry) {
   // Initialize token buffer to empty state
   for (int i = 0; i < 4; ++i) {
     tokens_[i] = Token{};
@@ -1004,7 +1005,13 @@ ast::ASTNode *Parser::parseIntegerLiteral() {
 
   // Convert token's unsigned value to signed for AST node
   __int128 value = static_cast<__int128>(token.getIntValue());
-  return ast::createIntLiteral(value, token.location, arena_);
+  auto *node = ast::createIntLiteral(value, token.location, arena_);
+  
+  // Assign type from token information
+  IntegerKind intKind = token.getIntType();
+  node->type = typeRegistry_.integerType(intKind);
+  
+  return node;
 }
 
 ast::ASTNode *Parser::parseFloatLiteral() {
@@ -1026,7 +1033,13 @@ ast::ASTNode *Parser::parseFloatLiteral() {
   }
 
   double value = token.getFloatValue();
-  return ast::createFloatLiteral(value, token.location, arena_);
+  auto *node = ast::createFloatLiteral(value, token.location, arena_);
+  
+  // Assign type from token information
+  FloatKind floatKind = token.getFloatType();
+  node->type = typeRegistry_.floatType(floatKind);
+  
+  return node;
 }
 
 ast::ASTNode *Parser::parseCharacterLiteral() {
@@ -1048,7 +1061,12 @@ ast::ASTNode *Parser::parseCharacterLiteral() {
   }
 
   uint32_t value = token.getCharValue();
-  return ast::createCharLiteral(value, token.location, arena_);
+  auto *node = ast::createCharLiteral(value, token.location, arena_);
+  
+  // Assign character type
+  node->type = typeRegistry_.charType();
+  
+  return node;
 }
 
 ast::ASTNode *Parser::parseStringLiteral() {
@@ -1072,7 +1090,13 @@ ast::ASTNode *Parser::parseStringLiteral() {
 
   // Get the processed string value directly from the token
   InternedString value = token.value.stringValue;
-  return ast::createStringLiteral(value, token.location, arena_);
+  auto *node = ast::createStringLiteral(value, token.location, arena_);
+  
+  // Assign string type (using CharType as placeholder for now)
+  // TODO: Implement proper string type in type system
+  node->type = typeRegistry_.charType();
+  
+  return node;
 }
 
 ast::ASTNode *Parser::parseBooleanLiteral() {
@@ -1093,7 +1117,12 @@ ast::ASTNode *Parser::parseBooleanLiteral() {
     return nullptr;
   }
 
-  return ast::createBoolLiteral(value, token.location, arena_);
+  auto *node = ast::createBoolLiteral(value, token.location, arena_);
+  
+  // Assign boolean type
+  node->type = typeRegistry_.boolType();
+  
+  return node;
 }
 
 ast::ASTNode *Parser::parseNullLiteral() {
