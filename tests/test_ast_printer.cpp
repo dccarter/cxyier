@@ -696,7 +696,7 @@ TEST_CASE("AST Printer - Node Attributes", "[ast][printer][attributes]") {
 
     ASTPrinter printer({PrinterFlags::IncludeAttributes});
     std::string result = printer.print(node);
-    REQUIRE(result.find("[Config(10 true \"test\")]") != std::string::npos);
+    REQUIRE(result.find("[(Config 10 true \"test\")]") != std::string::npos);
   }
 
   SECTION("Attributes with named arguments") {
@@ -717,7 +717,7 @@ TEST_CASE("AST Printer - Node Attributes", "[ast][printer][attributes]") {
 
     ASTPrinter printer({PrinterFlags::IncludeAttributes});
     std::string result = printer.print(node);
-    REQUIRE(result.find("[Setup(width 800 height 600)]") != std::string::npos);
+    REQUIRE(result.find("[(Setup (width 800) (height 600))]") != std::string::npos);
   }
 
   SECTION("Combined with other printer flags") {
@@ -779,7 +779,7 @@ TEST_CASE("AST Printer - Node Attributes", "[ast][printer][attributes]") {
     auto *leftNode = createIdentifier(nameA, loc, arena);
     auto *rightNode = createIdentifier(nameB, loc, arena);
     auto *binaryNode = createBinaryExpr(leftNode, TokenKind::Plus, rightNode, loc, arena);
-    
+
     // Add attributes
     auto *attr1 = createAttribute(interner.intern("fast"), loc, arena);
     auto *attr2 = createAttribute(interner.intern("safe"), loc, arena);
@@ -790,7 +790,7 @@ TEST_CASE("AST Printer - Node Attributes", "[ast][printer][attributes]") {
     ASTPrinter compactPrinter({PrinterFlags::IncludeAttributes | PrinterFlags::CompactMode});
     REQUIRE(compactPrinter.print(binaryNode) == "(BinaryExpr [fast safe] + (Identifier x) (Identifier y))");
 
-    // Test non-compact mode - multi-line with proper indentation  
+    // Test non-compact mode - multi-line with proper indentation
     ASTPrinter normalPrinter({PrinterFlags::IncludeAttributes});
     REQUIRE(normalPrinter.print(binaryNode) == R"((BinaryExpr [fast safe] +
   (Identifier x)

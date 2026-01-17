@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cxy/arena_allocator.hpp"
+#include "cxy/ast/attributes.hpp"
 #include "cxy/ast/node.hpp"
 #include "cxy/diagnostics.hpp"
 #include "cxy/lexer.hpp"
@@ -705,6 +706,39 @@ private:
    * @return Parsed match case AST node, or nullptr on error
    */
   ast::ASTNode *parseMatchCaseStatement();
+
+  /**
+   * @brief Parse attribute list that can appear before declarations/statements.
+   *
+   * attribute_list ::= attribute+
+   * attribute ::= '@' attribute_spec | '@[' attribute_list_inner ']'
+   * attribute_list_inner ::= attribute_spec (',' attribute_spec)* ','?
+   *
+   * @return AttributeListNode or nullptr on error
+   */
+  ast::ASTNode *parseAttributeList();
+
+  /**
+   * @brief Parse a single attribute specification.
+   *
+   * attribute_spec ::= identifier attribute_args?
+   * attribute_args ::= '(' attribute_arg_list? ')' | '(' named_attribute_args ')'
+   *
+   * @return AttributeNode or nullptr on error
+   */
+  ast::ASTNode *parseAttribute();
+
+  /**
+   * @brief Parse attribute arguments (positional or named).
+   *
+   * attribute_arg_list ::= literal (',' literal)* ','?
+   * named_attribute_args ::= named_attribute_arg (',' named_attribute_arg)* ','?
+   * named_attribute_arg ::= identifier ':' literal
+   *
+   * @param attr AttributeNode to add arguments to
+   * @return true if arguments parsed successfully, false on error
+   */
+  bool parseAttributeArguments(ast::AttributeNode *attr);
 
   /**
    * @brief Parse an integer literal token into an AST node.

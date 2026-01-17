@@ -425,18 +425,16 @@ void ASTPrinter::printAttributes(const ASTNode *node) {
       if (node->attrs[i] && node->attrs[i]->kind == astAttribute) {
         // Cast to AttributeNode to access name and args
         auto *attr = static_cast<const AttributeNode *>(node->attrs[i]);
-        *output_ << attr->name.view();
 
         if (attr->hasParameters()) {
-          *output_ << "(";
+          *output_ << "(" << attr->name.view();
           for (size_t j = 0; j < attr->args.size(); ++j) {
-            if (j > 0) {
               *output_ << " ";
-            }
 
             ASTNode *arg = attr->args[j];
             if (arg->kind == astFieldExpr) {
               // Named parameter: name value
+              *output_ << "(";
               auto *field = static_cast<const FieldExpressionNode *>(arg);
               if (field->name) {
                 printAttributeArgument(field->name);
@@ -445,12 +443,15 @@ void ASTPrinter::printAttributes(const ASTNode *node) {
               if (field->value) {
                 printAttributeArgument(field->value);
               }
+              *output_ << ")";
             } else {
               // Positional parameter: just the value
               printAttributeArgument(arg);
             }
           }
           *output_ << ")";
+        } else {
+            *output_ << attr->name.view();
         }
       } else if (node->attrs[i]) {
         // Fallback for non-attribute nodes

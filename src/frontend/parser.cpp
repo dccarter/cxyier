@@ -1,4 +1,5 @@
 #include "cxy/parser.hpp"
+#include "cxy/ast/attributes.hpp"
 #include "cxy/ast/declarations.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
@@ -1416,7 +1417,7 @@ void Parser::synchronize() {
   while (!isAtEnd() && !isSynchronizationPoint()) {
     advance();
   }
-  
+
   // Only advance past separators/terminators, not structure starters
   if (!isAtEnd() && isSeparatorToken()) {
     advance();
@@ -1427,7 +1428,7 @@ bool Parser::isSeparatorToken() const {
   TokenKind kind = current().kind;
   // These are tokens we want to skip over during synchronization
   // Separators and terminators that don't start new constructs
-  return kind == TokenKind::Comma || 
+  return kind == TokenKind::Comma ||
          kind == TokenKind::Semicolon ||
          kind == TokenKind::RBrace ||
          kind == TokenKind::RParen ||
@@ -1497,38 +1498,70 @@ bool Parser::isStatementStart() const {
 // Phase 4: Statement parsing implementation
 
 ast::ASTNode *Parser::parseStatement() {
+  // Check for attributes at the beginning
+  ast::AttributeListNode *attributes = nullptr;
+  if (check(TokenKind::At)) {
+    attributes = static_cast<ast::AttributeListNode*>(parseAttributeList());
+    if (!attributes) {
+      return nullptr; // Error parsing attributes
+    }
+  }
+
   // Dispatch based on current token
+  ast::ASTNode *stmt = nullptr;
   switch (current().kind) {
   case TokenKind::Break:
-    return parseBreakStatement();
+    stmt = parseBreakStatement();
+    break;
   case TokenKind::Continue:
-    return parseContinueStatement();
+    stmt = parseContinueStatement();
+    break;
   case TokenKind::LBrace:
-    return parseBlockStatement();
+    stmt = parseBlockStatement();
+    break;
   case TokenKind::Defer:
-    return parseDeferStatement();
+    stmt = parseDeferStatement();
+    break;
   case TokenKind::Return:
-    return parseReturnStatement();
+    stmt = parseReturnStatement();
+    break;
   case TokenKind::Yield:
-    return parseYieldStatement();
+    stmt = parseYieldStatement();
+    break;
   case TokenKind::Var:
   case TokenKind::Const:
   case TokenKind::Auto:
-    return parseVariableDeclaration();
+    stmt = parseVariableDeclaration();
+    break;
   case TokenKind::If:
-    return parseIfStatement();
+    stmt = parseIfStatement();
+    break;
   case TokenKind::While:
-    return parseWhileStatement();
+    stmt = parseWhileStatement();
+    break;
   case TokenKind::For:
-    return parseForStatement();
+    stmt = parseForStatement();
+    break;
   case TokenKind::Switch:
-    return parseSwitchStatement();
+    stmt = parseSwitchStatement();
+    break;
   case TokenKind::Match:
-    return parseMatchStatement();
+    stmt = parseMatchStatement();
+    break;
   default:
     // Fall back to expression statement
-    return parseExpressionStatement();
+    stmt = parseExpressionStatement();
+    break;
   }
+
+  // Attach attributes to the statement if both exist
+  if (attributes && stmt) {
+    for (auto *attr : attributes->attributes) {
+      stmt->addAttribute(attr);
+    }
+  }
+
+  return stmt;
 }
 
 ast::ASTNode *Parser::parseBreakStatement() {
@@ -2303,18 +2336,18 @@ ast::ASTNode *Parser::parseMatchCaseStatement() {
   // Check for optional variable binding (as identifier)
   if (check(TokenKind::As)) {
     advance(); // consume 'as'
-    
+
     if (!check(TokenKind::Ident)) {
       reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
                              "Expected identifier after 'as'"));
       return nullptr;
     }
-    
+
     auto *binding = parseIdentifierExpression();
     if (!binding) {
       return nullptr; // Error already reported
     }
-    
+
     matchCase->setBinding(binding);
   }
 
@@ -2339,6 +2372,163 @@ ast::ASTNode *Parser::parseMatchCaseStatement() {
 
   matchCase->addStatement(body);
   return matchCase;
+}
+
+ast::ASTNode *Parser::parseAttributeList() {
+  Location startLoc = current().location;
+  auto *attrList = ast::createAttributeList(startLoc, arena_);
+
+  // Parse attributes until we don't see '@' anymore
+  while (check(TokenKind::At)) {
+    advance(); // consume '@'
+
+    // Check for list syntax @[attr1, attr2, ...]
+    if (check(TokenKind::LBracket)) {
+      advance(); // consume '['
+
+      // Parse comma-separated attributes
+      do {
+        auto *attr = parseAttribute();
+        if (!attr) {
+          return nullptr; // Error already reported
+        }
+        attrList->addAttribute(static_cast<ast::AttributeNode*>(attr));
+
+        // Check for comma
+        if (check(TokenKind::Comma)) {
+          advance();
+          // Allow trailing comma before ']'
+          if (check(TokenKind::RBracket)) {
+            break;
+          }
+        } else {
+          break;
+        }
+      } while (!check(TokenKind::RBracket) && !check(TokenKind::EoF));
+
+      // Expect closing bracket
+      if (!expect(TokenKind::RBracket)) {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Expected ']' to close attribute list"));
+        return nullptr;
+      }
+      break; // Only one @[...] list allowed
+    } else {
+      // Parse single attribute @attr
+      auto *attr = parseAttribute();
+      if (!attr) {
+        return nullptr; // Error already reported
+      }
+      attrList->addAttribute(static_cast<ast::AttributeNode*>(attr));
+    }
+  }
+
+  return attrList->hasAttributes() ? attrList : nullptr;
+}
+
+ast::ASTNode *Parser::parseAttribute() {
+  Location startLoc = current().location;
+
+  // Expect identifier for attribute name
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected attribute name after '@'"));
+    return nullptr;
+  }
+
+  Token nameToken = current();
+  advance(); // consume attribute name
+
+  // Create attribute node
+  auto *attr = ast::createAttribute(interner_.intern(nameToken.value.stringValue.view()),
+                                   startLoc, arena_);
+
+  // Check for arguments
+  if (check(TokenKind::LParen)) {
+    if (!parseAttributeArguments(attr)) {
+      return nullptr; // Error already reported
+    }
+  }
+
+  return attr;
+}
+
+bool Parser::parseAttributeArguments(ast::AttributeNode *attr) {
+  // Expect opening parenthesis
+  if (!expect(TokenKind::LParen)) {
+    return false;
+  }
+
+  // Handle empty argument list
+  if (check(TokenKind::RParen)) {
+    advance(); // consume ')'
+    return true;
+  }
+
+  bool isNamedArgs = false;
+
+  // Parse arguments
+  do {
+    // Check for named argument syntax (identifier ':' literal)
+    if (check(TokenKind::Ident) && lookahead(1).kind == TokenKind::Colon) {
+      isNamedArgs = true;
+
+      // Parse named argument: name : value
+      Token nameToken = current();
+      advance(); // consume name
+      advance(); // consume ':'
+
+      // Parse literal value
+      auto *value = parseLiteralExpression();
+      if (!value) {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Expected literal value in named attribute argument"));
+        return false;
+      }
+
+      // Create field expression for named argument
+      auto *field = ast::createFieldExpr(
+        ast::createIdentifier(interner_.intern(nameToken.value.stringValue.view()),
+                             nameToken.location, arena_),
+        value, nameToken.location, arena_);
+      attr->addArg(field);
+    } else {
+      // Parse positional literal argument
+      if (isNamedArgs) {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Cannot mix positional and named arguments in attribute"));
+        return false;
+      }
+
+      auto *literal = parseLiteralExpression();
+      if (!literal) {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Expected literal argument in attribute"));
+        return false;
+      }
+      attr->addArg(literal);
+    }
+
+    // Check for comma
+    if (check(TokenKind::Comma)) {
+      advance();
+      // Allow trailing comma before ')'
+      if (check(TokenKind::RParen)) {
+        break;
+      }
+    } else {
+      break;
+    }
+  } while (!check(TokenKind::RParen) && !check(TokenKind::EoF));
+
+  // Expect closing parenthesis
+  if (!expect(TokenKind::RParen)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected ')' to close attribute arguments"));
+    return false;
+  }
+
+  return true;
 }
 
 } // namespace cxy
