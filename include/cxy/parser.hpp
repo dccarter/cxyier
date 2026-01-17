@@ -654,7 +654,7 @@ private:
    * @param singleVariable If true, only allow single variable declaration (for if conditions)
    * @return Parsed variable declaration AST node, or nullptr on error
    */
-  ast::ASTNode *parseVariableDeclaration(bool singleVariable = false);
+  ast::ASTNode *parseVariableDeclaration(bool singleVariable = false, bool isExtern = false);
 
   /**
    * @brief Parse a function declaration.
@@ -674,7 +674,7 @@ private:
    *
    * @return Parsed function declaration AST node, or nullptr on error
    */
-  ast::ASTNode *parseFunctionDeclaration();
+  ast::ASTNode *parseFunctionDeclaration(bool isExtern = false);
 
   /**
    * @brief Parse a function parameter declaration.
@@ -686,6 +686,28 @@ private:
    * @return Parsed function parameter declaration AST node, or nullptr on error
    */
   ast::ASTNode *parseFunctionParamDeclaration();
+
+  /**
+   * @brief Parse an enum declaration.
+   *
+   * enum_declaration ::= 'enum' identifier enum_backing_type? enum_body
+   * enum_backing_type ::= ':' type
+   * enum_body ::= '{' enum_option_list? '}'
+   * enum_option_list ::= enum_option (',' enum_option)* ','?
+   *
+   * @return Parsed enum declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseEnumDeclaration();
+
+  /**
+   * @brief Parse an enum option declaration.
+   *
+   * enum_option ::= identifier enum_value?
+   * enum_value ::= '=' expression
+   *
+   * @return Parsed enum option declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseEnumOption();
 
   /**
    * @brief Parse an if statement.

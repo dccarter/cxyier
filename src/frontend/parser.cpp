@@ -1531,7 +1531,7 @@ ast::ASTNode *Parser::parseStatement() {
   case TokenKind::Var:
   case TokenKind::Const:
   case TokenKind::Auto:
-    stmt = parseVariableDeclaration();
+    stmt = parseVariableDeclaration(false, false);
     break;
   case TokenKind::If:
     stmt = parseIfStatement();
@@ -1724,7 +1724,7 @@ ast::ASTNode *Parser::parseExpressionStatement() {
 
 // Phase 5.1: Variable declaration parsing implementation
 
-ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable) {
+ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable, bool isExtern) {
   Location startLoc = current().location;
   bool isConst = false;
 
@@ -1806,6 +1806,20 @@ ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable) {
     decl->setInitializer(initializer);
   }
 
+  // Extern variable validation
+  if (isExtern) {
+    if (!typeExpr) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "External variable declarations must have explicit type annotations"));
+      return nullptr;
+    }
+    if (initializer) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "External variable declarations cannot have initializers"));
+      return nullptr;
+    }
+  }
+
   // Validate constraint: either type or initializer must be present
   // In single variable mode (if conditions), initializer is always required
   if (!typeExpr && !initializer) {
@@ -1831,7 +1845,7 @@ ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable) {
 // Phase 5.2: Declaration parsing implementation
 
 ast::ASTNode *Parser::parseDeclaration() {
-  // Check for attributes at the beginning
+  // Check for attributes first
   ast::AttributeListNode *attributes = nullptr;
   if (check(TokenKind::At)) {
     attributes = static_cast<ast::AttributeListNode*>(parseAttributeList());
@@ -1840,16 +1854,35 @@ ast::ASTNode *Parser::parseDeclaration() {
     }
   }
 
+  // Check for visibility modifiers after attributes
+  Flags visibilityFlags = flgNone;
+  if (check(TokenKind::Pub)) {
+    advance(); // consume 'pub'
+    visibilityFlags |= flgPublic;
+  } else if (check(TokenKind::Extern)) {
+    advance(); // consume 'extern'
+    visibilityFlags |= flgExtern;
+  }
+
   // Dispatch based on current token
   ast::ASTNode *decl = nullptr;
   switch (current().kind) {
   case TokenKind::Var:
   case TokenKind::Const:
   case TokenKind::Auto:
-    decl = parseVariableDeclaration();
+    decl = parseVariableDeclaration(false, (visibilityFlags & flgExtern) != 0);
     break;
   case TokenKind::Func:
-    decl = parseFunctionDeclaration();
+    decl = parseFunctionDeclaration((visibilityFlags & flgExtern) != 0);
+    break;
+  case TokenKind::Enum:
+    // Enums cannot be extern
+    if (visibilityFlags & flgExtern) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "Enums cannot be extern - they define types, not external symbols"));
+      return nullptr;
+    }
+    decl = parseEnumDeclaration();
     break;
   default:
     reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
@@ -1862,6 +1895,11 @@ ast::ASTNode *Parser::parseDeclaration() {
     for (auto *attr : attributes->attributes) {
       decl->addAttribute(attr);
     }
+  }
+
+  // Set visibility flags on the declaration
+  if (visibilityFlags != flgNone && decl) {
+    decl->flags |= visibilityFlags;
   }
 
   return decl;
@@ -1919,7 +1957,7 @@ ast::ASTNode *Parser::parseFunctionParamDeclaration() {
   return param;
 }
 
-ast::ASTNode *Parser::parseFunctionDeclaration() {
+ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
   Location startLoc = current().location;
 
   // Consume 'func' keyword
@@ -1946,8 +1984,15 @@ ast::ASTNode *Parser::parseFunctionDeclaration() {
   // Check for generic parameters after function name
   ArenaVector<ast::ASTNode*> genericParams{ArenaSTLAllocator<ast::ASTNode*>(arena_)};
   bool hasGenericParams = false;
-
+  
   if (check(TokenKind::Less)) {
+    // Extern function validation: cannot be generic
+    if (isExtern) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "External function declarations cannot have generic parameters"));
+      return nullptr;
+    }
+    
     genericParams = parseGenericParameters();
     if (genericParams.empty() && check(TokenKind::Greater)) {
       // Error occurred during parsing, but we might have consumed '<'
@@ -2029,8 +2074,22 @@ ast::ASTNode *Parser::parseFunctionDeclaration() {
     funcDecl->setReturnType(returnTypeExpr);
   }
 
+  // Extern function validation: must have return type
+  if (isExtern && !funcDecl->returnType) {
+    reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                           "External function declarations must have explicit return types"));
+    return nullptr;
+  }
+
   // Parse function body if present
   if (check(TokenKind::FatArrow)) {
+    // Extern function validation: cannot have body
+    if (isExtern) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "External function declarations cannot have function bodies"));
+      return nullptr;
+    }
+    
     advance(); // consume '=>'
     // Expression body
     auto *bodyExpr = parseExpression();
@@ -2039,6 +2098,13 @@ ast::ASTNode *Parser::parseFunctionDeclaration() {
     }
     funcDecl->setBody(bodyExpr);
   } else if (check(TokenKind::LBrace)) {
+    // Extern function validation: cannot have body
+    if (isExtern) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "External function declarations cannot have function bodies"));
+      return nullptr;
+    }
+    
     // Block body
     auto *bodyBlock = parseBlockStatement();
     if (!bodyBlock) {
@@ -2095,7 +2161,7 @@ ast::ASTNode *Parser::parseIfStatement() {
 
     // Parse condition expression or variable declaration
     if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
-      condition = parseVariableDeclaration(true); // single variable only
+      condition = parseVariableDeclaration(true, false); // single variable only
     } else {
       condition = parseExpression();
     }
@@ -2110,7 +2176,7 @@ ast::ASTNode *Parser::parseIfStatement() {
   } else {
     // Parse bare condition (expression or variable declaration)
     if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
-      condition = parseVariableDeclaration(true); // single variable only
+      condition = parseVariableDeclaration(true, false); // single variable only
     } else {
       condition = parseExpression(true);
     }
@@ -2202,7 +2268,7 @@ ast::ASTNode *Parser::parseWhileStatement() {
 
     // Parse condition expression or variable declaration
     if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
-      condition = parseVariableDeclaration(true); // single variable only
+      condition = parseVariableDeclaration(true, false); // single variable only
     } else {
       condition = parseExpression();
     }
@@ -2217,7 +2283,7 @@ ast::ASTNode *Parser::parseWhileStatement() {
   } else {
     // Parse bare condition (expression or variable declaration)
     if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
-      condition = parseVariableDeclaration(true); // single variable only
+      condition = parseVariableDeclaration(true, false); // single variable only
     } else {
       condition = parseExpression(true); // withoutStructLiterals = true
     }
@@ -2383,7 +2449,7 @@ ast::ASTNode *Parser::parseSwitchStatement() {
 
   // Parse discriminant expression or variable declaration
   if (check(TokenKind::Var) || check(TokenKind::Const) || check(TokenKind::Auto)) {
-    discriminant = parseVariableDeclaration(true); // single variable only
+    discriminant = parseVariableDeclaration(true, false); // single variable only
   } else {
     discriminant = parseExpression(hasParentheses? false : true); // withoutStructLiterals = true
   }
@@ -2902,6 +2968,126 @@ ArenaVector<ast::ASTNode*> Parser::parseGenericParameters() {
   }
 
   return params;
+}
+
+ast::ASTNode *Parser::parseEnumDeclaration() {
+  Location startLoc = current().location;
+
+  // Consume 'enum' keyword
+  if (!expect(TokenKind::Enum)) {
+    return nullptr;
+  }
+
+  // Parse enum name
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected enum name after 'enum'"));
+    return nullptr;
+  }
+
+  // Create enum declaration
+  auto *enumDecl = ast::createEnumDeclaration(startLoc, arena_);
+
+  // Set enum name
+  Token nameToken = current();
+  advance(); // consume identifier
+  auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
+  enumDecl->setName(nameNode);
+
+  // Parse optional backing type
+  if (check(TokenKind::Colon)) {
+    advance(); // consume ':'
+    
+    auto *backingTypeExpr = parseTypeExpression();
+    if (!backingTypeExpr) {
+      return nullptr; // Error parsing backing type
+    }
+    enumDecl->setBase(backingTypeExpr);
+  }
+
+  // Parse enum body
+  if (!expect(TokenKind::LBrace)) {
+    return nullptr;
+  }
+
+  // Parse enum options
+  while (!check(TokenKind::RBrace) && !isAtEnd()) {
+    auto *option = parseEnumOption();
+    if (!option) {
+      return nullptr; // Error parsing option
+    }
+
+    enumDecl->addOption(option);
+
+    // Check for comma or end of options
+    if (check(TokenKind::Comma)) {
+      advance(); // consume ','
+      // Optional trailing comma support
+      if (check(TokenKind::RBrace)) {
+        break;
+      }
+    } else if (!check(TokenKind::RBrace)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Expected ',' or '}' in enum option list"));
+      return nullptr;
+    }
+  }
+
+  if (!expect(TokenKind::RBrace)) {
+    return nullptr;
+  }
+
+  return enumDecl;
+}
+
+ast::ASTNode *Parser::parseEnumOption() {
+  Location startLoc = current().location;
+
+  // Parse attributes if present
+  ast::AttributeListNode *attributes = nullptr;
+  if (check(TokenKind::At)) {
+    attributes = static_cast<ast::AttributeListNode*>(parseAttributeList());
+    if (!attributes) {
+      return nullptr; // Error parsing attributes
+    }
+  }
+
+  // Parse option name
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected identifier for enum option name"));
+    return nullptr;
+  }
+
+  Token nameToken = current();
+  advance(); // consume identifier
+
+  // Create enum option node
+  auto *option = ast::createEnumOptionDeclaration(startLoc, arena_);
+
+  // Set option name
+  auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
+  option->setName(nameNode);
+
+  // Parse optional value assignment
+  if (check(TokenKind::Assign)) {
+    advance(); // consume '='
+    
+    auto *valueExpr = parseExpression();
+    if (!valueExpr) {
+      return nullptr; // Error parsing value expression
+    }
+    option->setValue(valueExpr);
+  }
+
+  // Attach attributes to the option if present
+  if (attributes) {
+    for (auto *attr : attributes->attributes) {
+      option->addAttribute(attr);
+    }
+  }
+
+  return option;
 }
 
 } // namespace cxy

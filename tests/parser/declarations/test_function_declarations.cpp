@@ -663,3 +663,147 @@ TEST_CASE("Function Declaration Parsing - Generic Functions Error Cases", "[pars
         REQUIRE(fixture->hasErrors());
     }
 }
+
+TEST_CASE("Function Declaration Parsing - Visibility Modifiers", "[parser][declarations][func-decl][visibility]") {
+    SECTION("pub func calculate() i32") {
+        auto fixture = createParserFixture("pub func calculate() i32");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+        REQUIRE((stmt->flags & flgPublic) != 0);
+        REQUIRE((stmt->flags & flgExtern) == 0);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->name != nullptr);
+        REQUIRE(funcDecl->returnType != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier calculate)
+  (Type i32)))");
+    }
+
+    SECTION("extern func printf(fmt string, ...args auto) void") {
+        auto fixture = createParserFixture("extern func printf(fmt string, ...args auto) void");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+        REQUIRE((stmt->flags & flgExtern) != 0);
+        REQUIRE((stmt->flags & flgPublic) == 0);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->name != nullptr);
+        REQUIRE(funcDecl->parameters.size() == 2);
+        REQUIRE(funcDecl->returnType != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier printf)
+  (FuncParamDeclaration
+    (Identifier fmt)
+    (Type string))
+  (FuncParamDeclaration
+    (Identifier args)
+    (Type auto))
+  (Type void)))");
+    }
+
+    SECTION("@inline pub func fastOp(x i32) i32 => x * 2") {
+        auto fixture = createParserFixture("@inline pub func fastOp(x i32) i32 => x * 2");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+        REQUIRE((stmt->flags & flgPublic) != 0);
+        REQUIRE(stmt->hasAttributes());
+        REQUIRE(stmt->getAttributeCount() == 1);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->name != nullptr);
+        REQUIRE(funcDecl->parameters.size() == 1);
+        REQUIRE(funcDecl->returnType != nullptr);
+        REQUIRE(funcDecl->body != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier fastOp)
+  (FuncParamDeclaration
+    (Identifier x)
+    (Type i32))
+  (Type i32)
+  (BinaryExpr * (Identifier x) (Int 2))))");
+    }
+
+    SECTION("pub func max<T>(a i32, b i32) i32 => a") {
+        auto fixture = createParserFixture("pub func max<T>(a i32, b i32) i32 => a");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astGenericDeclaration);
+        REQUIRE((stmt->flags & flgPublic) != 0);
+
+        auto *genericDecl = static_cast<GenericDeclarationNode *>(stmt);
+        REQUIRE(genericDecl->parameters.size() == 1);
+        REQUIRE(genericDecl->decl != nullptr);
+        REQUIRE(genericDecl->decl->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(genericDecl->decl);
+        REQUIRE(funcDecl->parameters.size() == 2);
+        REQUIRE(funcDecl->returnType != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((GenericDeclaration
+  (TypeParameterDeclaration
+    (Identifier T))
+  (FuncDeclaration
+    (Identifier max)
+    (FuncParamDeclaration
+      (Identifier a)
+      (Type i32))
+    (FuncParamDeclaration
+      (Identifier b)
+      (Type i32))
+    (Type i32)
+    (Identifier a))))");
+    }
+}
+
+TEST_CASE("Function Declaration Parsing - Extern Validation Errors", "[parser][declarations][func-decl][extern][errors]") {
+    SECTION("extern func with generic parameters") {
+        auto fixture = createParserFixture("extern func process<T>(data T) i32");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("extern func without return type") {
+        auto fixture = createParserFixture("extern func calculate(x i32)");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("extern func with expression body") {
+        auto fixture = createParserFixture("extern func add(a i32, b i32) i32 => a + b");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("extern func with block body") {
+        auto fixture = createParserFixture("extern func multiply(a i32, b i32) i32 { return a * b }");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("extern enum declaration") {
+        auto fixture = createParserFixture("extern enum Status { Ok, Error }");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+}

@@ -57,6 +57,7 @@ add_executable(cxyier_tests
     parser/statements/test_match_statements.cpp
     parser/declarations/test_variable_declarations.cpp
     parser/declarations/test_function_declarations.cpp
+    parser/declarations/test_enum_declarations.cpp
     types/test_type_infrastructure.cpp
     types/test_primitive_types.cpp
     ast_printer_statements_test.cpp

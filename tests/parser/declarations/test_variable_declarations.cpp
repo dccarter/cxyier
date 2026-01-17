@@ -421,6 +421,116 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
     }
 }
 
+TEST_CASE("Variable Declaration Parsing - Visibility Modifiers", "[parser][declarations][var-decl][visibility]") {
+    SECTION("pub var globalCounter = 0") {
+        auto fixture = createParserFixture("pub var globalCounter = 0");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astVariableDeclaration);
+        REQUIRE((stmt->flags & flgPublic) != 0);
+        REQUIRE((stmt->flags & flgExtern) == 0);
+
+        auto *varDecl = static_cast<VariableDeclarationNode *>(stmt);
+        REQUIRE(varDecl->names.size() == 1);
+        REQUIRE(varDecl->initializer != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((VariableDeclaration
+  (Identifier globalCounter)
+  (Int 0)))");
+    }
+
+    SECTION("extern var errno: i32") {
+        auto fixture = createParserFixture("extern var errno: i32");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astVariableDeclaration);
+        REQUIRE((stmt->flags & flgExtern) != 0);
+        REQUIRE((stmt->flags & flgPublic) == 0);
+
+        auto *varDecl = static_cast<VariableDeclarationNode *>(stmt);
+        REQUIRE(varDecl->names.size() == 1);
+        REQUIRE(varDecl->type != nullptr);
+        REQUIRE(varDecl->initializer == nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((VariableDeclaration
+  (Identifier errno)
+  (Type i32)))");
+    }
+
+    SECTION("pub const MAX_SIZE = 1024") {
+        auto fixture = createParserFixture("pub const MAX_SIZE = 1024");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astVariableDeclaration);
+        REQUIRE((stmt->flags & flgPublic) != 0);
+        REQUIRE((stmt->flags & flgConst) != 0);
+
+        auto *varDecl = static_cast<VariableDeclarationNode *>(stmt);
+        REQUIRE(varDecl->names.size() == 1);
+        REQUIRE(varDecl->initializer != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((VariableDeclaration
+  (Identifier MAX_SIZE)
+  (Int 1024)))");
+    }
+
+    SECTION("@deprecated pub var legacyVar = 42") {
+        auto fixture = createParserFixture("@deprecated pub var legacyVar = 42");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astVariableDeclaration);
+        REQUIRE((stmt->flags & flgPublic) != 0);
+        REQUIRE(stmt->hasAttributes());
+        REQUIRE(stmt->getAttributeCount() == 1);
+
+        auto *varDecl = static_cast<VariableDeclarationNode *>(stmt);
+        REQUIRE(varDecl->names.size() == 1);
+        REQUIRE(varDecl->initializer != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((VariableDeclaration
+  (Identifier legacyVar)
+  (Int 42)))");
+    }
+}
+
+TEST_CASE("Variable Declaration Parsing - Extern Validation Errors", "[parser][declarations][var-decl][extern][errors]") {
+    SECTION("extern var without type annotation") {
+        auto fixture = createParserFixture("extern var counter");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("extern var with initializer") {
+        auto fixture = createParserFixture("extern var errno: i32 = 42");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("extern const with initializer") {
+        auto fixture = createParserFixture("extern const MAX_SIZE: i32 = 1024");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("extern var without type and with initializer") {
+        auto fixture = createParserFixture("extern var value = 100");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+}
+
 TEST_CASE("Variable Declaration Parsing - Complex Expressions", "[parser][statements][var-decl][complex]") {
     SECTION("var result = add(1, 2)") {
         auto fixture = createParserFixture("var result = add(1, 2)");
