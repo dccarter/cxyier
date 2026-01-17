@@ -11,10 +11,118 @@
 #include <cxy/arena_allocator.hpp>
 #include <cxy/arena_stl.hpp>
 
+// Define builtin names that need to be interned
+#define CXY_BUILTIN_NAMES(f, ff)    \
+    f(main)                         \
+    f(super)                    \
+    f(static)                   \
+    f(transient)                \
+    f(abstract)                 \
+    f(inline)                   \
+    f(noinline)                 \
+    f(optimize)                 \
+    f(volatile)                 \
+    f(explicit)                 \
+    f(pure)                     \
+    f(strlen)                   \
+    f(memset)                   \
+    f(char)                     \
+    f(wputc)                    \
+    f(sb)                       \
+    f(s)                        \
+    f(Optional)               \
+    f(Slice)                    \
+    f(String)                   \
+    f(__string)                  \
+    ff(_assert, "assert")       \
+    f(baseof)                  \
+    f(column)                   \
+    f(ptr)                      \
+    f(cstr)                     \
+    f(data)                     \
+    f(init)                     \
+    f(destructor)               \
+    f(file)                     \
+    f(len)                      \
+    f(line)                     \
+    f(mkIdent)                  \
+    f(mkInteger)                \
+    f(ptroff)                   \
+    f(sizeof)                   \
+    f(typeof)                   \
+    f(allocate)                 \
+    f(alias)                    \
+    f(align)                    \
+    f(name)                     \
+    f(None)                     \
+    f(Some)                     \
+    f(unchecked)                \
+    f(unused)                   \
+    f(_Variadic)                \
+    f(consistent)               \
+    f(final)                    \
+    f(newClass)                 \
+    f(release)                  \
+    f(vtable)                   \
+    f(poco)                     \
+    f(allTestCases)             \
+    f(External)                 \
+    f(Appending)                \
+    f(linkage)                  \
+    f(section)                  \
+    f(packed)                   \
+    f(Exception)                \
+    f(Void)                     \
+    f(what)                     \
+    f(push)                     \
+    f(ex)                       \
+    f(thread)                   \
+    f(likely)                   \
+    f(unlikely)                 \
+    f(atomic)                   \
+    f(__init)                   \
+    f(__default_init)           \
+    f(__startup)                \
+    f(__name)                   \
+    f(__construct0)             \
+    f(__construct1)             \
+    f(__fwd)                    \
+    f(__copy)                   \
+    f(__destroy)                \
+    f(__destructor_fwd)         \
+    f(__tuple_dctor)            \
+    f(__tuple_copy)             \
+    f(__union_dctor)            \
+    f(__union_copy)             \
+    f(__async)                  \
+    f(__tid)                    \
+    f(resolve)                  \
+    f(reject)                   \
+    f(result)                   \
+    f(clib)                     \
+    f(src)                      \
+    ff(AsmInputPrefix,      "\"r\"")             \
+    ff(AsmOutputPrefix,     "\"=r\"")            \
+    ff(underscore,          "_")
+
 namespace cxy {
 
 // Forward declaration
 class StringInterner;
+class InternedString;
+
+// Static builtin name accessors for easy access
+namespace S {
+  // Forward declare all builtin names as extern
+  #define DECLARE_BUILTIN_NAME(name) extern const InternedString S_##name;
+  #define DECLARE_BUILTIN_NAME_STR(name, str) extern const InternedString S_##name;
+  CXY_BUILTIN_NAMES(DECLARE_BUILTIN_NAME, DECLARE_BUILTIN_NAME_STR)
+  #undef DECLARE_BUILTIN_NAME
+  #undef DECLARE_BUILTIN_NAME_STR
+  
+  // Initialize all builtin names (defined in strings.cpp)
+  void initializeBuiltinNames(StringInterner& interner);
+}
 
 class InternedString {
 private:
@@ -86,11 +194,15 @@ private:
   StringMap internedStrings;
 
 public:
-  explicit StringInterner(ArenaAllocator &allocator)
+  explicit StringInterner(ArenaAllocator &allocator, bool preInternKeywords = true)
       : arena(allocator),
         internedStrings(
             ArenaSTLAllocator<
                 std::pair<const std::string_view, InternedString>>(allocator)) {
+    if (preInternKeywords) {
+      internCommonStrings();
+      S::initializeBuiltinNames(*this);
+    }
   }
 
   ~StringInterner() = default;
@@ -132,6 +244,11 @@ public:
 
 private:
   [[nodiscard]] InternedString internNewString(std::string_view str);
+  
+  // Pre-intern common strings for performance
+  void internCommonStrings();
 };
+
+
 
 } // namespace cxy

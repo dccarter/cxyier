@@ -1828,6 +1828,253 @@ ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable) {
   return decl;
 }
 
+// Phase 5.2: Declaration parsing implementation
+
+ast::ASTNode *Parser::parseDeclaration() {
+  // Check for attributes at the beginning
+  ast::AttributeListNode *attributes = nullptr;
+  if (check(TokenKind::At)) {
+    attributes = static_cast<ast::AttributeListNode*>(parseAttributeList());
+    if (!attributes) {
+      return nullptr; // Error parsing attributes
+    }
+  }
+
+  // Dispatch based on current token
+  ast::ASTNode *decl = nullptr;
+  switch (current().kind) {
+  case TokenKind::Var:
+  case TokenKind::Const:
+  case TokenKind::Auto:
+    decl = parseVariableDeclaration();
+    break;
+  case TokenKind::Func:
+    decl = parseFunctionDeclaration();
+    break;
+  default:
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected declaration"));
+    return nullptr;
+  }
+
+  // Attach attributes to the declaration if both exist
+  if (attributes && decl) {
+    for (auto *attr : attributes->attributes) {
+      decl->addAttribute(attr);
+    }
+  }
+
+  return decl;
+}
+
+// Phase 5.2: Function declaration parsing implementation
+
+ast::ASTNode *Parser::parseFunctionParamDeclaration() {
+  Location startLoc = current().location;
+
+  // Check for variadic modifier
+  bool isVariadic = false;
+  if (check(TokenKind::Elipsis)) {
+    isVariadic = true;
+    advance(); // consume '...'
+  }
+
+  // Parse parameter name
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected parameter name"));
+    return nullptr;
+  }
+
+  auto *param = ast::createFuncParamDeclaration(startLoc, arena_);
+  Token paramNameToken = current();
+  advance(); // consume parameter name
+  auto *paramNameNode = ast::createIdentifier(paramNameToken.value.stringValue, paramNameToken.location, arena_);
+  param->setName(paramNameNode);
+
+  // Parse type using parseTypeExpression
+  auto *typeExpr = parseTypeExpression();
+  if (!typeExpr) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected parameter type"));
+    return nullptr;
+  }
+  param->setType(typeExpr);
+
+  // Parse default value if present
+  if (check(TokenKind::Assign)) {
+    advance(); // consume '='
+    auto *defaultExpr = parseExpression();
+    if (!defaultExpr) {
+      return nullptr;
+    }
+    param->setDefaultValue(defaultExpr);
+  }
+
+  // Set variadic flag if this is a variadic parameter
+  if (isVariadic) {
+    param->flags |= flgVariadic;
+  }
+
+  return param;
+}
+
+ast::ASTNode *Parser::parseFunctionDeclaration() {
+  Location startLoc = current().location;
+
+  // Consume 'func' keyword
+  if (!expect(TokenKind::Func)) {
+    return nullptr;
+  }
+
+  // Parse function name
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected function name after 'func'"));
+    return nullptr;
+  }
+
+  // Create function declaration
+  auto *funcDecl = ast::createFuncDeclaration(startLoc, arena_);
+
+  // Set function name
+  Token nameToken = current();
+  advance(); // consume identifier
+  auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
+  funcDecl->setName(nameNode);
+
+  // Check for generic parameters after function name
+  ArenaVector<ast::ASTNode*> genericParams{ArenaSTLAllocator<ast::ASTNode*>(arena_)};
+  bool hasGenericParams = false;
+
+  if (check(TokenKind::Less)) {
+    genericParams = parseGenericParameters();
+    if (genericParams.empty() && check(TokenKind::Greater)) {
+      // Error occurred during parsing, but we might have consumed '<'
+      return nullptr;
+    }
+    hasGenericParams = !genericParams.empty();
+  }
+
+  // State tracking for validation
+  bool hasDefaultParam = false;
+  bool hasVariadicParam = false;
+
+  // Parse parameter list if present
+  if (check(TokenKind::LParen)) {
+    advance(); // consume '('
+
+    // Parse parameters
+    while (!check(TokenKind::RParen) && !isAtEnd()) {
+      // Check for variadic (must be last)
+      if (hasVariadicParam) {
+        reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                               "Variadic parameter must be the last parameter"));
+        return nullptr;
+      }
+
+      bool currentIsVariadic = check(TokenKind::Elipsis);
+
+      auto *param = parseFunctionParamDeclaration();
+      if (!param) {
+        return nullptr;
+      }
+
+      auto *paramDecl = static_cast<ast::FuncParamDeclarationNode*>(param);
+      bool hasDefault = (paramDecl->defaultValue != nullptr);
+
+      // Validate parameter ordering constraints
+      if (hasDefaultParam && !hasDefault) {
+        reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                               "Non-default parameter cannot follow default parameter"));
+        return nullptr;
+      }
+
+      if (hasDefault) {
+        hasDefaultParam = true;
+      }
+
+      if (currentIsVariadic) {
+        hasVariadicParam = true;
+      }
+
+      funcDecl->addParameter(param);
+
+      // Check for comma or end of parameters
+      if (check(TokenKind::Comma)) {
+        advance(); // consume ','
+        // Optional trailing comma support
+        if (check(TokenKind::RParen)) {
+          break;
+        }
+      } else if (!check(TokenKind::RParen)) {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Expected ',' or ')' in parameter list"));
+        return nullptr;
+      }
+    }
+
+    if (!expect(TokenKind::RParen)) {
+      return nullptr;
+    }
+  }
+
+  // Parse return type if present (direct type, no arrow)
+  // If the next token is not a function body start, try to parse return type
+  if (!check(TokenKind::FatArrow) && !check(TokenKind::LBrace) && !isAtEnd()) {
+    auto *returnTypeExpr = parseTypeExpression();
+    if (!returnTypeExpr) {
+      return nullptr; // Error parsing return type
+    }
+    funcDecl->setReturnType(returnTypeExpr);
+  }
+
+  // Parse function body if present
+  if (check(TokenKind::FatArrow)) {
+    advance(); // consume '=>'
+    // Expression body
+    auto *bodyExpr = parseExpression();
+    if (!bodyExpr) {
+      return nullptr;
+    }
+    funcDecl->setBody(bodyExpr);
+  } else if (check(TokenKind::LBrace)) {
+    // Block body
+    auto *bodyBlock = parseBlockStatement();
+    if (!bodyBlock) {
+      return nullptr;
+    }
+    funcDecl->setBody(bodyBlock);
+  }
+
+  // Set variadic flag on function if it has variadic parameters
+  if (hasVariadicParam) {
+    funcDecl->flags |= flgVariadic;
+  }
+
+  // If we have generic parameters, wrap in GenericDeclarationNode
+  if (hasGenericParams) {
+    auto *genericDecl = ast::createGenericDeclaration(startLoc, arena_);
+
+    // Move generic parameters vector directly to avoid copying
+    genericDecl->parameters = std::move(genericParams);
+    
+    // Add children for proper AST parent-child relationships
+    for (auto *param : genericDecl->parameters) {
+      if (param) {
+        genericDecl->addChild(param);
+      }
+    }
+
+    // Set the function declaration as the wrapped declaration
+    genericDecl->setDeclaration(funcDecl);
+
+    return genericDecl;
+  }
+
+  return funcDecl;
+}
+
 // Phase 4.5: If statement parsing implementation
 
 ast::ASTNode *Parser::parseIfStatement() {
@@ -2529,6 +2776,132 @@ bool Parser::parseAttributeArguments(ast::AttributeNode *attr) {
   }
 
   return true;
+}
+
+ast::ASTNode *Parser::parseGenericParameter() {
+  Location startLoc = current().location;
+
+  // Check for variadic modifier
+  bool isVariadic = false;
+  if (check(TokenKind::Elipsis)) {
+    isVariadic = true;
+    advance(); // consume '...'
+  }
+
+  // Parse parameter name (identifier)
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected identifier for generic parameter name"));
+    return nullptr;
+  }
+
+  Token nameToken = current();
+  advance(); // consume identifier
+
+  // Create generic parameter node
+  auto *param = ast::createTypeParameterDeclaration(startLoc, arena_);
+
+  // Set parameter name
+  auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
+  param->setName(nameNode);
+
+  // Set variadic flag if needed
+  if (isVariadic) {
+    param->flags |= flgVariadic;
+  }
+
+  // Parse optional constraint (':' type_expression)
+  if (check(TokenKind::Colon)) {
+    advance(); // consume ':'
+
+    auto *constraintExpr = parseTypeExpression();
+    if (!constraintExpr) {
+      return nullptr; // Error parsing constraint
+    }
+    param->setConstraint(constraintExpr);
+  }
+
+  // Parse optional default value ('=' type_expression)
+  if (check(TokenKind::Assign)) {
+    advance(); // consume '='
+
+    auto *defaultExpr = parseTypeExpression();
+    if (!defaultExpr) {
+      return nullptr; // Error parsing default type
+    }
+    param->setDefaultValue(defaultExpr);
+  }
+
+  return param;
+}
+
+ArenaVector<ast::ASTNode*> Parser::parseGenericParameters() {
+  ArenaVector<ast::ASTNode*> params{ArenaSTLAllocator<ast::ASTNode*>(arena_)};
+
+  // Expect '<' to start generic parameters
+  if (!expect(TokenKind::Less)) {
+    return params; // Return empty vector on error
+  }
+
+  // State tracking for validation
+  bool hasDefaultParam = false;
+  bool hasVariadicParam = false;
+
+  // Parse parameters
+  while (!check(TokenKind::Greater) && !isAtEnd()) {
+    // Check for variadic (must be last)
+    if (hasVariadicParam) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "Variadic generic parameter must be the last parameter"));
+      return ArenaVector<ast::ASTNode*>(ArenaSTLAllocator<ast::ASTNode*>(arena_)); // Return empty vector
+    }
+
+    bool currentIsVariadic = check(TokenKind::Elipsis);
+
+    auto *param = parseGenericParameter();
+    if (!param) {
+      return ArenaVector<ast::ASTNode*>(ArenaSTLAllocator<ast::ASTNode*>(arena_)); // Return empty vector on error
+    }
+
+    auto *paramDecl = static_cast<ast::TypeParameterDeclarationNode*>(param);
+    bool hasDefault = (paramDecl->defaultValue != nullptr);
+
+    // Validate parameter ordering constraints
+    if (hasDefaultParam && !hasDefault) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "Non-defaulted generic parameter cannot follow defaulted parameter"));
+      return ArenaVector<ast::ASTNode*>(ArenaSTLAllocator<ast::ASTNode*>(arena_)); // Return empty vector
+    }
+
+    if (hasDefault) {
+      hasDefaultParam = true;
+    }
+
+    if (currentIsVariadic) {
+      hasVariadicParam = true;
+    }
+
+    params.push_back(param);
+
+    // Check for comma or end of parameters
+    if (check(TokenKind::Comma)) {
+      advance(); // consume ','
+      // Optional trailing comma support
+      if (check(TokenKind::Greater)) {
+        break;
+      }
+    } else if (!check(TokenKind::Greater)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Expected ',' or '>' in generic parameter list"));
+      return ArenaVector<ast::ASTNode*>(ArenaSTLAllocator<ast::ASTNode*>(arena_)); // Return empty vector
+    }
+  }
+
+  if (!expect(TokenKind::Greater)) {
+    return ArenaVector<ast::ASTNode*>(ArenaSTLAllocator<ast::ASTNode*>(arena_)); // Return empty vector on error
+  }
+
+  return params;
 }
 
 } // namespace cxy

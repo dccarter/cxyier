@@ -509,6 +509,22 @@ public:
   ast::ASTNode *parseStatement();
 
   /**
+   * @brief Parse a declaration (function, type, etc.).
+   *
+   * declaration ::=
+   *   | function_declaration
+   *   | variable_declaration
+   *   | type_declaration
+   *   | etc.
+   *
+   * This is the main entry point for parsing declarations and routes
+   * to the appropriate specific declaration parser.
+   *
+   * @return Parsed declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseDeclaration();
+
+  /**
    * @brief Parse an expression statement.
    *
    * expression_statement ::=
@@ -535,6 +551,35 @@ private:
   std::vector<ParseError> errors_; ///< Accumulated parse errors
 
   // Private parsing helpers
+
+  /**
+   * @brief Parse a generic parameter declaration.
+   *
+   * Parses a single generic parameter: T, T:Constraint, T=DefaultType, ...T:Constraint
+   *
+   * generic_param ::= variadic_generic_modifier? identifier generic_constraint? generic_default_value?
+   * variadic_generic_modifier ::= '...'
+   * generic_constraint ::= ':' type_expression  
+   * generic_default_value ::= '=' type_expression
+   *
+   * @return Parsed generic parameter AST node, or nullptr on error
+   */
+  ast::ASTNode *parseGenericParameter();
+
+  /**
+   * @brief Parse generic parameters list.
+   *
+   * Parses the full generic parameter list syntax: <T:Constraint, U=DefaultType, ...V:ConstraintType>
+   * Enforces ordering constraints:
+   * - Non-defaulted parameters cannot come after defaulted parameters
+   * - Variadic parameter must be last
+   *
+   * generic_params ::= '<' generic_param_list '>'
+   * generic_param_list ::= generic_param (',' generic_param)* ','?
+   *
+   * @return Vector of parsed generic parameter AST nodes, or empty vector on error
+   */
+  ArenaVector<ast::ASTNode*> parseGenericParameters();
 
   /**
    * @brief Parse a break statement.
@@ -610,6 +655,37 @@ private:
    * @return Parsed variable declaration AST node, or nullptr on error
    */
   ast::ASTNode *parseVariableDeclaration(bool singleVariable = false);
+
+  /**
+   * @brief Parse a function declaration.
+   *
+   * function_declaration ::=
+   *   | 'func' identifier parameter_list return_type? function_body
+   *
+   * parameter_list ::= '(' parameter_declarations? ')'
+   *
+   * parameter_declarations ::= parameter_declaration (',' parameter_declaration)* ','?
+   *
+   * parameter_declaration ::= variadic_modifier? identifier type default_value?
+   *
+   * return_type ::= type
+   *
+   * function_body ::= '=>' expression | block_statement
+   *
+   * @return Parsed function declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseFunctionDeclaration();
+
+  /**
+   * @brief Parse a function parameter declaration.
+   *
+   * parameter_declaration ::= variadic_modifier? identifier type default_value?
+   * variadic_modifier ::= '...'
+   * default_value ::= '=' expression
+   *
+   * @return Parsed function parameter declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseFunctionParamDeclaration();
 
   /**
    * @brief Parse an if statement.

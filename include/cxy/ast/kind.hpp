@@ -68,7 +68,23 @@ namespace cxy::ast {
     f(MatchCase)                \
                                 \
     /* Declarations */          \
-    f(VariableDeclaration)
+    f(VariableDeclaration)      \
+    f(FuncDeclaration)          \
+    f(FuncParamDeclaration)     \
+    f(MethodDeclaration)        \
+    f(TypeDeclaration)          \
+    f(EnumOptionDeclaration)    \
+    f(EnumDeclaration)          \
+    f(FieldDeclaration)         \
+    f(StructDeclaration)        \
+    f(ClassDeclaration)         \
+    f(ExternDeclaration)        \
+    f(ModuleDeclaration)        \
+    f(ImportDeclaration)        \
+    f(TypeParameterDeclaration) \
+    f(GenericDeclaration)       \
+    f(TestDeclaration)          \
+    f(MacroDeclaration)
 // clang-format on
 
 // Generate the enum with ast prefix

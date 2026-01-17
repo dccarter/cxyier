@@ -49,13 +49,14 @@ add_executable(cxyier_tests
     parser/statements/test_break_continue_statements.cpp
     parser/statements/test_block_statements.cpp
     parser/statements/test_defer_return_yield_statements.cpp
-    parser/statements/test_variable_declarations.cpp
+
     parser/statements/test_if_statements.cpp
     parser/statements/test_while_statements.cpp
     parser/statements/test_for_statements.cpp
     parser/statements/test_switch_statements.cpp
     parser/statements/test_match_statements.cpp
-    declarations/test_variable_declarations.cpp
+    parser/declarations/test_variable_declarations.cpp
+    parser/declarations/test_function_declarations.cpp
     types/test_type_infrastructure.cpp
     types/test_primitive_types.cpp
     ast_printer_statements_test.cpp

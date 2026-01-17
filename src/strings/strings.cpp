@@ -1,4 +1,5 @@
 #include <cxy/strings.hpp>
+#include <cxy/token.hpp>
 #include <iostream>
 
 namespace cxy {
@@ -66,6 +67,42 @@ void StringInterner::printAllStrings() const {
     std::cout << "  [" << index << "] \"" << value.c_str()
               << "\" (hash: " << value.getHash() << ")\n";
     ++index;
+  }
+}
+
+void StringInterner::internCommonStrings() {
+  // Pre-intern all keywords from KEYWORD_LIST for performance
+  #define INTERN_KEYWORD(name, str) (void)intern(str);
+  KEYWORD_LIST(INTERN_KEYWORD)
+  #undef INTERN_KEYWORD
+  
+  // Pre-intern builtin names
+  #define INTERN_BUILTIN(name) (void)intern(#name);
+  #define INTERN_BUILTIN_STR(name, str) (void)intern(str);
+  CXY_BUILTIN_NAMES(INTERN_BUILTIN, INTERN_BUILTIN_STR)
+  #undef INTERN_BUILTIN
+  #undef INTERN_BUILTIN_STR
+  
+  // Pre-intern other common strings
+  (void)intern("");  // Empty string
+}
+
+// Define static builtin name variables
+namespace S {
+  // Define all builtin names as static variables with S_ prefix
+  #define DEFINE_BUILTIN_NAME(name) const InternedString S_##name{};
+  #define DEFINE_BUILTIN_NAME_STR(name, str) const InternedString S_##name{};
+  CXY_BUILTIN_NAMES(DEFINE_BUILTIN_NAME, DEFINE_BUILTIN_NAME_STR)
+  #undef DEFINE_BUILTIN_NAME
+  #undef DEFINE_BUILTIN_NAME_STR
+
+  void initializeBuiltinNames(StringInterner& interner) {
+    // Initialize all builtin names with interned values
+    #define INIT_BUILTIN_NAME(name) const_cast<InternedString&>(S_##name) = interner.intern(#name);
+    #define INIT_BUILTIN_NAME_STR(name, str) const_cast<InternedString&>(S_##name) = interner.intern(str);
+    CXY_BUILTIN_NAMES(INIT_BUILTIN_NAME, INIT_BUILTIN_NAME_STR)
+    #undef INIT_BUILTIN_NAME
+    #undef INIT_BUILTIN_NAME_STR
   }
 }
 

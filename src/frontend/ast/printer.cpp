@@ -717,4 +717,19 @@ bool ASTPrinter::visitVariableDeclaration(const VariableDeclarationNode *node) {
   return true;
 }
 
+bool ASTPrinter::visitFuncDeclaration(const FuncDeclarationNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitFuncParamDeclaration(const FuncParamDeclarationNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitMethodDeclaration(const MethodDeclarationNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
 } // namespace cxy::ast

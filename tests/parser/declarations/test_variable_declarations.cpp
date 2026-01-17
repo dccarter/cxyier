@@ -13,7 +13,7 @@ using namespace cxy::test;
 TEST_CASE("Variable Declaration Parsing - Basic Forms", "[parser][statements][var-decl]") {
     SECTION("var x = 42") {
         auto fixture = createParserFixture("var x = 42");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -31,7 +31,7 @@ TEST_CASE("Variable Declaration Parsing - Basic Forms", "[parser][statements][va
 
     SECTION("const PI = 3.14") {
         auto fixture = createParserFixture("const PI = 3.14");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -49,7 +49,7 @@ TEST_CASE("Variable Declaration Parsing - Basic Forms", "[parser][statements][va
 
     SECTION("auto name = \"John\"") {
         auto fixture = createParserFixture("auto name = \"John\"");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -69,7 +69,7 @@ TEST_CASE("Variable Declaration Parsing - Basic Forms", "[parser][statements][va
 TEST_CASE("Variable Declaration Parsing - Type Annotations", "[parser][statements][var-decl][types]") {
     SECTION("var count: i32 = 0") {
         auto fixture = createParserFixture("var count: i32 = 0");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -88,7 +88,7 @@ TEST_CASE("Variable Declaration Parsing - Type Annotations", "[parser][statement
 
     SECTION("const user: string") {
         auto fixture = createParserFixture("const user: string");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -106,7 +106,7 @@ TEST_CASE("Variable Declaration Parsing - Type Annotations", "[parser][statement
 
     SECTION("auto value: f64 = 100.0") {
         auto fixture = createParserFixture("auto value: f64 = 100.0");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -127,7 +127,7 @@ TEST_CASE("Variable Declaration Parsing - Type Annotations", "[parser][statement
 TEST_CASE("Variable Declaration Parsing - Multiple Names", "[parser][statements][var-decl][multiple]") {
     SECTION("var a, b = 10") {
         auto fixture = createParserFixture("var a, b = 10");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -146,7 +146,7 @@ TEST_CASE("Variable Declaration Parsing - Multiple Names", "[parser][statements]
 
     SECTION("var x, y, z = getTuple()") {
         auto fixture = createParserFixture("var x, y, z = getTuple()");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -167,7 +167,7 @@ TEST_CASE("Variable Declaration Parsing - Multiple Names", "[parser][statements]
 
     SECTION("const name, age: i32 = getInfo()") {
         auto fixture = createParserFixture("const name, age: i32 = getInfo()");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -188,7 +188,7 @@ TEST_CASE("Variable Declaration Parsing - Multiple Names", "[parser][statements]
 
     SECTION("var a, b, c: bool") {
         auto fixture = createParserFixture("var a, b, c: bool");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -210,7 +210,7 @@ TEST_CASE("Variable Declaration Parsing - Multiple Names", "[parser][statements]
 TEST_CASE("Variable Declaration Parsing - Trailing Commas", "[parser][statements][var-decl][trailing-comma]") {
     SECTION("var first, second, = getLargerTuple()") {
         auto fixture = createParserFixture("var first, second, = getLargerTuple()");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -230,7 +230,7 @@ TEST_CASE("Variable Declaration Parsing - Trailing Commas", "[parser][statements
 
     SECTION("const a, b, : i32 = getValues()") {
         auto fixture = createParserFixture("const a, b, : i32 = getValues()");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -253,7 +253,7 @@ TEST_CASE("Variable Declaration Parsing - Trailing Commas", "[parser][statements
 TEST_CASE("Variable Declaration Parsing - Discard Patterns", "[parser][statements][var-decl][discard]") {
     SECTION("var _, important = getResult()") {
         auto fixture = createParserFixture("var _, important = getResult()");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -273,7 +273,7 @@ TEST_CASE("Variable Declaration Parsing - Discard Patterns", "[parser][statement
 
     SECTION("const _, _, value = getTriple()") {
         auto fixture = createParserFixture("const _, _, value = getTriple()");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -296,7 +296,7 @@ TEST_CASE("Variable Declaration Parsing - Discard Patterns", "[parser][statement
 TEST_CASE("Variable Declaration Parsing - Semicolon Handling", "[parser][statements][var-decl][semicolon]") {
     SECTION("var x = 42;") {
         auto fixture = createParserFixture("var x = 42;");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -311,7 +311,7 @@ TEST_CASE("Variable Declaration Parsing - Semicolon Handling", "[parser][stateme
 
     SECTION("const PI = 3.14; break") {
         auto fixture = createParserFixture("const PI = 3.14; break");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -326,7 +326,7 @@ TEST_CASE("Variable Declaration Parsing - Semicolon Handling", "[parser][stateme
 
     SECTION("var x = 42 break") {
         auto fixture = createParserFixture("var x = 42 break");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -343,7 +343,7 @@ TEST_CASE("Variable Declaration Parsing - Semicolon Handling", "[parser][stateme
 TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][var-decl][errors]") {
     SECTION("var x - missing type and initializer") {
         auto fixture = createParserFixture("var x");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -351,7 +351,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 
     SECTION("const y - missing type and initializer") {
         auto fixture = createParserFixture("const y");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -359,7 +359,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 
     SECTION("auto z - missing type and initializer") {
         auto fixture = createParserFixture("auto z");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -367,7 +367,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 
     SECTION("var - missing variable name") {
         auto fixture = createParserFixture("var = 42");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -375,7 +375,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 
     SECTION("const - missing variable name") {
         auto fixture = createParserFixture("const : i32");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -383,7 +383,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 
     SECTION("var x, - trailing comma without more names") {
         auto fixture = createParserFixture("var x, = 42");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -398,7 +398,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 
     SECTION("var x: - missing type after colon") {
         auto fixture = createParserFixture("var x: = 42");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -406,7 +406,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 
     SECTION("var x = - missing initializer expression") {
         auto fixture = createParserFixture("var x = ");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -414,7 +414,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 
     SECTION("var x: InvalidType") {
         auto fixture = createParserFixture("var x: InvalidType");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
@@ -424,7 +424,7 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
 TEST_CASE("Variable Declaration Parsing - Complex Expressions", "[parser][statements][var-decl][complex]") {
     SECTION("var result = add(1, 2)") {
         auto fixture = createParserFixture("var result = add(1, 2)");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -446,7 +446,7 @@ TEST_CASE("Variable Declaration Parsing - Complex Expressions", "[parser][statem
 
     SECTION("const sum: i32 = x + y") {
         auto fixture = createParserFixture("const sum: i32 = x + y");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -468,7 +468,7 @@ TEST_CASE("Variable Declaration Parsing - Complex Expressions", "[parser][statem
 
     SECTION("auto flag = x > 10 && y < 20") {
         auto fixture = createParserFixture("auto flag = x > 10 && y < 20");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -493,17 +493,17 @@ TEST_CASE("Variable Declaration Parsing - Complex Expressions", "[parser][statem
 }
 
 TEST_CASE("Variable Declaration Parsing - Statement Dispatch", "[parser][statements][var-decl][dispatch]") {
-    SECTION("parseStatement() correctly dispatches var declarations") {
+    SECTION("parseDeclaration() correctly dispatches var declarations") {
         auto fixture = createParserFixture("var x = 5");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
     }
 
-    SECTION("parseStatement() correctly dispatches const declarations") {
+    SECTION("parseDeclaration() correctly dispatches const declarations") {
         auto fixture = createParserFixture("const Y = 10");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);
@@ -512,9 +512,9 @@ TEST_CASE("Variable Declaration Parsing - Statement Dispatch", "[parser][stateme
         REQUIRE(constDecl->isConst());
     }
 
-    SECTION("parseStatement() correctly dispatches auto declarations") {
+    SECTION("parseDeclaration() correctly dispatches auto declarations") {
         auto fixture = createParserFixture("auto z = true");
-        auto *stmt = fixture->parseStatement();
+        auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt != nullptr);
         REQUIRE(stmt->kind == astVariableDeclaration);

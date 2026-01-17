@@ -132,7 +132,6 @@ enum class FloatKind : uint8_t {
  * These are reserved words that have special meaning in the language.
  */
 #define KEYWORD_LIST(f)                                                        \
-  f(Virtual, "virtual")                                                        \
   f(Auto, "auto")                                                              \
   f(True, "true")                                                              \
   f(False, "false")                                                            \
@@ -239,7 +238,7 @@ enum class TokenKind : uint32_t {
   // Special values for range checking
   FirstSymbol = LParen,
   LastSymbol = BangColon,
-  FirstKeyword = Virtual,
+  FirstKeyword = Auto,
   LastKeyword = CBuild, // Note: This assumes CBuild is the last in KEYWORD_LIST
   FirstSpecial = Ident,
   LastSpecial = Error

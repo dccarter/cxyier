@@ -299,7 +299,7 @@ TEST_CASE("String interning functionality", "[interned_string]") {
 
   SECTION("String interner statistics") {
     ArenaAllocator arena(1024);
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     REQUIRE(interner.getStringCount() == 0);
 
@@ -323,7 +323,7 @@ TEST_CASE("String interning functionality", "[interned_string]") {
 
   SECTION("Different input types") {
     ArenaAllocator arena(1024);
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     std::string stdString = "test_string";
     std::string_view stringView = "test_string";
@@ -344,7 +344,7 @@ TEST_CASE("String interning functionality", "[interned_string]") {
 
   SECTION("Large number of strings") {
     ArenaAllocator arena(64 * 1024); // Larger arena
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     std::vector<InternedString> strings;
 

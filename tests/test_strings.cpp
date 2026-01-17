@@ -82,7 +82,7 @@ TEST_CASE("InternedString basic functionality", "[strings][interned_string]") {
 TEST_CASE("StringInterner functionality", "[strings][string_interner]") {
   SECTION("Basic interning") {
     ArenaAllocator arena(1024);
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     InternedString str1 = interner.intern("hello");
     InternedString str2 = interner.intern("world");
@@ -112,7 +112,7 @@ TEST_CASE("StringInterner functionality", "[strings][string_interner]") {
 
   SECTION("Different input types") {
     ArenaAllocator arena(1024);
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     std::string stdStr = "test";
     std::string_view strView = "test";
@@ -131,7 +131,7 @@ TEST_CASE("StringInterner functionality", "[strings][string_interner]") {
 
   SECTION("Statistics") {
     ArenaAllocator arena(1024);
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     REQUIRE(interner.getStringCount() == 0);
     REQUIRE(interner.getLoadFactor() == 0.0);
@@ -154,7 +154,7 @@ TEST_CASE("StringInterner functionality", "[strings][string_interner]") {
 
   SECTION("Performance with many strings") {
     ArenaAllocator arena(64 * 1024);
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     std::vector<InternedString> strings;
     const size_t numStrings = 1000;
@@ -279,7 +279,7 @@ TEST_CASE("String interner edge cases", "[strings][edge_cases]") {
 
   SECTION("Unicode strings") {
     ArenaAllocator arena(1024);
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     std::string unicode = "Hello, 世界! 🌍";
     InternedString interned = interner.intern(unicode);
@@ -295,7 +295,7 @@ TEST_CASE("String interner edge cases", "[strings][edge_cases]") {
 
   SECTION("Hash collision handling") {
     ArenaAllocator arena(1024);
-    StringInterner interner(arena);
+    StringInterner interner(arena, false);
 
     // Create many strings to potentially force hash collisions
     std::vector<InternedString> strings;

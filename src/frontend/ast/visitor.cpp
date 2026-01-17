@@ -140,6 +140,12 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
   // Declarations
   case astVariableDeclaration:
     return visitVariableDeclaration(static_cast<VariableDeclarationNode *>(node));
+  case astFuncDeclaration:
+    return visitFuncDeclaration(static_cast<FuncDeclarationNode *>(node));
+  case astFuncParamDeclaration:
+    return visitFuncParamDeclaration(static_cast<FuncParamDeclarationNode *>(node));
+  case astMethodDeclaration:
+    return visitMethodDeclaration(static_cast<MethodDeclarationNode *>(node));
 
   default:
     // Fallback to generic visitNode for unknown types
@@ -291,6 +297,15 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
   case astVariableDeclaration:
     visitVariableDeclarationPost(static_cast<VariableDeclarationNode *>(node));
     break;
+  case astFuncDeclaration:
+    visitFuncDeclarationPost(static_cast<FuncDeclarationNode *>(node));
+    break;
+  case astFuncParamDeclaration:
+    visitFuncParamDeclarationPost(static_cast<FuncParamDeclarationNode *>(node));
+    break;
+  case astMethodDeclaration:
+    visitMethodDeclarationPost(static_cast<MethodDeclarationNode *>(node));
+    break;
 
   default:
     // Fallback to generic visitNodePost for unknown types
@@ -415,6 +430,12 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
   // Declarations
   case astVariableDeclaration:
     return visitVariableDeclaration(static_cast<const VariableDeclarationNode *>(node));
+  case astFuncDeclaration:
+    return visitFuncDeclaration(static_cast<const FuncDeclarationNode *>(node));
+  case astFuncParamDeclaration:
+    return visitFuncParamDeclaration(static_cast<const FuncParamDeclarationNode *>(node));
+  case astMethodDeclaration:
+    return visitMethodDeclaration(static_cast<const MethodDeclarationNode *>(node));
 
   default:
     // Fallback to generic visitNode for unknown types
@@ -565,6 +586,15 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
   // Declarations
   case astVariableDeclaration:
     visitVariableDeclarationPost(static_cast<const VariableDeclarationNode *>(node));
+    break;
+  case astFuncDeclaration:
+    visitFuncDeclarationPost(static_cast<const FuncDeclarationNode *>(node));
+    break;
+  case astFuncParamDeclaration:
+    visitFuncParamDeclarationPost(static_cast<const FuncParamDeclarationNode *>(node));
+    break;
+  case astMethodDeclaration:
+    visitMethodDeclarationPost(static_cast<const MethodDeclarationNode *>(node));
     break;
 
   default:
@@ -1249,6 +1279,32 @@ void ASTVisitor::visitVariableDeclarationPost(VariableDeclarationNode *node) {
   visitNodePost(static_cast<ASTNode *>(node));
 }
 
+// Function declaration implementations for ASTVisitor
+
+bool ASTVisitor::visitFuncDeclaration(FuncDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitFuncDeclarationPost(FuncDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitFuncParamDeclaration(FuncParamDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitFuncParamDeclarationPost(FuncParamDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitMethodDeclaration(MethodDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitMethodDeclarationPost(MethodDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
 // Match case implementations for ASTVisitor
 
 bool ASTVisitor::visitMatchCase(MatchCaseNode *node) {
@@ -1266,6 +1322,32 @@ bool ConstASTVisitor::visitVariableDeclaration(const VariableDeclarationNode *no
 }
 
 void ConstASTVisitor::visitVariableDeclarationPost(const VariableDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+// Function declaration implementations for ConstASTVisitor
+
+bool ConstASTVisitor::visitFuncDeclaration(const FuncDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitFuncDeclarationPost(const FuncDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitFuncParamDeclaration(const FuncParamDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitFuncParamDeclarationPost(const FuncParamDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitMethodDeclaration(const MethodDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitMethodDeclarationPost(const MethodDeclarationNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

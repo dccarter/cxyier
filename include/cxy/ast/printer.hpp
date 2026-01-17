@@ -31,6 +31,12 @@ class WhileStatementNode;
 class SwitchStatementNode;
 class MatchStatementNode;
 class CaseStatementNode;
+
+// Declaration node forward declarations
+class VariableDeclarationNode;
+class FuncDeclarationNode;
+class FuncParamDeclarationNode;
+class MethodDeclarationNode;
 } // namespace cxy::ast
 
 namespace cxy::ast {
@@ -167,6 +173,9 @@ protected:
 
   // Declaration node visitors
   bool visitVariableDeclaration(const VariableDeclarationNode *node) override;
+  bool visitFuncDeclaration(const FuncDeclarationNode *node) override;
+  bool visitFuncParamDeclaration(const FuncParamDeclarationNode *node) override;
+  bool visitMethodDeclaration(const MethodDeclarationNode *node) override;
 
 private:
   // Helper methods

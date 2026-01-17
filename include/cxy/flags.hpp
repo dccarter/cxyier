@@ -16,7 +16,8 @@ namespace cxy {
  * to each flag definition.
  */
 #define CXY_FLAGS(fn) \
-  fn(Const, 1)
+  fn(Const, 1) \
+  fn(Variadic, 2)
 
 /**
  * @brief 64-bit flags enum for AST nodes.

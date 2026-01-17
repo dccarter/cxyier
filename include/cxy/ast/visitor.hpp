@@ -59,6 +59,9 @@ class MatchCaseNode;
 // Declaration node forward declarations
 class DeclarationNode;
 class VariableDeclarationNode;
+class FuncDeclarationNode;
+class FuncParamDeclarationNode;
+class MethodDeclarationNode;
 
 /**
  * @brief Base visitor class for AST traversal.
@@ -218,6 +221,15 @@ public:
   // Declaration node visits
   virtual bool visitVariableDeclaration(VariableDeclarationNode *node);
   virtual void visitVariableDeclarationPost(VariableDeclarationNode *node);
+
+  virtual bool visitFuncDeclaration(FuncDeclarationNode *node);
+  virtual void visitFuncDeclarationPost(FuncDeclarationNode *node);
+
+  virtual bool visitFuncParamDeclaration(FuncParamDeclarationNode *node);
+  virtual void visitFuncParamDeclarationPost(FuncParamDeclarationNode *node);
+
+  virtual bool visitMethodDeclaration(MethodDeclarationNode *node);
+  virtual void visitMethodDeclarationPost(MethodDeclarationNode *node);
 
 private:
   // Internal dispatch method
@@ -379,6 +391,15 @@ public:
   // Declaration node visits
   virtual bool visitVariableDeclaration(const VariableDeclarationNode *node);
   virtual void visitVariableDeclarationPost(const VariableDeclarationNode *node);
+
+  virtual bool visitFuncDeclaration(const FuncDeclarationNode *node);
+  virtual void visitFuncDeclarationPost(const FuncDeclarationNode *node);
+
+  virtual bool visitFuncParamDeclaration(const FuncParamDeclarationNode *node);
+  virtual void visitFuncParamDeclarationPost(const FuncParamDeclarationNode *node);
+
+  virtual bool visitMethodDeclaration(const MethodDeclarationNode *node);
+  virtual void visitMethodDeclarationPost(const MethodDeclarationNode *node);
 
 protected:
   // Internal dispatch method
