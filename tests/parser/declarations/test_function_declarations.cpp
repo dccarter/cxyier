@@ -406,6 +406,44 @@ TEST_CASE("Function Declaration Parsing - Invalid Operator Overloads", "[parser]
     }
 }
 
+TEST_CASE("Function Declaration Parsing - Truthy Operator Overload", "[parser][declarations][func-decl][truthy-operator]") {
+    SECTION("func `bool`() bool") {
+        auto fixture = createParserFixture("func `bool`() bool");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::Bool);
+        REQUIRE(funcDecl->parameters.empty());
+        REQUIRE(funcDecl->returnType != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier truthy)
+  (Type bool)))");
+    }
+
+    SECTION("func `bool`() bool => true") {
+        auto fixture = createParserFixture("func `bool`() bool => true");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::Bool);
+        REQUIRE(funcDecl->body != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier truthy)
+  (Type bool)
+  (Bool true)))");
+    }
+}
+
 TEST_CASE("Function Declaration Parsing - Binary Use of Restricted Operators", "[parser][declarations][func-decl][binary-restricted]") {
     SECTION("func `&`(other i32) i32 - binary AND allowed") {
         auto fixture = createParserFixture("func `&`(other i32) i32");

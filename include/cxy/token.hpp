@@ -99,6 +99,7 @@ enum class FloatKind : uint8_t {
   f(CallOverride, "()")                                                        \
   f(IndexOverride, "[]")                                                       \
   f(IndexAssignOvd, "[]=")                                                     \
+  f(TruthyOverload, "!!")                                                    \
   f(AstMacroAccess, "#.")                                                      \
   f(Define, "##")                                                              \
   f(BangColon, "!:")

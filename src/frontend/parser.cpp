@@ -154,6 +154,9 @@ std::string Parser::getSpecialOverloadOperatorName(TokenKind firstToken, TokenKi
   if (firstToken == TokenKind::DotDot) {
     return "range";
   }
+  if (firstToken == TokenKind::Bool) {
+    return "truthy";
+  }
   return "";
 }
 
@@ -2097,6 +2100,11 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
       operatorName = getSpecialOverloadOperatorName(TokenKind::DotDot);
       operatorToken = current().kind;
       advance(); // consume '..'
+    } else if (check(TokenKind::Bool)) {
+      // Handle bool truthy operator
+      operatorName = getSpecialOverloadOperatorName(TokenKind::Bool);
+      operatorToken = current().kind;
+      advance(); // consume 'bool'
     } else {
       // Check for increment/decrement operators first
       if (current().kind == TokenKind::PlusPlus) {
