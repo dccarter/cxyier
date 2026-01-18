@@ -177,6 +177,9 @@ protected:
   bool visitFuncParamDeclaration(const FuncParamDeclarationNode *node) override;
   bool visitMethodDeclaration(const MethodDeclarationNode *node) override;
 
+  // Annotation node visitor
+  bool visitAnnotation(const AnnotationNode *node) override;
+
 private:
   // Helper methods
   void printNodeStart(const ASTNode *node);

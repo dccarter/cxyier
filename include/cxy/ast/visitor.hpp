@@ -62,6 +62,8 @@ class VariableDeclarationNode;
 class FuncDeclarationNode;
 class FuncParamDeclarationNode;
 class MethodDeclarationNode;
+class AnnotationNode;
+class AnnotationListNode;
 
 /**
  * @brief Base visitor class for AST traversal.
@@ -230,6 +232,12 @@ public:
 
   virtual bool visitMethodDeclaration(MethodDeclarationNode *node);
   virtual void visitMethodDeclarationPost(MethodDeclarationNode *node);
+
+  virtual bool visitAnnotation(AnnotationNode *node);
+  virtual void visitAnnotationPost(AnnotationNode *node);
+
+  virtual bool visitAnnotationList(AnnotationListNode *node);
+  virtual void visitAnnotationListPost(AnnotationListNode *node);
 
 private:
   // Internal dispatch method
@@ -400,6 +408,12 @@ public:
 
   virtual bool visitMethodDeclaration(const MethodDeclarationNode *node);
   virtual void visitMethodDeclarationPost(const MethodDeclarationNode *node);
+
+  virtual bool visitAnnotation(const AnnotationNode *node);
+  virtual void visitAnnotationPost(const AnnotationNode *node);
+
+  virtual bool visitAnnotationList(const AnnotationListNode *node);
+  virtual void visitAnnotationListPost(const AnnotationListNode *node);
 
 protected:
   // Internal dispatch method

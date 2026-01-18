@@ -1,4 +1,5 @@
 #include "cxy/parser.hpp"
+#include "cxy/ast/annotations.hpp"
 #include "cxy/ast/attributes.hpp"
 #include "cxy/ast/declarations.hpp"
 #include "cxy/ast/expressions.hpp"
@@ -1884,6 +1885,16 @@ ast::ASTNode *Parser::parseDeclaration() {
     }
     decl = parseEnumDeclaration();
     break;
+  case TokenKind::Struct:
+  case TokenKind::Class:
+    // Structs and classes cannot be extern
+    if (visibilityFlags & flgExtern) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "Structs and classes cannot be extern - they define types, not external symbols"));
+      return nullptr;
+    }
+    decl = parseStructOrClassDeclaration();
+    break;
   default:
     reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
                            "Expected declaration"));
@@ -1984,7 +1995,7 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
   // Check for generic parameters after function name
   ArenaVector<ast::ASTNode*> genericParams{ArenaSTLAllocator<ast::ASTNode*>(arena_)};
   bool hasGenericParams = false;
-  
+
   if (check(TokenKind::Less)) {
     // Extern function validation: cannot be generic
     if (isExtern) {
@@ -1992,7 +2003,7 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
                              "External function declarations cannot have generic parameters"));
       return nullptr;
     }
-    
+
     genericParams = parseGenericParameters();
     if (genericParams.empty() && check(TokenKind::Greater)) {
       // Error occurred during parsing, but we might have consumed '<'
@@ -2089,7 +2100,7 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
                              "External function declarations cannot have function bodies"));
       return nullptr;
     }
-    
+
     advance(); // consume '=>'
     // Expression body
     auto *bodyExpr = parseExpression();
@@ -2104,7 +2115,7 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
                              "External function declarations cannot have function bodies"));
       return nullptr;
     }
-    
+
     // Block body
     auto *bodyBlock = parseBlockStatement();
     if (!bodyBlock) {
@@ -2124,7 +2135,7 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
 
     // Move generic parameters vector directly to avoid copying
     genericDecl->parameters = std::move(genericParams);
-    
+
     // Add children for proper AST parent-child relationships
     for (auto *param : genericDecl->parameters) {
       if (param) {
@@ -2997,7 +3008,7 @@ ast::ASTNode *Parser::parseEnumDeclaration() {
   // Parse optional backing type
   if (check(TokenKind::Colon)) {
     advance(); // consume ':'
-    
+
     auto *backingTypeExpr = parseTypeExpression();
     if (!backingTypeExpr) {
       return nullptr; // Error parsing backing type
@@ -3072,7 +3083,7 @@ ast::ASTNode *Parser::parseEnumOption() {
   // Parse optional value assignment
   if (check(TokenKind::Assign)) {
     advance(); // consume '='
-    
+
     auto *valueExpr = parseExpression();
     if (!valueExpr) {
       return nullptr; // Error parsing value expression
@@ -3088,6 +3099,321 @@ ast::ASTNode *Parser::parseEnumOption() {
   }
 
   return option;
+}
+
+// Struct and Class Declaration Parsing
+
+ast::ASTNode *Parser::parseStructOrClassDeclaration() {
+  Location startLoc = current().location;
+  bool isClass = check(TokenKind::Class);
+
+  // Consume 'struct' or 'class' keyword
+  if (!expect(isClass ? TokenKind::Class : TokenKind::Struct)) {
+    return nullptr;
+  }
+
+  // Parse name
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           isClass ? "Expected class name" : "Expected struct name"));
+    return nullptr;
+  }
+
+  Token nameToken = current();
+  advance(); // consume name
+
+  if (!nameToken.hasLiteralValue()) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, nameToken.location,
+                           "Name token missing value"));
+    return nullptr;
+  }
+
+  InternedString name = nameToken.value.stringValue;
+  auto *nameNode = ast::createIdentifier(name, nameToken.location, arena_);
+
+  // Check for generic parameters
+  ArenaVector<ast::ASTNode*> genericParams{ArenaSTLAllocator<ast::ASTNode*>(arena_)};
+  if (check(TokenKind::Less)) {
+    genericParams = parseGenericParameters();
+    if (genericParams.empty()) {
+      return nullptr; // Error already reported
+    }
+  }
+
+  // Check for inheritance
+  ast::ASTNode *baseType = nullptr;
+  if (check(TokenKind::Colon)) {
+    baseType = parseInheritanceClause();
+    if (!baseType) {
+      return nullptr; // Error already reported
+    }
+  }
+
+  // Parse body
+  if (!expect(TokenKind::LBrace)) {
+    return nullptr;
+  }
+
+  // Create declaration node
+  ast::ASTNode *decl;
+  if (isClass) {
+    auto *classDecl = ast::createClassDeclaration(startLoc, arena_);
+    classDecl->setName(nameNode);
+    if (baseType) {
+      classDecl->setBase(baseType);
+    }
+    decl = classDecl;
+  } else {
+    auto *structDecl = ast::createStructDeclaration(startLoc, arena_);
+    structDecl->setName(nameNode);
+    decl = structDecl;
+  }
+
+  // Parse annotations first (if any) - they must appear at the top
+  if (check(TokenKind::Quote)) {
+    auto *annotationList = ast::createAnnotationList(startLoc, arena_);
+
+    while (check(TokenKind::Quote)) {
+      auto *annotation = static_cast<ast::AnnotationNode*>(parseAnnotationDeclaration());
+      if (!annotation) {
+        return nullptr; // Error already reported
+      }
+      annotationList->addAnnotation(annotation);
+    }
+
+    // Add annotation list to the declaration
+    if (isClass) {
+      static_cast<ast::ClassDeclarationNode*>(decl)->addAnnotation(annotationList);
+    } else {
+      static_cast<ast::StructDeclarationNode*>(decl)->addAnnotation(annotationList);
+    }
+  }
+
+  // Parse regular members after annotations
+  while (!check(TokenKind::RBrace) && !check(TokenKind::EoF)) {
+    auto *member = parseStructOrClassMember();
+    if (!member) {
+      return nullptr; // Error already reported
+    }
+
+    // Add member to appropriate declaration type
+    if (isClass) {
+      static_cast<ast::ClassDeclarationNode*>(decl)->addMember(member);
+    } else {
+      static_cast<ast::StructDeclarationNode*>(decl)->addMember(member);
+    }
+  }
+
+  if (!expect(TokenKind::RBrace)) {
+    return nullptr;
+  }
+
+  // Wrap in generic declaration if needed
+  if (!genericParams.empty()) {
+    auto *genericDecl = ast::createGenericDeclaration(startLoc, arena_);
+
+    // Move parameters to generic declaration
+    for (auto *param : genericParams) {
+      genericDecl->addParameter(param);
+    }
+
+    genericDecl->setDeclaration(decl);
+    return genericDecl;
+  }
+
+  return decl;
+}
+
+ast::ASTNode *Parser::parseStructOrClassMember() {
+  // Check for attributes
+  ast::AttributeListNode *attributes = nullptr;
+  if (check(TokenKind::At)) {
+    attributes = static_cast<ast::AttributeListNode*>(parseAttributeList());
+    if (!attributes) {
+      return nullptr; // Error parsing attributes
+    }
+  }
+
+  // Check for visibility modifier
+  bool isPrivate = false;
+  if (check(TokenKind::Priv)) {
+    isPrivate = true;
+    advance(); // consume 'priv'
+  }
+
+  // Check member type
+  if (check(TokenKind::Func)) {
+    // Parse method
+    auto *method = parseFunctionDeclaration(false); // not extern
+    if (!method) {
+      return nullptr;
+    }
+
+    // Set visibility flags
+    if (isPrivate) {
+      method->flags &= ~flgPublic; // Remove public flag
+    } else {
+      method->flags |= flgPublic; // Set public flag (default)
+    }
+
+    // Attach attributes
+    if (attributes) {
+      for (auto *attr : attributes->attributes) {
+        method->addAttribute(attr);
+      }
+    }
+
+    return method;
+  } else if (check(TokenKind::Ident)) {
+    // Parse field
+    auto *field = parseFieldDeclaration(isPrivate);
+    if (!field) {
+      return nullptr;
+    }
+
+    // Attach attributes
+    if (attributes) {
+      for (auto *attr : attributes->attributes) {
+        field->addAttribute(attr);
+      }
+    }
+
+    return field;
+  } else {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected member declaration (field or method)"));
+    return nullptr;
+  }
+}
+
+ast::ASTNode *Parser::parseFieldDeclaration(bool isPrivate) {
+  Location startLoc = current().location;
+
+  // Parse field name
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected field name"));
+    return nullptr;
+  }
+
+  Token nameToken = current();
+  advance(); // consume name
+
+  if (!nameToken.hasLiteralValue()) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, nameToken.location,
+                           "Field name token missing value"));
+    return nullptr;
+  }
+
+  InternedString fieldName = nameToken.value.stringValue;
+  auto *nameNode = ast::createIdentifier(fieldName, nameToken.location, arena_);
+
+  // Create field declaration
+  auto *fieldDecl = ast::createFieldDeclaration(startLoc, arena_);
+  fieldDecl->setName(nameNode);
+
+  // Set visibility flags
+  if (isPrivate) {
+    fieldDecl->flags &= ~flgPublic; // Remove public flag
+  } else {
+    fieldDecl->flags |= flgPublic; // Set public flag (default)
+  }
+
+  // Check for assignment first (inferred type)
+  if (check(TokenKind::Assign)) {
+    advance(); // consume '='
+
+    auto *defaultValue = parseExpression();
+    if (!defaultValue) {
+      return nullptr;
+    }
+    fieldDecl->setDefaultValue(defaultValue);
+  } else {
+    // Type is required when no initializer
+    auto *type = parseTypeExpression();
+    if (!type) {
+      return nullptr;
+    }
+    fieldDecl->setType(type);
+
+    // Check for optional default value after type
+    if (check(TokenKind::Assign)) {
+      advance(); // consume '='
+
+      auto *defaultValue = parseExpression();
+      if (!defaultValue) {
+        return nullptr;
+      }
+      fieldDecl->setDefaultValue(defaultValue);
+    }
+  }
+
+  // Optional semicolon
+  if (check(TokenKind::Semicolon)) {
+    advance();
+  }
+
+  return fieldDecl;
+}
+
+ast::ASTNode *Parser::parseAnnotationDeclaration() {
+  Location startLoc = current().location;
+
+  // Consume backtick
+  if (!expect(TokenKind::Quote)) {
+    return nullptr;
+  }
+
+  // Parse annotation name
+  if (!check(TokenKind::Ident)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected annotation name"));
+    return nullptr;
+  }
+
+  Token nameToken = current();
+  advance(); // consume name
+
+  if (!nameToken.hasLiteralValue()) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, nameToken.location,
+                           "Annotation name token missing value"));
+    return nullptr;
+  }
+
+  InternedString annotationName = nameToken.value.stringValue;
+
+  // Expect '='
+  if (!expect(TokenKind::Assign)) {
+    return nullptr;
+  }
+
+  // Parse value expression
+  auto *value = parseExpression();
+  if (!value) {
+    return nullptr;
+  }
+
+  // Create annotation
+  auto *annotation = ast::createAnnotation(annotationName, value, startLoc, arena_);
+
+  return annotation;
+}
+
+ast::ASTNode *Parser::parseInheritanceClause() {
+  // Consume ':'
+  if (!expect(TokenKind::Colon)) {
+    return nullptr;
+  }
+
+  // Parse base type expression
+  auto *baseType = parseTypeExpression();
+  if (!baseType) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected base type"));
+    return nullptr;
+  }
+
+  return baseType;
 }
 
 } // namespace cxy

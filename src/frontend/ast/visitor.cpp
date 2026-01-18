@@ -1,4 +1,5 @@
 #include "cxy/ast/visitor.hpp"
+#include "cxy/ast/annotations.hpp"
 #include "cxy/ast/attributes.hpp"
 #include "cxy/ast/declarations.hpp"
 #include "cxy/ast/expressions.hpp"
@@ -146,6 +147,10 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitFuncParamDeclaration(static_cast<FuncParamDeclarationNode *>(node));
   case astMethodDeclaration:
     return visitMethodDeclaration(static_cast<MethodDeclarationNode *>(node));
+  case astAnnotation:
+    return visitAnnotation(static_cast<AnnotationNode *>(node));
+  case astAnnotationList:
+    return visitAnnotationList(static_cast<AnnotationListNode *>(node));
 
   default:
     // Fallback to generic visitNode for unknown types
@@ -306,6 +311,12 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
   case astMethodDeclaration:
     visitMethodDeclarationPost(static_cast<MethodDeclarationNode *>(node));
     break;
+  case astAnnotation:
+    visitAnnotationPost(static_cast<AnnotationNode *>(node));
+    break;
+  case astAnnotationList:
+    visitAnnotationListPost(static_cast<AnnotationListNode *>(node));
+    break;
 
   default:
     // Fallback to generic visitNodePost for unknown types
@@ -436,6 +447,10 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitFuncParamDeclaration(static_cast<const FuncParamDeclarationNode *>(node));
   case astMethodDeclaration:
     return visitMethodDeclaration(static_cast<const MethodDeclarationNode *>(node));
+  case astAnnotation:
+    return visitAnnotation(static_cast<const AnnotationNode *>(node));
+  case astAnnotationList:
+    return visitAnnotationList(static_cast<const AnnotationListNode *>(node));
 
   default:
     // Fallback to generic visitNode for unknown types
@@ -595,6 +610,12 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
   case astMethodDeclaration:
     visitMethodDeclarationPost(static_cast<const MethodDeclarationNode *>(node));
+    break;
+  case astAnnotation:
+    visitAnnotationPost(static_cast<const AnnotationNode *>(node));
+    break;
+  case astAnnotationList:
+    visitAnnotationListPost(static_cast<const AnnotationListNode *>(node));
     break;
 
   default:
@@ -1305,6 +1326,22 @@ void ASTVisitor::visitMethodDeclarationPost(MethodDeclarationNode *node) {
   visitNodePost(static_cast<ASTNode *>(node));
 }
 
+bool ASTVisitor::visitAnnotation(AnnotationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitAnnotationPost(AnnotationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitAnnotationList(AnnotationListNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitAnnotationListPost(AnnotationListNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
 // Match case implementations for ASTVisitor
 
 bool ASTVisitor::visitMatchCase(MatchCaseNode *node) {
@@ -1348,6 +1385,22 @@ bool ConstASTVisitor::visitMethodDeclaration(const MethodDeclarationNode *node) 
 }
 
 void ConstASTVisitor::visitMethodDeclarationPost(const MethodDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitAnnotation(const AnnotationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitAnnotationPost(const AnnotationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitAnnotationList(const AnnotationListNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitAnnotationListPost(const AnnotationListNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

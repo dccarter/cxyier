@@ -1,4 +1,5 @@
 #include "cxy/ast/printer.hpp"
+#include "cxy/ast/annotations.hpp"
 #include "cxy/ast/attributes.hpp"
 #include "cxy/ast/declarations.hpp"
 #include "cxy/ast/expressions.hpp"
@@ -730,6 +731,12 @@ bool ASTPrinter::visitFuncParamDeclaration(const FuncParamDeclarationNode *node)
 bool ASTPrinter::visitMethodDeclaration(const MethodDeclarationNode *node) {
   printNodeStartInline(node);
   return true;
+}
+
+bool ASTPrinter::visitAnnotation(const AnnotationNode *node) {
+  printNodeStartInline(node);
+  *output_ << " " << node->name.view();
+  return true; // Continue to visit children (the value)
 }
 
 } // namespace cxy::ast

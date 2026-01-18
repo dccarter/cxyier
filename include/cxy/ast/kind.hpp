@@ -30,6 +30,10 @@ namespace cxy::ast {
     f(Attribute)                \
     f(AttributeList)            \
                                 \
+    /* Annotations */           \
+    f(Annotation)               \
+    f(AnnotationList)           \
+                                \
     /* Expressions */           \
     f(UnaryExpr)                \
     f(BinaryExpr)               \

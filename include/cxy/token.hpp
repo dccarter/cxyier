@@ -157,6 +157,7 @@ enum class FloatKind : uint8_t {
   f(Struct, "struct")                                                          \
   f(Enum, "enum")                                                              \
   f(Pub, "pub")                                                                \
+  f(Priv, "priv")                                                              \
   f(Opaque, "opaque")                                                          \
   f(Catch, "catch")                                                            \
   f(Raise, "raise")                                                            \

@@ -134,6 +134,7 @@ public:
   ArenaVector<ASTNode*> parameters;           ///< Function parameters
   ASTNode* returnType = nullptr;              ///< Return type annotation
   ASTNode* body = nullptr;                    ///< Function body (block statement)
+  TokenKind operatorToken = TokenKind::Error; ///< Operator token for overloads (Error = not an operator)
 
   explicit FuncDeclarationNode(Location loc, ArenaAllocator &arena)
       : DeclarationNode(astFuncDeclaration, loc, arena),
@@ -170,6 +171,14 @@ public:
     if (body) removeChild(body);
     body = bodyNode;
     if (body) addChild(body);
+  }
+
+  void setOperatorToken(TokenKind token) {
+    operatorToken = token;
+  }
+
+  bool isOperatorOverload() const {
+    return operatorToken != TokenKind::Error;
   }
 
   std::format_context::iterator toString(std::format_context &ctx) const override {
@@ -477,11 +486,13 @@ public:
 class StructDeclarationNode : public DeclarationNode {
 public:
   ASTNode* name = nullptr;                    ///< Struct name
-  ArenaVector<ASTNode*> fields;               ///< Struct fields
+  ArenaVector<ASTNode*> members;              ///< Struct members (fields and methods)
+  ArenaVector<ASTNode*> annotations;          ///< Struct annotations
 
   explicit StructDeclarationNode(Location loc, ArenaAllocator &arena)
       : DeclarationNode(astStructDeclaration, loc, arena),
-        fields(ArenaSTLAllocator<ASTNode*>(arena)) {}
+        members(ArenaSTLAllocator<ASTNode*>(arena)),
+        annotations(ArenaSTLAllocator<ASTNode*>(arena)) {}
 
   void setName(ASTNode* nameNode) {
     if (name) removeChild(name);
@@ -489,10 +500,17 @@ public:
     if (name) addChild(name);
   }
 
-  void addField(ASTNode* field) {
-    if (field) {
-      fields.push_back(field);
-      addChild(field);
+  void addMember(ASTNode* member) {
+    if (member) {
+      members.push_back(member);
+      addChild(member);
+    }
+  }
+
+  void addAnnotation(ASTNode* annotation) {
+    if (annotation) {
+      annotations.push_back(annotation);
+      addChild(annotation);
     }
   }
 
@@ -503,7 +521,7 @@ public:
     } else {
       it = std::format_to(it, "unnamed");
     }
-    return std::format_to(it, ", {} fields)", fields.size());
+    return std::format_to(it, ", {} members)", members.size());
   }
 };
 

@@ -710,6 +710,53 @@ private:
   ast::ASTNode *parseEnumOption();
 
   /**
+   * @brief Parse a struct or class declaration.
+   *
+   * struct_declaration ::= attributeList? visibilityModifier? 'struct' identifier genericParameters? inheritance? structBody
+   * class_declaration ::= attributeList? visibilityModifier? 'class' identifier genericParameters? inheritance? classBody
+   *
+   * @return Parsed struct or class declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseStructOrClassDeclaration();
+
+  /**
+   * @brief Parse a struct or class member.
+   *
+   * struct_member ::= fieldDeclaration | methodDeclaration | typeAliasDeclaration | annotationDeclaration
+   * class_member ::= fieldDeclaration | methodDeclaration | typeAliasDeclaration | annotationDeclaration | constructorDeclaration | destructorDeclaration
+   *
+   * @return Parsed member AST node, or nullptr on error
+   */
+  ast::ASTNode *parseStructOrClassMember();
+
+  /**
+   * @brief Parse a field declaration.
+   *
+   * field_declaration ::= attributeList? visibilityModifier? identifier typeAnnotation? ('=' expression)? ';'?
+   *
+   * @return Parsed field declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseFieldDeclaration(bool isPrivate = false);
+
+  /**
+   * @brief Parse an annotation declaration.
+   *
+   * annotation_declaration ::= '`' identifier '=' expression
+   *
+   * @return Parsed annotation AST node, or nullptr on error
+   */
+  ast::ASTNode *parseAnnotationDeclaration();
+
+  /**
+   * @brief Parse inheritance clause.
+   *
+   * inheritance ::= ':' typeExpression
+   *
+   * @return Parsed type expression for base class, or nullptr on error
+   */
+  ast::ASTNode *parseInheritanceClause();
+
+  /**
    * @brief Parse an if statement.
    *
    * if_statement ::=
