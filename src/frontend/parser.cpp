@@ -147,9 +147,7 @@ std::string Parser::getSpecialOverloadOperatorName(TokenKind firstToken, TokenKi
     }
     return "index";
   }
-  if (firstToken == TokenKind::As) {
-    return "cast";
-  }
+
   if (firstToken == TokenKind::BAndDot) {
     return "redirect";
   }
@@ -2089,11 +2087,6 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
                                "Expected ']' after '['"));
         return nullptr;
       }
-    } else if (check(TokenKind::As)) {
-      // Handle 'as T' cast operator
-      operatorName = getSpecialOverloadOperatorName(TokenKind::As);
-      operatorToken = TokenKind::As;
-      advance(); // consume 'as'
     } else if (check(TokenKind::BAndDot)) {
       // Handle &. redirect operator
       operatorName = getSpecialOverloadOperatorName(TokenKind::BAndDot);

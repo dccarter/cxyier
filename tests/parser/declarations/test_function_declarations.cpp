@@ -396,6 +396,14 @@ TEST_CASE("Function Declaration Parsing - Invalid Operator Overloads", "[parser]
         REQUIRE(stmt == nullptr);
         REQUIRE(fixture->hasErrors());
     }
+
+    SECTION("func `as`() auto - cast operator not allowed") {
+        auto fixture = createParserFixture("func `as`() auto");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
 }
 
 TEST_CASE("Function Declaration Parsing - Binary Use of Restricted Operators", "[parser][declarations][func-decl][binary-restricted]") {
