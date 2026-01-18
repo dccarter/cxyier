@@ -398,6 +398,68 @@ TEST_CASE("Function Declaration Parsing - Invalid Operator Overloads", "[parser]
     }
 }
 
+TEST_CASE("Function Declaration Parsing - Binary Use of Restricted Operators", "[parser][declarations][func-decl][binary-restricted]") {
+    SECTION("func `&`(other i32) i32 - binary AND allowed") {
+        auto fixture = createParserFixture("func `&`(other i32) i32");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::BAnd);
+        REQUIRE(funcDecl->parameters.size() == 1);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier band)
+  (FuncParamDeclaration
+    (Identifier other)
+    (Type i32))
+  (Type i32)))");
+    }
+
+    SECTION("func `^`(other i32) i32 - binary XOR allowed") {
+        auto fixture = createParserFixture("func `^`(other i32) i32");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::BXor);
+        REQUIRE(funcDecl->parameters.size() == 1);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier bxor)
+  (FuncParamDeclaration
+    (Identifier other)
+    (Type i32))
+  (Type i32)))");
+    }
+
+    SECTION("func `&&`(other bool) bool - binary logical AND allowed") {
+        auto fixture = createParserFixture("func `&&`(other bool) bool");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::LAnd);
+        REQUIRE(funcDecl->parameters.size() == 1);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier land)
+  (FuncParamDeclaration
+    (Identifier other)
+    (Type bool))
+  (Type bool)))");
+    }
+}
+
 TEST_CASE("Function Declaration Parsing - Expression Bodies", "[parser][declarations][func-decl][expr-body]") {
     SECTION("func add(a i32, b i32) => a + b") {
         auto fixture = createParserFixture("func add(a i32, b i32) => a + b");

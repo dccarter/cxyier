@@ -2051,17 +2051,17 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
   if (check(TokenKind::Quote)) {
     // Parse operator overload: `operator`
     advance(); // consume opening backtick
-    
+
     if (isAtEnd()) {
       reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
                              "Expected operator after '`'"));
       return nullptr;
     }
-    
+
     Location operatorLoc = current().location;
     std::string operatorName;
     TokenKind operatorToken = TokenKind::Error;
-    
+
     // Try special operators first (multi-token)
     if (check(TokenKind::LParen) && lookahead().kind == TokenKind::RParen) {
       // Handle () operator
@@ -2118,15 +2118,6 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
         // Try binary operators
         operatorName = getBinaryOverloadOperatorName(current().kind);
         if (!operatorName.empty()) {
-          // Check for prohibited unary use of binary operators
-          TokenKind opKind = current().kind;
-          if (opKind == TokenKind::BAnd || opKind == TokenKind::BXor || 
-              opKind == TokenKind::LAnd || opKind == TokenKind::LNot || 
-              opKind == TokenKind::BNot) {
-            reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
-                                   "This operator cannot be overloaded"));
-            return nullptr;
-          }
           operatorToken = current().kind;
           advance(); // consume operator
         } else {
@@ -2136,28 +2127,28 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
         }
       }
     }
-    
+
     if (!expect(TokenKind::Quote)) {
       return nullptr; // Expected closing backtick
     }
-    
+
     // Create identifier node with operator name and set operator token
     InternedString opName = interner_.intern(operatorName);
     auto *nameNode = ast::createIdentifier(opName, operatorLoc, arena_);
     funcDecl->setName(nameNode);
     funcDecl->setOperatorToken(operatorToken);
-    
+
   } else {
     // Parse regular identifier
     Token nameToken = current();
     advance(); // consume identifier
-    
+
     if (!nameToken.hasLiteralValue()) {
       reportError(ParseError(ParseErrorType::UnexpectedToken, nameToken.location,
                              "Function name token missing value"));
       return nullptr;
     }
-    
+
     auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
     funcDecl->setName(nameNode);
   }
@@ -2292,6 +2283,21 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
       return nullptr;
     }
     funcDecl->setBody(bodyBlock);
+  }
+
+  // Check for prohibited unary operator overloads
+  if (funcDecl->isOperatorOverload()) {
+    TokenKind opKind = funcDecl->operatorToken;
+    size_t paramCount = funcDecl->parameters.size();
+
+    // Prohibit unary use of certain operators
+    if (paramCount == 0 && (opKind == TokenKind::BAnd || opKind == TokenKind::BXor ||
+                           opKind == TokenKind::LAnd || opKind == TokenKind::LNot ||
+                           opKind == TokenKind::BNot)) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "This operator cannot be overloaded as a unary operator"));
+      return nullptr;
+    }
   }
 
   // Set variadic flag on function if it has variadic parameters
