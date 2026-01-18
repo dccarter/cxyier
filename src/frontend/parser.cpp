@@ -2413,6 +2413,11 @@ ast::ASTNode *Parser::parseVariableDeclaration(bool singleVariable, bool isExter
 // Phase 5.2: Declaration parsing implementation
 
 ast::ASTNode *Parser::parseDeclaration() {
+  // Handle import declarations first (no modifiers allowed)
+  if (check(TokenKind::Import)) {
+    return parseImportDeclaration();
+  }
+
   // Check for attributes first
   ast::AttributeListNode *attributes = nullptr;
   if (check(TokenKind::At)) {
@@ -2471,6 +2476,7 @@ ast::ASTNode *Parser::parseDeclaration() {
     }
     decl = parseStructOrClassDeclaration();
     break;
+
   default:
     reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
                            "Expected declaration"));
@@ -3866,6 +3872,241 @@ ast::ASTNode *Parser::parseTypeDeclaration() {
   }
 
   return typeDecl;
+}
+
+// Phase 5.6: Import Declaration Parsing
+
+ast::ASTNode *Parser::parseImportDeclaration() {
+  Location startLoc = current().location;
+
+  // Expect 'import' keyword
+  if (!expect(TokenKind::Import)) {
+    return nullptr;
+  }
+
+  // Check for optional 'test' keyword
+  bool isTestImport = false;
+  if (check(TokenKind::Test)) {
+    isTestImport = true;
+    advance(); // consume 'test'
+  }
+
+  // Create import declaration
+  auto *importDecl = ast::createImportDeclaration(startLoc, arena_);
+
+  // Check what type of import this is
+  if (check(TokenKind::StringLiteral)) {
+    // Could be: import "module" or import "module" as Alias
+    auto *pathNode = parseStringLiteral();
+    if (!pathNode) {
+      return nullptr;
+    }
+    importDecl->setPath(pathNode);
+
+    if (check(TokenKind::As)) {
+      // import "module" as Alias
+      advance(); // consume 'as'
+
+      if (!check(TokenKind::Ident)) {
+        reportError(createUnexpectedTokenError(TokenKind::Ident, "Expected alias identifier after 'as'"));
+        return nullptr;
+      }
+
+      Token aliasToken = current();
+      advance(); // consume identifier
+      auto *aliasNode = ast::createIdentifier(aliasToken.value.stringValue, aliasToken.location, arena_);
+      importDecl->setAlias(aliasNode);
+      importDecl->kind = ast::ImportDeclarationNode::ModuleAlias;
+    } else {
+      // import "module"
+      importDecl->kind = ast::ImportDeclarationNode::WholeModule;
+    }
+  } else if (check(TokenKind::Ident)) {
+    // Single named import: import name from "module" or import name as alias from "module"
+    // Treat as equivalent to import { name } from "module" or import { name as alias } from "module"
+    Token nameToken = current();
+    advance(); // consume identifier
+
+    auto *itemNode = ast::createImportItem(nameToken.location, arena_);
+    auto *itemNameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
+    itemNode->setName(itemNameNode);
+
+    if (check(TokenKind::As)) {
+      // import name as alias from "module"
+      advance(); // consume 'as'
+      
+      if (!check(TokenKind::Ident)) {
+        reportError(createUnexpectedTokenError(TokenKind::Ident, "Expected alias identifier after 'as'"));
+        return nullptr;
+      }
+
+      Token aliasToken = current();
+      advance(); // consume identifier
+      auto *aliasNode = ast::createIdentifier(aliasToken.value.stringValue, aliasToken.location, arena_);
+      itemNode->setAlias(aliasNode);
+    }
+
+    // Expect 'from' keyword
+    if (!expect(TokenKind::From)) {
+      return nullptr;
+    }
+
+    // Parse module path
+    if (!check(TokenKind::StringLiteral)) {
+      reportError(createUnexpectedTokenError(TokenKind::StringLiteral, "Expected module path string literal after 'from'"));
+      return nullptr;
+    }
+
+    auto *pathNode = parseStringLiteral();
+    if (!pathNode) {
+      return nullptr;
+    }
+    importDecl->setPath(pathNode);
+    importDecl->addEntity(itemNode);
+    importDecl->kind = ast::ImportDeclarationNode::MultipleImports;
+  } else if (check(TokenKind::LBrace)) {
+    // import { ... } from "module"
+    advance(); // consume '{'
+
+    if (check(TokenKind::RBrace)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Empty import list is not allowed"));
+      return nullptr;
+    }
+
+    // Parse import items
+    do {
+      if (!check(TokenKind::Ident)) {
+        reportError(createUnexpectedTokenError(TokenKind::Ident, "Expected import item identifier"));
+        return nullptr;
+      }
+
+      Token itemToken = current();
+      advance(); // consume identifier
+
+      auto *itemNode = ast::createImportItem(itemToken.location, arena_);
+      auto *itemNameNode = ast::createIdentifier(itemToken.value.stringValue, itemToken.location, arena_);
+      itemNode->setName(itemNameNode);
+
+      // Check for optional alias
+      if (check(TokenKind::As)) {
+        advance(); // consume 'as'
+
+        if (!check(TokenKind::Ident)) {
+          reportError(createUnexpectedTokenError(TokenKind::Ident, "Expected alias identifier after 'as'"));
+          return nullptr;
+        }
+
+        Token aliasToken = current();
+        advance(); // consume identifier
+        auto *aliasNode = ast::createIdentifier(aliasToken.value.stringValue, aliasToken.location, arena_);
+        itemNode->setAlias(aliasNode);
+      }
+
+      importDecl->addEntity(itemNode);
+
+      // Check for continuation
+      if (check(TokenKind::Comma)) {
+        advance(); // consume ','
+
+        // Allow trailing comma
+        if (check(TokenKind::RBrace)) {
+          break;
+        }
+      } else {
+        break;
+      }
+    } while (true);
+
+    // Expect closing brace
+    if (!expect(TokenKind::RBrace)) {
+      return nullptr;
+    }
+
+    // Expect 'from' keyword
+    if (!expect(TokenKind::From)) {
+      return nullptr;
+    }
+
+    // Parse module path
+    if (!check(TokenKind::StringLiteral)) {
+      reportError(createUnexpectedTokenError(TokenKind::StringLiteral, "Expected module path string literal after 'from'"));
+      return nullptr;
+    }
+
+    auto *pathNode = parseStringLiteral();
+    if (!pathNode) {
+      return nullptr;
+    }
+    importDecl->setPath(pathNode);
+    importDecl->kind = ast::ImportDeclarationNode::MultipleImports;
+  } else {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected string literal, identifier, or '{' after 'import'"));
+    return nullptr;
+  }
+
+  // Set test conditional flag
+  if (isTestImport) {
+    importDecl->kind = ast::ImportDeclarationNode::ConditionalTest;
+  }
+
+  return importDecl;
+}
+
+// Compilation
+
+ast::ASTNode *Parser::parseCompilationUnit() {
+  Location startLoc = current().location;
+
+  // Create module declaration - either named or implicit
+  auto *moduleDecl = ast::createModuleDeclaration(startLoc, arena_);
+
+  // Check for optional module declaration
+  if (check(TokenKind::Module)) {
+    advance(); // consume 'module'
+
+    // Parse module name
+    if (!check(TokenKind::Ident)) {
+      reportError(createUnexpectedTokenError(TokenKind::Ident, "Expected module name identifier"));
+      return nullptr;
+    }
+
+    Token nameToken = current();
+    advance(); // consume identifier
+
+    auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
+    moduleDecl->setName(nameNode);
+  }
+  // If no explicit module declaration, leave name as nullptr (implicit main module)
+
+  // Parse top-level imports
+  while (check(TokenKind::Import)) {
+    auto *importDecl = parseDeclaration();
+    if (!importDecl) {
+      return nullptr; // Error parsing import
+    }
+    moduleDecl->addTopLevel(importDecl);
+  }
+
+  // Parse main content declarations
+  while (!isAtEnd()) {
+    // Skip any lingering separators
+    if (isSeparatorToken()) {
+      advance();
+      continue;
+    }
+
+    auto *decl = parseDeclaration();
+    if (!decl) {
+      // Try to synchronize and continue
+      synchronize();
+      continue;
+    }
+    moduleDecl->addMainContent(decl);
+  }
+
+  return moduleDecl;
 }
 
 // Struct and Class Declaration Parsing

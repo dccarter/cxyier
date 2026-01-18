@@ -141,6 +141,13 @@ public:
   }
 
   /**
+   * @brief Parse a compilation unit (complete module structure) and return the result.
+   */
+  ast::ASTNode *parseCompilationUnit() {
+    return parser_.parseCompilationUnit();
+  }
+
+  /**
    * @brief Check if parser is at end of input.
    */
   bool isAtEnd() const { return parser_.isAtEnd(); }

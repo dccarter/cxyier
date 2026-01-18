@@ -60,6 +60,8 @@ add_executable(cxyier_tests
     parser/declarations/test_enum_declarations.cpp
     parser/declarations/test_struct_class_declarations.cpp
     parser/declarations/test_type_declarations.cpp
+    parser/declarations/test_import_declarations.cpp
+    parser/declarations/test_module_declarations.cpp
     types/test_type_infrastructure.cpp
     types/test_primitive_types.cpp
     parser/types/test_qualified_paths.cpp

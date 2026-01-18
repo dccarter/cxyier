@@ -637,6 +637,18 @@ public:
   ast::ASTNode *parseDeclaration();
 
   /**
+   * @brief Parse a compilation unit (complete module structure).
+   *
+   * compilation_unit ::= moduleDeclaration? topLevelSection mainSection
+   * moduleDeclaration ::= 'module' identifier
+   * topLevelSection ::= importDeclaration*
+   * mainSection ::= declaration*
+   *
+   * @return Parsed module declaration AST node representing the entire compilation unit
+   */
+  ast::ASTNode *parseCompilationUnit();
+
+  /**
    * @brief Parse an expression statement.
    *
    * expression_statement ::=
@@ -861,6 +873,21 @@ private:
    * @return Parsed struct or class declaration AST node, or nullptr on error
    */
   ast::ASTNode *parseStructOrClassDeclaration();
+
+  /**
+   * @brief Parse an import declaration.
+   *
+   * import_declaration ::= 'import' ('test')? import_clause
+   * import_clause ::= 
+   *   | string_literal                                    # Whole module import
+   *   | string_literal 'as' identifier                    # Module alias import  
+   *   | identifier 'from' string_literal                  # Named import
+   *   | identifier 'as' identifier 'from' string_literal  # Named import with alias
+   *   | import_list 'from' string_literal                 # Multiple named imports
+   *
+   * @return Parsed import declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseImportDeclaration();
 
   /**
    * @brief Parse a struct or class member.
