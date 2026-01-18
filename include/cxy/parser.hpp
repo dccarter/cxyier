@@ -283,6 +283,87 @@ public:
   ast::ASTNode *parseTypeExpression();
 
   /**
+   * @brief Parse an array type expression.
+   *
+   * array_type ::= '[' expression? ']' type_expression
+   *
+   * @return Parsed array type AST node, or nullptr on error
+   */
+  ast::ASTNode *parseArrayType();
+
+  /**
+   * @brief Parse a tuple type expression.
+   *
+   * tuple_type ::= '(' type_expression (',' type_expression)* ')'
+   *
+   * @return Parsed tuple type AST node, or nullptr on error
+   */
+  ast::ASTNode *parseTupleType();
+
+  /**
+   * @brief Parse a union type expression.
+   *
+   * union_type ::= primary_type ('|' primary_type)*
+   *
+   * @return Parsed union type AST node, or nullptr on error
+   */
+  ast::ASTNode *parseUnionType();
+
+  /**
+   * @brief Parse a primary type expression (non-union types).
+   *
+   * primary_type ::= array_type | tuple_type | primitive_type | qualified_path
+   *
+   * @return Parsed primary type AST node, or nullptr on error
+   */
+  ast::ASTNode *parsePrimaryType();
+
+  /**
+   * @brief Parse a reference type expression.
+   *
+   * reference_type ::= '&' primary_type
+   *
+   * @return Parsed reference type AST node, or nullptr on error
+   */
+  ast::ASTNode *parseReferenceType();
+
+  /**
+   * @brief Parse a pointer type expression.
+   *
+   * pointer_type ::= '*' primary_type
+   *
+   * @return Parsed pointer type AST node, or nullptr on error
+   */
+  ast::ASTNode *parsePointerType();
+
+  /**
+   * @brief Parse an optional type expression.
+   *
+   * optional_type ::= '?' primary_type
+   *
+   * @return Parsed optional type AST node, or nullptr on error
+   */
+  ast::ASTNode *parseOptionalType();
+
+  /**
+   * @brief Parse a result type expression.
+   *
+   * result_type ::= '!' primary_type
+   *
+   * @return Parsed result type AST node, or nullptr on error
+   */
+  ast::ASTNode *parseResultType();
+
+  /**
+   * @brief Parse a function type expression.
+   *
+   * function_type ::= 'func' '(' parameter_types? ')' '->' type_expression
+   *
+   * @return Parsed function type AST node, or nullptr on error
+   */
+  ast::ASTNode *parseFunctionType();
+
+  /**
    * @brief Parse a qualified path (identifier with optional segments).
    *
    * qualified_path ::= identifier ('.' identifier)* ('<' type_list '>')?

@@ -26,7 +26,14 @@ namespace cxy::ast {
                                 \
     /* Types */                 \
     f(PrimitiveType)            \
-    f(GenericInstantiation)     \
+    f(ArrayType)                \
+    f(TupleType)                \
+    f(UnionType)                \
+    f(ReferenceType)            \
+    f(PointerType)              \
+    f(OptionalType)             \
+    f(ResultType)               \
+    f(FunctionType)             \
                                 \
     /* Attributes */            \
     f(Attribute)                \
@@ -87,6 +94,7 @@ namespace cxy::ast {
     f(ExternDeclaration)        \
     f(ModuleDeclaration)        \
     f(ImportDeclaration)        \
+    f(ImportItem)               \
     f(TypeParameterDeclaration) \
     f(GenericDeclaration)       \
     f(TestDeclaration)          \

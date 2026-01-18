@@ -659,12 +659,62 @@ public:
 };
 
 /**
+ * @brief Import item node for named imports.
+ *
+ * Represents individual items in import statements like "name" or "name as alias".
+ */
+class ImportItemNode : public ASTNode {
+public:
+  ASTNode* name = nullptr;                    ///< Import name
+  ASTNode* alias = nullptr;                   ///< Optional alias
+  ASTNode* resolveNode = nullptr;
+
+  explicit ImportItemNode(Location loc, ArenaAllocator &arena)
+      : ASTNode(astImportItem, loc, arena) {}
+
+  void setName(ASTNode* nameNode) {
+    if (name) removeChild(name);
+    name = nameNode;
+    if (name) addChild(name);
+  }
+
+  void setAlias(ASTNode* aliasNode) {
+    if (alias) removeChild(alias);
+    alias = aliasNode;
+    if (alias) addChild(alias);
+  }
+
+  std::format_context::iterator toString(std::format_context &ctx) const override {
+    auto it = std::format_to(ctx.out(), "ImportItem(");
+    if (name) {
+      it = std::format_to(it, "{}", *name);
+    } else {
+      it = std::format_to(it, "unnamed");
+    }
+    if (alias) {
+      it = std::format_to(it, " as {}", *alias);
+    }
+    return std::format_to(it, ")");
+  }
+};
+
+/**
  * @brief Import declaration node.
  *
  * Represents import statements.
  */
 class ImportDeclarationNode : public DeclarationNode {
 public:
+  enum ImportKind {
+    WholeModule,     ///< import "module"
+    ModuleAlias,     ///< import "module" as Alias
+    NamedImport,     ///< import name from "module"
+    NamedWithAlias,  ///< import name as alias from "module"
+    MultipleImports, ///< import { a, b } from "module"
+    ConditionalTest  ///< import test ...
+  };
+
+  ImportKind kind = WholeModule;              ///< Type of import
   ASTNode* path = nullptr;                    ///< Import path
   ASTNode* name = nullptr;                    ///< Module name
   ArenaVector<ASTNode*> entities;             ///< Imported entities
@@ -926,6 +976,10 @@ inline ModuleDeclarationNode *createModuleDeclaration(Location loc, ArenaAllocat
 
 inline ImportDeclarationNode *createImportDeclaration(Location loc, ArenaAllocator &arena) {
   return arena.construct<ImportDeclarationNode>(loc, arena);
+}
+
+inline ImportItemNode *createImportItem(Location loc, ArenaAllocator &arena) {
+  return arena.construct<ImportItemNode>(loc, arena);
 }
 
 inline TypeParameterDeclarationNode *createTypeParameterDeclaration(Location loc, ArenaAllocator &arena) {

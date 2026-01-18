@@ -683,12 +683,92 @@ ast::ASTNode *Parser::parseCastExpression(bool withoutStructLiterals) {
 }
 
 ast::ASTNode *Parser::parseTypeExpression() {
-  // type_expression ::= primitive_type | qualified_path
+  // type_expression ::= union_type
+  // union_type ::= primary_type ('|' primary_type)*
+  return parseUnionType();
+}
+
+ast::ASTNode *Parser::parseUnionType() {
+  // union_type ::= primary_type ('|' primary_type)*
+
+  auto *left = parsePrimaryType();
+  if (!left) {
+    return nullptr;
+  }
+
+  // Check for union operator |
+  if (!check(TokenKind::BOr)) {
+    return left; // Not a union, just return the primary type
+  }
+
+  Location startLoc = left->location;
+  auto *unionType = ast::createUnionType(startLoc, arena_);
+  unionType->addMember(left);
+
+  // Parse remaining union members
+  while (check(TokenKind::BOr)) {
+    advance(); // consume '|'
+
+    auto *member = parsePrimaryType();
+    if (!member) {
+      return nullptr; // Error already reported
+    }
+    unionType->addMember(member);
+  }
+
+  return unionType;
+}
+
+ast::ASTNode *Parser::parsePrimaryType() {
+  // primary_type ::= reference_type | pointer_type | optional_type | result_type | function_type | array_type | tuple_type | parenthesized_type | primitive_type | qualified_path
+  // reference_type ::= '&' primary_type
+  // pointer_type ::= '*' primary_type
+  // optional_type ::= '?' primary_type
+  // result_type ::= '!' primary_type
+  // function_type ::= 'func' '(' parameter_types? ')' '->' type_expression
+  // array_type ::= '[' expression? ']' type_expression
+  // tuple_type ::= '(' type_expression (',' type_expression)* ')'
+  // parenthesized_type ::= '(' type_expression ')'
   // primitive_type ::= 'i8' | 'i16' | 'i32' | 'i64' | 'i128'
   //                  | 'u8' | 'u16' | 'u32' | 'u64' | 'u128'
   //                  | 'f32' | 'f64' | 'bool' | 'char' | 'void'
   //                  | 'auto' | 'string'
   // qualified_path ::= identifier ('.' identifier)* ('<' type_list '>')?
+
+  // Handle reference types
+  if (check(TokenKind::BAnd)) {
+    return parseReferenceType();
+  }
+
+  // Handle pointer types
+  if (check(TokenKind::Mult)) {
+    return parsePointerType();
+  }
+
+  // Handle optional types
+  if (check(TokenKind::Question)) {
+    return parseOptionalType();
+  }
+
+  // Handle result types
+  if (check(TokenKind::LNot)) {
+    return parseResultType();
+  }
+
+  // Handle function types
+  if (check(TokenKind::Func)) {
+    return parseFunctionType();
+  }
+
+  // Handle array types
+  if (check(TokenKind::LBracket)) {
+    return parseArrayType();
+  }
+
+  // Handle parenthesized types (including tuples and single parenthesized expressions)
+  if (check(TokenKind::LParen)) {
+    return parseTupleType();
+  }
 
   // Handle primitive types
   if (isPrimitiveType(current().kind)) {
@@ -714,6 +794,249 @@ ast::ASTNode *Parser::parseTypeExpression() {
   reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
                          "Expected type name"));
   return nullptr;
+}
+
+ast::ASTNode *Parser::parseArrayType() {
+  // array_type ::= '[' expression? ']' type_expression
+
+  Location startLoc = current().location;
+
+  if (!expect(TokenKind::LBracket)) {
+    return nullptr;
+  }
+
+  auto *arrayType = ast::createArrayType(startLoc, arena_);
+
+  // Parse optional size expression
+  if (!check(TokenKind::RBracket)) {
+    auto *sizeExpr = parseExpression();
+    if (!sizeExpr) {
+      return nullptr; // Error already reported
+    }
+    arrayType->setSize(sizeExpr);
+  }
+
+  if (!expect(TokenKind::RBracket)) {
+    return nullptr;
+  }
+
+  // Parse element type
+  auto *elementType = parsePrimaryType();
+  if (!elementType) {
+    return nullptr; // Error already reported
+  }
+  arrayType->setElementType(elementType);
+
+  return arrayType;
+}
+
+ast::ASTNode *Parser::parseReferenceType() {
+  // reference_type ::= '&' primary_type
+  
+  Location startLoc = current().location;
+  
+  if (!expect(TokenKind::BAnd)) {
+    return nullptr;
+  }
+
+  auto *referenceType = ast::createReferenceType(startLoc, arena_);
+
+  // Parse target type
+  auto *targetType = parsePrimaryType();
+  if (!targetType) {
+    return nullptr; // Error already reported
+  }
+  referenceType->setTarget(targetType);
+
+  return referenceType;
+}
+
+ast::ASTNode *Parser::parsePointerType() {
+  // pointer_type ::= '*' primary_type
+  
+  Location startLoc = current().location;
+  
+  if (!expect(TokenKind::Mult)) {
+    return nullptr;
+  }
+
+  auto *pointerType = ast::createPointerType(startLoc, arena_);
+
+  // Parse target type
+  auto *targetType = parsePrimaryType();
+  if (!targetType) {
+    return nullptr; // Error already reported
+  }
+  pointerType->setTarget(targetType);
+
+  return pointerType;
+}
+
+ast::ASTNode *Parser::parseOptionalType() {
+  // optional_type ::= '?' primary_type
+  
+  Location startLoc = current().location;
+  
+  if (!expect(TokenKind::Question)) {
+    return nullptr;
+  }
+
+  auto *optionalType = ast::createOptionalType(startLoc, arena_);
+
+  // Parse target type
+  auto *targetType = parsePrimaryType();
+  if (!targetType) {
+    return nullptr; // Error already reported
+  }
+  optionalType->setTarget(targetType);
+
+  return optionalType;
+}
+
+ast::ASTNode *Parser::parseResultType() {
+  // result_type ::= '!' primary_type
+  
+  Location startLoc = current().location;
+  
+  if (!expect(TokenKind::LNot)) {
+    return nullptr;
+  }
+
+  auto *resultType = ast::createResultType(startLoc, arena_);
+
+  // Parse target type
+  auto *targetType = parsePrimaryType();
+  if (!targetType) {
+    return nullptr; // Error already reported
+  }
+  resultType->setTarget(targetType);
+
+  return resultType;
+}
+
+ast::ASTNode *Parser::parseFunctionType() {
+  // function_type ::= 'func' '(' parameter_types? ')' '->' type_expression
+  // parameter_types ::= type_expression (',' type_expression)*
+  
+  Location startLoc = current().location;
+  
+  if (!expect(TokenKind::Func)) {
+    return nullptr;
+  }
+
+  auto *functionType = ast::createFunctionType(startLoc, arena_);
+
+  // Parse parameter list
+  if (!expect(TokenKind::LParen)) {
+    return nullptr;
+  }
+
+  // Handle empty parameter list
+  if (!check(TokenKind::RParen)) {
+    // Parse first parameter
+    auto *firstParam = parseTypeExpression();
+    if (!firstParam) {
+      return nullptr; // Error already reported
+    }
+    functionType->addParam(firstParam);
+
+    // Parse remaining parameters
+    while (check(TokenKind::Comma)) {
+      advance(); // consume ','
+
+      // Check for trailing comma before closing paren (error)
+      if (check(TokenKind::RParen)) {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Trailing comma not allowed in function parameter list"));
+        return nullptr;
+      }
+
+      auto *param = parseTypeExpression();
+      if (!param) {
+        return nullptr; // Error already reported
+      }
+      functionType->addParam(param);
+    }
+  }
+
+  if (!expect(TokenKind::RParen)) {
+    return nullptr;
+  }
+
+  // Parse arrow
+  if (!expect(TokenKind::ThinArrow)) {
+    return nullptr;
+  }
+
+  // Parse return type
+  auto *returnType = parseTypeExpression();
+  if (!returnType) {
+    return nullptr; // Error already reported
+  }
+  functionType->setReturnType(returnType);
+
+  return functionType;
+}
+
+ast::ASTNode *Parser::parseTupleType() {
+  // tuple_type ::= '(' type_expression (',' type_expression)* ')'
+  // parenthesized_type ::= '(' type_expression ')'
+
+  Location startLoc = current().location;
+
+  if (!expect(TokenKind::LParen)) {
+    return nullptr;
+  }
+
+  // Handle empty tuple ()
+  if (check(TokenKind::RParen)) {
+    advance(); // consume ')'
+    auto *tupleType = ast::createTupleType(startLoc, arena_);
+    return tupleType;
+  }
+
+  // Parse first element as full type expression to handle unions
+  auto *firstType = parseTypeExpression();
+  if (!firstType) {
+    return nullptr; // Error already reported
+  }
+
+  // Check if this is a tuple (has comma) or parenthesized expression (no comma)
+  if (check(TokenKind::Comma)) {
+    // It's a tuple - create tuple type and add first element
+    auto *tupleType = ast::createTupleType(startLoc, arena_);
+    tupleType->addMember(firstType);
+
+    // Parse remaining elements
+    while (check(TokenKind::Comma)) {
+      advance(); // consume ','
+
+      // Check for trailing comma before closing paren (error)
+      if (check(TokenKind::RParen)) {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Trailing comma not allowed in tuple type"));
+        return nullptr;
+      }
+
+      auto *memberType = parseTypeExpression();
+      if (!memberType) {
+        return nullptr; // Error already reported
+      }
+      tupleType->addMember(memberType);
+    }
+
+    if (!expect(TokenKind::RParen)) {
+      return nullptr;
+    }
+
+    return tupleType;
+  } else {
+    // It's a parenthesized expression - just return the inner expression
+    if (!expect(TokenKind::RParen)) {
+      return nullptr;
+    }
+    return firstType;
+  }
 }
 
 ast::ASTNode *Parser::parseQualifiedPath(bool inExpressionContext) {

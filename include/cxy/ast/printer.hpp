@@ -135,6 +135,7 @@ protected:
   bool visitQualifiedPath(const QualifiedPathNode *node) override;
   bool visitPathSegment(const PathSegmentNode *node) override;
   bool visitPrimitiveType(const PrimitiveTypeNode *node) override;
+  bool visitArrayType(const ArrayTypeNode *node) override;
 
   bool visitUnary(const UnaryExpressionNode *node) override;
   bool visitBinary(const BinaryExpressionNode *node) override;

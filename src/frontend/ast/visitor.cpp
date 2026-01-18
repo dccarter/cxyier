@@ -69,6 +69,22 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitPathSegment(static_cast<PathSegmentNode *>(node));
   case astPrimitiveType:
     return visitPrimitiveType(static_cast<PrimitiveTypeNode *>(node));
+  case astArrayType:
+    return visitArrayType(static_cast<ArrayTypeNode *>(node));
+  case astFunctionType:
+    return visitFunctionType(static_cast<FunctionTypeNode *>(node));
+  case astUnionType:
+    return visitUnionType(static_cast<UnionTypeNode *>(node));
+  case astTupleType:
+    return visitTupleType(static_cast<TupleTypeNode *>(node));
+  case astResultType:
+    return visitResultType(static_cast<ResultTypeNode *>(node));
+  case astOptionalType:
+    return visitOptionalType(static_cast<OptionalTypeNode *>(node));
+  case astReferenceType:
+    return visitReferenceType(static_cast<ReferenceTypeNode *>(node));
+  case astPointerType:
+    return visitPointerType(static_cast<PointerTypeNode *>(node));
 
   // Expressions
   case astUnaryExpr:
@@ -167,6 +183,8 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitModuleDeclaration(static_cast<ModuleDeclarationNode *>(node));
   case astImportDeclaration:
     return visitImportDeclaration(static_cast<ImportDeclarationNode *>(node));
+  case astImportItem:
+    return visitImportItem(static_cast<ImportItemNode *>(node));
   case astTypeParameterDeclaration:
     return visitTypeParameterDeclaration(static_cast<TypeParameterDeclarationNode *>(node));
   case astGenericDeclaration:
@@ -224,6 +242,30 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
     break;
   case astPrimitiveType:
     visitPrimitiveTypePost(static_cast<PrimitiveTypeNode *>(node));
+    break;
+  case astArrayType:
+    visitArrayTypePost(static_cast<ArrayTypeNode *>(node));
+    break;
+  case astFunctionType:
+    visitFunctionTypePost(static_cast<FunctionTypeNode *>(node));
+    break;
+  case astUnionType:
+    visitUnionTypePost(static_cast<UnionTypeNode *>(node));
+    break;
+  case astTupleType:
+    visitTupleTypePost(static_cast<TupleTypeNode *>(node));
+    break;
+  case astResultType:
+    visitResultTypePost(static_cast<ResultTypeNode *>(node));
+    break;
+  case astOptionalType:
+    visitOptionalTypePost(static_cast<OptionalTypeNode *>(node));
+    break;
+  case astReferenceType:
+    visitReferenceTypePost(static_cast<ReferenceTypeNode *>(node));
+    break;
+  case astPointerType:
+    visitPointerTypePost(static_cast<PointerTypeNode *>(node));
     break;
 
   // Expressions
@@ -369,6 +411,9 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
   case astImportDeclaration:
     visitImportDeclarationPost(static_cast<ImportDeclarationNode *>(node));
     break;
+  case astImportItem:
+    visitImportItemPost(static_cast<ImportItemNode *>(node));
+    break;
   case astTypeParameterDeclaration:
     visitTypeParameterDeclarationPost(static_cast<TypeParameterDeclarationNode *>(node));
     break;
@@ -439,6 +484,22 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitPathSegment(static_cast<const PathSegmentNode *>(node));
   case astPrimitiveType:
     return visitPrimitiveType(static_cast<const PrimitiveTypeNode *>(node));
+  case astArrayType:
+    return visitArrayType(static_cast<const ArrayTypeNode *>(node));
+  case astFunctionType:
+    return visitFunctionType(static_cast<const FunctionTypeNode *>(node));
+  case astUnionType:
+    return visitUnionType(static_cast<const UnionTypeNode *>(node));
+  case astTupleType:
+    return visitTupleType(static_cast<const TupleTypeNode *>(node));
+  case astResultType:
+    return visitResultType(static_cast<const ResultTypeNode *>(node));
+  case astOptionalType:
+    return visitOptionalType(static_cast<const OptionalTypeNode *>(node));
+  case astReferenceType:
+    return visitReferenceType(static_cast<const ReferenceTypeNode *>(node));
+  case astPointerType:
+    return visitPointerType(static_cast<const PointerTypeNode *>(node));
 
   // Expressions
   case astUnaryExpr:
@@ -537,6 +598,8 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitModuleDeclaration(static_cast<const ModuleDeclarationNode *>(node));
   case astImportDeclaration:
     return visitImportDeclaration(static_cast<const ImportDeclarationNode *>(node));
+  case astImportItem:
+    return visitImportItem(static_cast<const ImportItemNode *>(node));
   case astTypeParameterDeclaration:
     return visitTypeParameterDeclaration(static_cast<const TypeParameterDeclarationNode *>(node));
   case astGenericDeclaration:
@@ -594,6 +657,30 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
   case astPrimitiveType:
     visitPrimitiveTypePost(static_cast<const PrimitiveTypeNode *>(node));
+    break;
+  case astArrayType:
+    visitArrayTypePost(static_cast<const ArrayTypeNode *>(node));
+    break;
+  case astFunctionType:
+    visitFunctionTypePost(static_cast<const FunctionTypeNode *>(node));
+    break;
+  case astUnionType:
+    visitUnionTypePost(static_cast<const UnionTypeNode *>(node));
+    break;
+  case astTupleType:
+    visitTupleTypePost(static_cast<const TupleTypeNode *>(node));
+    break;
+  case astResultType:
+    visitResultTypePost(static_cast<const ResultTypeNode *>(node));
+    break;
+  case astOptionalType:
+    visitOptionalTypePost(static_cast<const OptionalTypeNode *>(node));
+    break;
+  case astReferenceType:
+    visitReferenceTypePost(static_cast<const ReferenceTypeNode *>(node));
+    break;
+  case astPointerType:
+    visitPointerTypePost(static_cast<const PointerTypeNode *>(node));
     break;
 
   // Expressions
@@ -739,6 +826,9 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
   case astImportDeclaration:
     visitImportDeclarationPost(static_cast<const ImportDeclarationNode *>(node));
     break;
+  case astImportItem:
+    visitImportItemPost(static_cast<const ImportItemNode *>(node));
+    break;
   case astTypeParameterDeclaration:
     visitTypeParameterDeclarationPost(static_cast<const TypeParameterDeclarationNode *>(node));
     break;
@@ -844,6 +934,70 @@ bool ASTVisitor::visitPrimitiveType(PrimitiveTypeNode *node) {
 }
 
 void ASTVisitor::visitPrimitiveTypePost(PrimitiveTypeNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitArrayType(ArrayTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitArrayTypePost(ArrayTypeNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitFunctionType(FunctionTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitFunctionTypePost(FunctionTypeNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitUnionType(UnionTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitUnionTypePost(UnionTypeNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitTupleType(TupleTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitTupleTypePost(TupleTypeNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitResultType(ResultTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitResultTypePost(ResultTypeNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitOptionalType(OptionalTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitOptionalTypePost(OptionalTypeNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitReferenceType(ReferenceTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitReferenceTypePost(ReferenceTypeNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitPointerType(PointerTypeNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitPointerTypePost(PointerTypeNode *node) {
   visitNodePost(static_cast<ASTNode *>(node));
 }
 
@@ -1070,6 +1224,70 @@ bool ConstASTVisitor::visitPrimitiveType(const PrimitiveTypeNode *node) {
 }
 
 void ConstASTVisitor::visitPrimitiveTypePost(const PrimitiveTypeNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitArrayType(const ArrayTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitArrayTypePost(const ArrayTypeNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitFunctionType(const FunctionTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitFunctionTypePost(const FunctionTypeNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitUnionType(const UnionTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitUnionTypePost(const UnionTypeNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitTupleType(const TupleTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitTupleTypePost(const TupleTypeNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitResultType(const ResultTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitResultTypePost(const ResultTypeNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitOptionalType(const OptionalTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitOptionalTypePost(const OptionalTypeNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitReferenceType(const ReferenceTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitReferenceTypePost(const ReferenceTypeNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitPointerType(const PointerTypeNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitPointerTypePost(const PointerTypeNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 
@@ -1554,6 +1772,14 @@ void ASTVisitor::visitImportDeclarationPost(ImportDeclarationNode *node) {
   visitNodePost(static_cast<ASTNode *>(node));
 }
 
+bool ASTVisitor::visitImportItem(ImportItemNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitImportItemPost(ImportItemNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
 bool ASTVisitor::visitTypeParameterDeclaration(TypeParameterDeclarationNode *node) {
   return visitNode(static_cast<ASTNode *>(node));
 }
@@ -1717,6 +1943,14 @@ bool ConstASTVisitor::visitImportDeclaration(const ImportDeclarationNode *node) 
 }
 
 void ConstASTVisitor::visitImportDeclarationPost(const ImportDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitImportItem(const ImportItemNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitImportItemPost(const ImportItemNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

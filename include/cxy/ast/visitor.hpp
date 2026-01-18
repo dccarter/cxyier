@@ -30,6 +30,14 @@ class CastExpressionNode;
 class CallExpressionNode;
 class IndexExpressionNode;
 class PrimitiveTypeNode;
+class ArrayTypeNode;
+class FunctionTypeNode;
+class UnionTypeNode;
+class TupleTypeNode;
+class ResultTypeNode;
+class OptionalTypeNode;
+class ReferenceTypeNode;
+class PointerTypeNode;
 class ArrayExpressionNode;
 class TupleExpressionNode;
 class FieldExpressionNode;
@@ -72,6 +80,7 @@ class ClassDeclarationNode;
 class ExternDeclarationNode;
 class ModuleDeclarationNode;
 class ImportDeclarationNode;
+class ImportItemNode;
 class TypeParameterDeclarationNode;
 class GenericDeclarationNode;
 class TestDeclarationNode;
@@ -135,6 +144,30 @@ public:
 
   virtual bool visitPrimitiveType(PrimitiveTypeNode *node);
   virtual void visitPrimitiveTypePost(PrimitiveTypeNode *node);
+
+  virtual bool visitArrayType(ArrayTypeNode *node);
+  virtual void visitArrayTypePost(ArrayTypeNode *node);
+
+  virtual bool visitFunctionType(FunctionTypeNode *node);
+  virtual void visitFunctionTypePost(FunctionTypeNode *node);
+
+  virtual bool visitUnionType(UnionTypeNode *node);
+  virtual void visitUnionTypePost(UnionTypeNode *node);
+
+  virtual bool visitTupleType(TupleTypeNode *node);
+  virtual void visitTupleTypePost(TupleTypeNode *node);
+
+  virtual bool visitResultType(ResultTypeNode *node);
+  virtual void visitResultTypePost(ResultTypeNode *node);
+
+  virtual bool visitOptionalType(OptionalTypeNode *node);
+  virtual void visitOptionalTypePost(OptionalTypeNode *node);
+
+  virtual bool visitReferenceType(ReferenceTypeNode *node);
+  virtual void visitReferenceTypePost(ReferenceTypeNode *node);
+
+  virtual bool visitPointerType(PointerTypeNode *node);
+  virtual void visitPointerTypePost(PointerTypeNode *node);
 
   // Expression node visits
   virtual bool visitUnary(UnaryExpressionNode *node);
@@ -277,6 +310,9 @@ public:
   virtual bool visitImportDeclaration(ImportDeclarationNode *node);
   virtual void visitImportDeclarationPost(ImportDeclarationNode *node);
 
+  virtual bool visitImportItem(ImportItemNode *node);
+  virtual void visitImportItemPost(ImportItemNode *node);
+
   virtual bool visitTypeParameterDeclaration(TypeParameterDeclarationNode *node);
   virtual void visitTypeParameterDeclarationPost(TypeParameterDeclarationNode *node);
 
@@ -353,6 +389,30 @@ public:
 
   virtual bool visitPrimitiveType(const PrimitiveTypeNode *node);
   virtual void visitPrimitiveTypePost(const PrimitiveTypeNode *node);
+
+  virtual bool visitArrayType(const ArrayTypeNode *node);
+  virtual void visitArrayTypePost(const ArrayTypeNode *node);
+
+  virtual bool visitFunctionType(const FunctionTypeNode *node);
+  virtual void visitFunctionTypePost(const FunctionTypeNode *node);
+
+  virtual bool visitUnionType(const UnionTypeNode *node);
+  virtual void visitUnionTypePost(const UnionTypeNode *node);
+
+  virtual bool visitTupleType(const TupleTypeNode *node);
+  virtual void visitTupleTypePost(const TupleTypeNode *node);
+
+  virtual bool visitResultType(const ResultTypeNode *node);
+  virtual void visitResultTypePost(const ResultTypeNode *node);
+
+  virtual bool visitOptionalType(const OptionalTypeNode *node);
+  virtual void visitOptionalTypePost(const OptionalTypeNode *node);
+
+  virtual bool visitReferenceType(const ReferenceTypeNode *node);
+  virtual void visitReferenceTypePost(const ReferenceTypeNode *node);
+
+  virtual bool visitPointerType(const PointerTypeNode *node);
+  virtual void visitPointerTypePost(const PointerTypeNode *node);
 
   // Expression node visits
   virtual bool visitUnary(const UnaryExpressionNode *node);
@@ -494,6 +554,9 @@ public:
 
   virtual bool visitImportDeclaration(const ImportDeclarationNode *node);
   virtual void visitImportDeclarationPost(const ImportDeclarationNode *node);
+
+  virtual bool visitImportItem(const ImportItemNode *node);
+  virtual void visitImportItemPost(const ImportItemNode *node);
 
   virtual bool visitTypeParameterDeclaration(const TypeParameterDeclarationNode *node);
   virtual void visitTypeParameterDeclarationPost(const TypeParameterDeclarationNode *node);

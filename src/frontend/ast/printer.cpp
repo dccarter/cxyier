@@ -168,6 +168,14 @@ bool ASTPrinter::visitPrimitiveType(const PrimitiveTypeNode *node) {
   return false;
 }
 
+bool ASTPrinter::visitArrayType(const ArrayTypeNode *node) {
+    printNodeStartInline(node);
+    // if (node->size != 0)
+    //     *output_ << " " << node->size;
+    // Children will be printed automatically
+    return true;
+}
+
 bool ASTPrinter::visitQualifiedPath(const QualifiedPathNode *node) {
   printNodeStartInline(node);
   // Children will be printed automatically
