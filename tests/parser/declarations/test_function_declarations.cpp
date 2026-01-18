@@ -215,6 +215,189 @@ TEST_CASE("Function Declaration Parsing - Return Types", "[parser][declarations]
     }
 }
 
+TEST_CASE("Function Declaration Parsing - Operator Overloads", "[parser][declarations][func-decl][operators]") {
+    SECTION("func `+`(other i32) i32") {
+        auto fixture = createParserFixture("func `+`(other i32) i32");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->name != nullptr);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::Plus);
+        REQUIRE(funcDecl->parameters.size() == 1);
+        REQUIRE(funcDecl->returnType != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier add)
+  (FuncParamDeclaration
+    (Identifier other)
+    (Type i32))
+  (Type i32)))");
+    }
+
+    SECTION("func `*`(rhs i32) f64") {
+        auto fixture = createParserFixture("func `*`(rhs i32) f64");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::Mult);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier mul)
+  (FuncParamDeclaration
+    (Identifier rhs)
+    (Type i32))
+  (Type f64)))");
+    }
+
+    SECTION("func `==`(other i32) bool") {
+        auto fixture = createParserFixture("func `==`(other i32) bool");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::Equal);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier eq)
+  (FuncParamDeclaration
+    (Identifier other)
+    (Type i32))
+  (Type bool)))");
+    }
+
+    SECTION("func `[]`(index i32) f64") {
+        auto fixture = createParserFixture("func `[]`(index i32) f64");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::IndexOverride);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier index)
+  (FuncParamDeclaration
+    (Identifier index)
+    (Type i32))
+  (Type f64)))");
+    }
+
+    SECTION("func `()`() i32") {
+        auto fixture = createParserFixture("func `()`() i32");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::CallOverride);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier call)
+  (Type i32)))");
+    }
+
+    SECTION("func `[]`() bool => true") {
+        auto fixture = createParserFixture("func `[]`() bool => true");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::IndexOverride);
+        REQUIRE(funcDecl->body != nullptr);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier index)
+  (Type bool)
+  (Bool true)))");
+    }
+}
+
+TEST_CASE("Function Declaration Parsing - Increment/Decrement Operator Overloads", "[parser][declarations][func-decl][inc-dec-operators]") {
+    SECTION("func `++`() auto") {
+        auto fixture = createParserFixture("func `++`() auto");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::PlusPlus);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier inc)
+  (Type auto)))");
+    }
+
+    SECTION("func `--`() auto") {
+        auto fixture = createParserFixture("func `--`() auto");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt != nullptr);
+        REQUIRE(stmt->kind == astFuncDeclaration);
+
+        auto *funcDecl = static_cast<FuncDeclarationNode *>(stmt);
+        REQUIRE(funcDecl->isOperatorOverload() == true);
+        REQUIRE(funcDecl->operatorToken == TokenKind::MinusMinus);
+
+        REQUIRE_AST_MATCHES(stmt, R"((FuncDeclaration
+  (Identifier dec)
+  (Type auto)))");
+    }
+}
+
+TEST_CASE("Function Declaration Parsing - Invalid Operator Overloads", "[parser][declarations][func-decl][invalid-operators]") {
+    SECTION("func `!`() bool - logical not not allowed") {
+        auto fixture = createParserFixture("func `!`() bool");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("func `&`() auto - address-of not allowed") {
+        auto fixture = createParserFixture("func `&`() auto");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("func `^`() auto - bitwise not as unary not allowed") {
+        auto fixture = createParserFixture("func `^`() auto");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+
+    SECTION("func `~`() auto - bitwise complement not allowed") {
+        auto fixture = createParserFixture("func `~`() auto");
+        auto *stmt = fixture->parseDeclaration();
+
+        REQUIRE(stmt == nullptr);
+        REQUIRE(fixture->hasErrors());
+    }
+}
+
 TEST_CASE("Function Declaration Parsing - Expression Bodies", "[parser][declarations][func-decl][expr-body]") {
     SECTION("func add(a i32, b i32) => a + b") {
         auto fixture = createParserFixture("func add(a i32, b i32) => a + b");

@@ -98,6 +98,67 @@ ParseError Parser::createUnexpectedTokenError(TokenKind expected,
                     {expected}, current());
 }
 
+// Operator overload helper functions
+
+std::string Parser::getBinaryOverloadOperatorName(TokenKind token) {
+  switch (token) {
+    case TokenKind::Plus: return "add";
+    case TokenKind::Minus: return "sub";
+    case TokenKind::Mult: return "mul";
+    case TokenKind::Div: return "div";
+    case TokenKind::Mod: return "mod";
+    case TokenKind::Equal: return "eq";
+    case TokenKind::NotEqual: return "ne";
+    case TokenKind::Less: return "lt";
+    case TokenKind::LessEqual: return "le";
+    case TokenKind::Greater: return "gt";
+    case TokenKind::GreaterEqual: return "ge";
+    case TokenKind::LAnd: return "land";
+    case TokenKind::LOr: return "lor";
+    case TokenKind::BAnd: return "band";
+    case TokenKind::BOr: return "bor";
+    case TokenKind::BXor: return "bxor";
+    case TokenKind::Shl: return "shl";
+    case TokenKind::Shr: return "shr";
+    case TokenKind::PlusEqual: return "addeq";
+    case TokenKind::MinusEqual: return "subeq";
+    case TokenKind::MultEqual: return "muleq";
+    case TokenKind::DivEqual: return "diveq";
+    case TokenKind::ModEqual: return "modeq";
+    case TokenKind::BAndEqual: return "bandeq";
+    case TokenKind::BXorEqual: return "bxoreq";
+    case TokenKind::BOrEqual: return "boreq";
+    case TokenKind::ShlEqual: return "shleq";
+    case TokenKind::ShrEqual: return "shreq";
+    default: return "";
+  }
+}
+
+
+
+std::string Parser::getSpecialOverloadOperatorName(TokenKind firstToken, TokenKind secondToken, TokenKind thirdToken) {
+  // Handle multi-token operators
+  if (firstToken == TokenKind::LParen && secondToken == TokenKind::RParen) {
+    return "call";
+  }
+  if (firstToken == TokenKind::LBracket && secondToken == TokenKind::RBracket) {
+    if (thirdToken == TokenKind::Assign) {
+      return "indexassign";
+    }
+    return "index";
+  }
+  if (firstToken == TokenKind::As) {
+    return "cast";
+  }
+  if (firstToken == TokenKind::BAndDot) {
+    return "redirect";
+  }
+  if (firstToken == TokenKind::DotDot) {
+    return "range";
+  }
+  return "";
+}
+
 ParseError
 Parser::createUnexpectedTokenError(const std::vector<TokenKind> &expected,
                                    const std::string &message) {
@@ -1976,21 +2037,130 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
     return nullptr;
   }
 
-  // Parse function name
-  if (!check(TokenKind::Ident)) {
+  // Parse function name or operator overload
+  if (!check(TokenKind::Ident) && !check(TokenKind::Quote)) {
     reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
-                           "Expected function name after 'func'"));
+                           "Expected function name or operator overload after 'func'"));
     return nullptr;
   }
 
   // Create function declaration
   auto *funcDecl = ast::createFuncDeclaration(startLoc, arena_);
 
-  // Set function name
-  Token nameToken = current();
-  advance(); // consume identifier
-  auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
-  funcDecl->setName(nameNode);
+  // Parse function name or operator overload
+  if (check(TokenKind::Quote)) {
+    // Parse operator overload: `operator`
+    advance(); // consume opening backtick
+    
+    if (isAtEnd()) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Expected operator after '`'"));
+      return nullptr;
+    }
+    
+    Location operatorLoc = current().location;
+    std::string operatorName;
+    TokenKind operatorToken = TokenKind::Error;
+    
+    // Try special operators first (multi-token)
+    if (check(TokenKind::LParen) && lookahead().kind == TokenKind::RParen) {
+      // Handle () operator
+      operatorName = getSpecialOverloadOperatorName(TokenKind::LParen, TokenKind::RParen);
+      operatorToken = TokenKind::CallOverride;
+      advance(); // consume '('
+      advance(); // consume ')'
+    } else if (check(TokenKind::LBracket)) {
+      // Handle [] or []= operators
+      advance(); // consume '['
+      if (check(TokenKind::RBracket)) {
+        advance(); // consume ']'
+        if (check(TokenKind::Assign)) {
+          // []= operator
+          operatorName = getSpecialOverloadOperatorName(TokenKind::LBracket, TokenKind::RBracket, TokenKind::Assign);
+          operatorToken = TokenKind::IndexAssignOvd;
+          advance(); // consume '='
+        } else {
+          // [] operator
+          operatorName = getSpecialOverloadOperatorName(TokenKind::LBracket, TokenKind::RBracket);
+          operatorToken = TokenKind::IndexOverride;
+        }
+      } else {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Expected ']' after '['"));
+        return nullptr;
+      }
+    } else if (check(TokenKind::As)) {
+      // Handle 'as T' cast operator
+      operatorName = getSpecialOverloadOperatorName(TokenKind::As);
+      operatorToken = TokenKind::CastOverride;
+      advance(); // consume 'as'
+    } else if (check(TokenKind::BAndDot)) {
+      // Handle &. redirect operator
+      operatorName = getSpecialOverloadOperatorName(TokenKind::BAndDot);
+      operatorToken = current().kind;
+      advance(); // consume '&.'
+    } else if (check(TokenKind::DotDot)) {
+      // Handle .. range operator
+      operatorName = getSpecialOverloadOperatorName(TokenKind::DotDot);
+      operatorToken = current().kind;
+      advance(); // consume '..'
+    } else {
+      // Check for increment/decrement operators first
+      if (current().kind == TokenKind::PlusPlus) {
+        operatorName = "inc";
+        operatorToken = TokenKind::PlusPlus;
+        advance(); // consume '++'
+      } else if (current().kind == TokenKind::MinusMinus) {
+        operatorName = "dec";
+        operatorToken = TokenKind::MinusMinus;
+        advance(); // consume '--'
+      } else {
+        // Try binary operators
+        operatorName = getBinaryOverloadOperatorName(current().kind);
+        if (!operatorName.empty()) {
+          // Check for prohibited unary use of binary operators
+          TokenKind opKind = current().kind;
+          if (opKind == TokenKind::BAnd || opKind == TokenKind::BXor || 
+              opKind == TokenKind::LAnd || opKind == TokenKind::LNot || 
+              opKind == TokenKind::BNot) {
+            reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                                   "This operator cannot be overloaded"));
+            return nullptr;
+          }
+          operatorToken = current().kind;
+          advance(); // consume operator
+        } else {
+          reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                                 "Invalid operator for overload"));
+          return nullptr;
+        }
+      }
+    }
+    
+    if (!expect(TokenKind::Quote)) {
+      return nullptr; // Expected closing backtick
+    }
+    
+    // Create identifier node with operator name and set operator token
+    InternedString opName = interner_.intern(operatorName);
+    auto *nameNode = ast::createIdentifier(opName, operatorLoc, arena_);
+    funcDecl->setName(nameNode);
+    funcDecl->setOperatorToken(operatorToken);
+    
+  } else {
+    // Parse regular identifier
+    Token nameToken = current();
+    advance(); // consume identifier
+    
+    if (!nameToken.hasLiteralValue()) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, nameToken.location,
+                             "Function name token missing value"));
+      return nullptr;
+    }
+    
+    auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
+    funcDecl->setName(nameNode);
+  }
 
   // Check for generic parameters after function name
   ArenaVector<ast::ASTNode*> genericParams{ArenaSTLAllocator<ast::ASTNode*>(arena_)};

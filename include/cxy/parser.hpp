@@ -550,6 +550,28 @@ private:
   // Error tracking
   std::vector<ParseError> errors_; ///< Accumulated parse errors
 
+  // Operator overload helper functions
+
+  /**
+   * @brief Get the function name for a binary operator overload.
+   *
+   * @param token The token representing the binary operator
+   * @return String name for the operator (e.g., "add" for "+"), or empty string if not a binary operator
+   */
+  std::string getBinaryOverloadOperatorName(TokenKind token);
+
+
+
+  /**
+   * @brief Get the function name for a special operator overload (multi-token operators).
+   *
+   * @param firstToken First token in the operator sequence
+   * @param secondToken Second token in the operator sequence (TokenKind::Error if not needed)
+   * @param thirdToken Third token in the operator sequence (TokenKind::Error if not needed)
+   * @return String name for the operator (e.g., "call" for "()"), or empty string if not a special operator
+   */
+  std::string getSpecialOverloadOperatorName(TokenKind firstToken, TokenKind secondToken = TokenKind::Error, TokenKind thirdToken = TokenKind::Error);
+
   // Private parsing helpers
 
   /**
