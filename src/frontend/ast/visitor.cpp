@@ -147,6 +147,32 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitFuncParamDeclaration(static_cast<FuncParamDeclarationNode *>(node));
   case astMethodDeclaration:
     return visitMethodDeclaration(static_cast<MethodDeclarationNode *>(node));
+  case astTypeDeclaration:
+    return visitTypeDeclaration(static_cast<TypeDeclarationNode *>(node));
+  case astEnumOptionDeclaration:
+    return visitEnumOptionDeclaration(static_cast<EnumOptionDeclarationNode *>(node));
+  case astEnumDeclaration:
+    return visitEnumDeclaration(static_cast<EnumDeclarationNode *>(node));
+  case astFieldDeclaration:
+    return visitFieldDeclaration(static_cast<FieldDeclarationNode *>(node));
+  case astStructDeclaration:
+    return visitStructDeclaration(static_cast<StructDeclarationNode *>(node));
+  case astClassDeclaration:
+    return visitClassDeclaration(static_cast<ClassDeclarationNode *>(node));
+  case astExternDeclaration:
+    return visitExternDeclaration(static_cast<ExternDeclarationNode *>(node));
+  case astModuleDeclaration:
+    return visitModuleDeclaration(static_cast<ModuleDeclarationNode *>(node));
+  case astImportDeclaration:
+    return visitImportDeclaration(static_cast<ImportDeclarationNode *>(node));
+  case astTypeParameterDeclaration:
+    return visitTypeParameterDeclaration(static_cast<TypeParameterDeclarationNode *>(node));
+  case astGenericDeclaration:
+    return visitGenericDeclaration(static_cast<GenericDeclarationNode *>(node));
+  case astTestDeclaration:
+    return visitTestDeclaration(static_cast<TestDeclarationNode *>(node));
+  case astMacroDeclaration:
+    return visitMacroDeclaration(static_cast<MacroDeclarationNode *>(node));
   case astAnnotation:
     return visitAnnotation(static_cast<AnnotationNode *>(node));
   case astAnnotationList:
@@ -311,6 +337,45 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
   case astMethodDeclaration:
     visitMethodDeclarationPost(static_cast<MethodDeclarationNode *>(node));
     break;
+  case astTypeDeclaration:
+    visitTypeDeclarationPost(static_cast<TypeDeclarationNode *>(node));
+    break;
+  case astEnumOptionDeclaration:
+    visitEnumOptionDeclarationPost(static_cast<EnumOptionDeclarationNode *>(node));
+    break;
+  case astEnumDeclaration:
+    visitEnumDeclarationPost(static_cast<EnumDeclarationNode *>(node));
+    break;
+  case astFieldDeclaration:
+    visitFieldDeclarationPost(static_cast<FieldDeclarationNode *>(node));
+    break;
+  case astStructDeclaration:
+    visitStructDeclarationPost(static_cast<StructDeclarationNode *>(node));
+    break;
+  case astClassDeclaration:
+    visitClassDeclarationPost(static_cast<ClassDeclarationNode *>(node));
+    break;
+  case astExternDeclaration:
+    visitExternDeclarationPost(static_cast<ExternDeclarationNode *>(node));
+    break;
+  case astModuleDeclaration:
+    visitModuleDeclarationPost(static_cast<ModuleDeclarationNode *>(node));
+    break;
+  case astImportDeclaration:
+    visitImportDeclarationPost(static_cast<ImportDeclarationNode *>(node));
+    break;
+  case astTypeParameterDeclaration:
+    visitTypeParameterDeclarationPost(static_cast<TypeParameterDeclarationNode *>(node));
+    break;
+  case astGenericDeclaration:
+    visitGenericDeclarationPost(static_cast<GenericDeclarationNode *>(node));
+    break;
+  case astTestDeclaration:
+    visitTestDeclarationPost(static_cast<TestDeclarationNode *>(node));
+    break;
+  case astMacroDeclaration:
+    visitMacroDeclarationPost(static_cast<MacroDeclarationNode *>(node));
+    break;
   case astAnnotation:
     visitAnnotationPost(static_cast<AnnotationNode *>(node));
     break;
@@ -447,6 +512,32 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitFuncParamDeclaration(static_cast<const FuncParamDeclarationNode *>(node));
   case astMethodDeclaration:
     return visitMethodDeclaration(static_cast<const MethodDeclarationNode *>(node));
+  case astTypeDeclaration:
+    return visitTypeDeclaration(static_cast<const TypeDeclarationNode *>(node));
+  case astEnumOptionDeclaration:
+    return visitEnumOptionDeclaration(static_cast<const EnumOptionDeclarationNode *>(node));
+  case astEnumDeclaration:
+    return visitEnumDeclaration(static_cast<const EnumDeclarationNode *>(node));
+  case astFieldDeclaration:
+    return visitFieldDeclaration(static_cast<const FieldDeclarationNode *>(node));
+  case astStructDeclaration:
+    return visitStructDeclaration(static_cast<const StructDeclarationNode *>(node));
+  case astClassDeclaration:
+    return visitClassDeclaration(static_cast<const ClassDeclarationNode *>(node));
+  case astExternDeclaration:
+    return visitExternDeclaration(static_cast<const ExternDeclarationNode *>(node));
+  case astModuleDeclaration:
+    return visitModuleDeclaration(static_cast<const ModuleDeclarationNode *>(node));
+  case astImportDeclaration:
+    return visitImportDeclaration(static_cast<const ImportDeclarationNode *>(node));
+  case astTypeParameterDeclaration:
+    return visitTypeParameterDeclaration(static_cast<const TypeParameterDeclarationNode *>(node));
+  case astGenericDeclaration:
+    return visitGenericDeclaration(static_cast<const GenericDeclarationNode *>(node));
+  case astTestDeclaration:
+    return visitTestDeclaration(static_cast<const TestDeclarationNode *>(node));
+  case astMacroDeclaration:
+    return visitMacroDeclaration(static_cast<const MacroDeclarationNode *>(node));
   case astAnnotation:
     return visitAnnotation(static_cast<const AnnotationNode *>(node));
   case astAnnotationList:
@@ -610,6 +701,45 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
   case astMethodDeclaration:
     visitMethodDeclarationPost(static_cast<const MethodDeclarationNode *>(node));
+    break;
+  case astTypeDeclaration:
+    visitTypeDeclarationPost(static_cast<const TypeDeclarationNode *>(node));
+    break;
+  case astEnumOptionDeclaration:
+    visitEnumOptionDeclarationPost(static_cast<const EnumOptionDeclarationNode *>(node));
+    break;
+  case astEnumDeclaration:
+    visitEnumDeclarationPost(static_cast<const EnumDeclarationNode *>(node));
+    break;
+  case astFieldDeclaration:
+    visitFieldDeclarationPost(static_cast<const FieldDeclarationNode *>(node));
+    break;
+  case astStructDeclaration:
+    visitStructDeclarationPost(static_cast<const StructDeclarationNode *>(node));
+    break;
+  case astClassDeclaration:
+    visitClassDeclarationPost(static_cast<const ClassDeclarationNode *>(node));
+    break;
+  case astExternDeclaration:
+    visitExternDeclarationPost(static_cast<const ExternDeclarationNode *>(node));
+    break;
+  case astModuleDeclaration:
+    visitModuleDeclarationPost(static_cast<const ModuleDeclarationNode *>(node));
+    break;
+  case astImportDeclaration:
+    visitImportDeclarationPost(static_cast<const ImportDeclarationNode *>(node));
+    break;
+  case astTypeParameterDeclaration:
+    visitTypeParameterDeclarationPost(static_cast<const TypeParameterDeclarationNode *>(node));
+    break;
+  case astGenericDeclaration:
+    visitGenericDeclarationPost(static_cast<const GenericDeclarationNode *>(node));
+    break;
+  case astTestDeclaration:
+    visitTestDeclarationPost(static_cast<const TestDeclarationNode *>(node));
+    break;
+  case astMacroDeclaration:
+    visitMacroDeclarationPost(static_cast<const MacroDeclarationNode *>(node));
     break;
   case astAnnotation:
     visitAnnotationPost(static_cast<const AnnotationNode *>(node));
@@ -1326,6 +1456,110 @@ void ASTVisitor::visitMethodDeclarationPost(MethodDeclarationNode *node) {
   visitNodePost(static_cast<ASTNode *>(node));
 }
 
+bool ASTVisitor::visitTypeDeclaration(TypeDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitTypeDeclarationPost(TypeDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitEnumOptionDeclaration(EnumOptionDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitEnumOptionDeclarationPost(EnumOptionDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitEnumDeclaration(EnumDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitEnumDeclarationPost(EnumDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitFieldDeclaration(FieldDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitFieldDeclarationPost(FieldDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitStructDeclaration(StructDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitStructDeclarationPost(StructDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitClassDeclaration(ClassDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitClassDeclarationPost(ClassDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitExternDeclaration(ExternDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitExternDeclarationPost(ExternDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitModuleDeclaration(ModuleDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitModuleDeclarationPost(ModuleDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitImportDeclaration(ImportDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitImportDeclarationPost(ImportDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitTypeParameterDeclaration(TypeParameterDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitTypeParameterDeclarationPost(TypeParameterDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitGenericDeclaration(GenericDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitGenericDeclarationPost(GenericDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitTestDeclaration(TestDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitTestDeclarationPost(TestDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
+bool ASTVisitor::visitMacroDeclaration(MacroDeclarationNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitMacroDeclarationPost(MacroDeclarationNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
 bool ASTVisitor::visitAnnotation(AnnotationNode *node) {
   return visitNode(static_cast<ASTNode *>(node));
 }
@@ -1385,6 +1619,110 @@ bool ConstASTVisitor::visitMethodDeclaration(const MethodDeclarationNode *node) 
 }
 
 void ConstASTVisitor::visitMethodDeclarationPost(const MethodDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitTypeDeclaration(const TypeDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitTypeDeclarationPost(const TypeDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitEnumOptionDeclaration(const EnumOptionDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitEnumOptionDeclarationPost(const EnumOptionDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitEnumDeclaration(const EnumDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitEnumDeclarationPost(const EnumDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitFieldDeclaration(const FieldDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitFieldDeclarationPost(const FieldDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitStructDeclaration(const StructDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitStructDeclarationPost(const StructDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitClassDeclaration(const ClassDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitClassDeclarationPost(const ClassDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitExternDeclaration(const ExternDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitExternDeclarationPost(const ExternDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitModuleDeclaration(const ModuleDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitModuleDeclarationPost(const ModuleDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitImportDeclaration(const ImportDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitImportDeclarationPost(const ImportDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitTypeParameterDeclaration(const TypeParameterDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitTypeParameterDeclarationPost(const TypeParameterDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitGenericDeclaration(const GenericDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitGenericDeclarationPost(const GenericDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitTestDeclaration(const TestDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitTestDeclarationPost(const TestDeclarationNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitMacroDeclaration(const MacroDeclarationNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitMacroDeclarationPost(const MacroDeclarationNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

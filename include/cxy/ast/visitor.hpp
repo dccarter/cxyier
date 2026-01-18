@@ -62,6 +62,19 @@ class VariableDeclarationNode;
 class FuncDeclarationNode;
 class FuncParamDeclarationNode;
 class MethodDeclarationNode;
+class TypeDeclarationNode;
+class EnumOptionDeclarationNode;
+class EnumDeclarationNode;
+class FieldDeclarationNode;
+class StructDeclarationNode;
+class ClassDeclarationNode;
+class ExternDeclarationNode;
+class ModuleDeclarationNode;
+class ImportDeclarationNode;
+class TypeParameterDeclarationNode;
+class GenericDeclarationNode;
+class TestDeclarationNode;
+class MacroDeclarationNode;
 class AnnotationNode;
 class AnnotationListNode;
 
@@ -232,6 +245,45 @@ public:
 
   virtual bool visitMethodDeclaration(MethodDeclarationNode *node);
   virtual void visitMethodDeclarationPost(MethodDeclarationNode *node);
+
+  virtual bool visitTypeDeclaration(TypeDeclarationNode *node);
+  virtual void visitTypeDeclarationPost(TypeDeclarationNode *node);
+
+  virtual bool visitEnumOptionDeclaration(EnumOptionDeclarationNode *node);
+  virtual void visitEnumOptionDeclarationPost(EnumOptionDeclarationNode *node);
+
+  virtual bool visitEnumDeclaration(EnumDeclarationNode *node);
+  virtual void visitEnumDeclarationPost(EnumDeclarationNode *node);
+
+  virtual bool visitFieldDeclaration(FieldDeclarationNode *node);
+  virtual void visitFieldDeclarationPost(FieldDeclarationNode *node);
+
+  virtual bool visitStructDeclaration(StructDeclarationNode *node);
+  virtual void visitStructDeclarationPost(StructDeclarationNode *node);
+
+  virtual bool visitClassDeclaration(ClassDeclarationNode *node);
+  virtual void visitClassDeclarationPost(ClassDeclarationNode *node);
+
+  virtual bool visitExternDeclaration(ExternDeclarationNode *node);
+  virtual void visitExternDeclarationPost(ExternDeclarationNode *node);
+
+  virtual bool visitModuleDeclaration(ModuleDeclarationNode *node);
+  virtual void visitModuleDeclarationPost(ModuleDeclarationNode *node);
+
+  virtual bool visitImportDeclaration(ImportDeclarationNode *node);
+  virtual void visitImportDeclarationPost(ImportDeclarationNode *node);
+
+  virtual bool visitTypeParameterDeclaration(TypeParameterDeclarationNode *node);
+  virtual void visitTypeParameterDeclarationPost(TypeParameterDeclarationNode *node);
+
+  virtual bool visitGenericDeclaration(GenericDeclarationNode *node);
+  virtual void visitGenericDeclarationPost(GenericDeclarationNode *node);
+
+  virtual bool visitTestDeclaration(TestDeclarationNode *node);
+  virtual void visitTestDeclarationPost(TestDeclarationNode *node);
+
+  virtual bool visitMacroDeclaration(MacroDeclarationNode *node);
+  virtual void visitMacroDeclarationPost(MacroDeclarationNode *node);
 
   virtual bool visitAnnotation(AnnotationNode *node);
   virtual void visitAnnotationPost(AnnotationNode *node);
@@ -408,6 +460,45 @@ public:
 
   virtual bool visitMethodDeclaration(const MethodDeclarationNode *node);
   virtual void visitMethodDeclarationPost(const MethodDeclarationNode *node);
+
+  virtual bool visitTypeDeclaration(const TypeDeclarationNode *node);
+  virtual void visitTypeDeclarationPost(const TypeDeclarationNode *node);
+
+  virtual bool visitEnumOptionDeclaration(const EnumOptionDeclarationNode *node);
+  virtual void visitEnumOptionDeclarationPost(const EnumOptionDeclarationNode *node);
+
+  virtual bool visitEnumDeclaration(const EnumDeclarationNode *node);
+  virtual void visitEnumDeclarationPost(const EnumDeclarationNode *node);
+
+  virtual bool visitFieldDeclaration(const FieldDeclarationNode *node);
+  virtual void visitFieldDeclarationPost(const FieldDeclarationNode *node);
+
+  virtual bool visitStructDeclaration(const StructDeclarationNode *node);
+  virtual void visitStructDeclarationPost(const StructDeclarationNode *node);
+
+  virtual bool visitClassDeclaration(const ClassDeclarationNode *node);
+  virtual void visitClassDeclarationPost(const ClassDeclarationNode *node);
+
+  virtual bool visitExternDeclaration(const ExternDeclarationNode *node);
+  virtual void visitExternDeclarationPost(const ExternDeclarationNode *node);
+
+  virtual bool visitModuleDeclaration(const ModuleDeclarationNode *node);
+  virtual void visitModuleDeclarationPost(const ModuleDeclarationNode *node);
+
+  virtual bool visitImportDeclaration(const ImportDeclarationNode *node);
+  virtual void visitImportDeclarationPost(const ImportDeclarationNode *node);
+
+  virtual bool visitTypeParameterDeclaration(const TypeParameterDeclarationNode *node);
+  virtual void visitTypeParameterDeclarationPost(const TypeParameterDeclarationNode *node);
+
+  virtual bool visitGenericDeclaration(const GenericDeclarationNode *node);
+  virtual void visitGenericDeclarationPost(const GenericDeclarationNode *node);
+
+  virtual bool visitTestDeclaration(const TestDeclarationNode *node);
+  virtual void visitTestDeclarationPost(const TestDeclarationNode *node);
+
+  virtual bool visitMacroDeclaration(const MacroDeclarationNode *node);
+  virtual void visitMacroDeclarationPost(const MacroDeclarationNode *node);
 
   virtual bool visitAnnotation(const AnnotationNode *node);
   virtual void visitAnnotationPost(const AnnotationNode *node);

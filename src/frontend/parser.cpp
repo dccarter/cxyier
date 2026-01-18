@@ -2092,7 +2092,7 @@ ast::ASTNode *Parser::parseFunctionDeclaration(bool isExtern) {
     } else if (check(TokenKind::As)) {
       // Handle 'as T' cast operator
       operatorName = getSpecialOverloadOperatorName(TokenKind::As);
-      operatorToken = TokenKind::CastOverride;
+      operatorToken = TokenKind::As;
       advance(); // consume 'as'
     } else if (check(TokenKind::BAndDot)) {
       // Handle &. redirect operator
