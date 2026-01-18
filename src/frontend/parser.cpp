@@ -99,7 +99,6 @@ ParseError Parser::createUnexpectedTokenError(TokenKind expected,
 }
 
 // Operator overload helper functions
-
 std::string Parser::getBinaryOverloadOperatorName(TokenKind token) {
   switch (token) {
     case TokenKind::Plus: return "add";
@@ -832,9 +831,9 @@ ast::ASTNode *Parser::parseArrayType() {
 
 ast::ASTNode *Parser::parseReferenceType() {
   // reference_type ::= '&' primary_type
-  
+
   Location startLoc = current().location;
-  
+
   if (!expect(TokenKind::BAnd)) {
     return nullptr;
   }
@@ -853,9 +852,9 @@ ast::ASTNode *Parser::parseReferenceType() {
 
 ast::ASTNode *Parser::parsePointerType() {
   // pointer_type ::= '*' primary_type
-  
+
   Location startLoc = current().location;
-  
+
   if (!expect(TokenKind::Mult)) {
     return nullptr;
   }
@@ -874,9 +873,9 @@ ast::ASTNode *Parser::parsePointerType() {
 
 ast::ASTNode *Parser::parseOptionalType() {
   // optional_type ::= '?' primary_type
-  
+
   Location startLoc = current().location;
-  
+
   if (!expect(TokenKind::Question)) {
     return nullptr;
   }
@@ -895,9 +894,9 @@ ast::ASTNode *Parser::parseOptionalType() {
 
 ast::ASTNode *Parser::parseResultType() {
   // result_type ::= '!' primary_type
-  
+
   Location startLoc = current().location;
-  
+
   if (!expect(TokenKind::LNot)) {
     return nullptr;
   }
@@ -917,9 +916,9 @@ ast::ASTNode *Parser::parseResultType() {
 ast::ASTNode *Parser::parseFunctionType() {
   // function_type ::= 'func' '(' parameter_types? ')' '->' type_expression
   // parameter_types ::= type_expression (',' type_expression)*
-  
+
   Location startLoc = current().location;
-  
+
   if (!expect(TokenKind::Func)) {
     return nullptr;
   }
@@ -2453,6 +2452,15 @@ ast::ASTNode *Parser::parseDeclaration() {
     }
     decl = parseEnumDeclaration();
     break;
+  case TokenKind::Type:
+    // Type declarations cannot be extern
+    if (visibilityFlags & flgExtern) {
+      reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                             "Type declarations cannot be extern - they define types, not external symbols"));
+      return nullptr;
+    }
+    decl = parseTypeDeclaration();
+    break;
   case TokenKind::Struct:
   case TokenKind::Class:
     // Structs and classes cannot be extern
@@ -3607,6 +3615,13 @@ ArenaVector<ast::ASTNode*> Parser::parseGenericParameters() {
   bool hasDefaultParam = false;
   bool hasVariadicParam = false;
 
+  // Check for empty parameter list (not allowed)
+  if (check(TokenKind::Greater)) {
+    reportError(ParseError(ParseErrorType::InvalidDeclaration, current().location,
+                           "Generic parameter list cannot be empty"));
+    return ArenaVector<ast::ASTNode*>(ArenaSTLAllocator<ast::ASTNode*>(arena_)); // Return empty vector on error
+  }
+
   // Parse parameters
   while (!check(TokenKind::Greater) && !isAtEnd()) {
     // Check for variadic (must be last)
@@ -3782,6 +3797,75 @@ ast::ASTNode *Parser::parseEnumOption() {
   }
 
   return option;
+}
+
+// Type Declaration Parsing
+
+ast::ASTNode *Parser::parseTypeDeclaration() {
+  Location startLoc = current().location;
+
+  // Expect 'type' keyword
+  if (!expect(TokenKind::Type)) {
+    return nullptr;
+  }
+
+  // Parse type name
+  if (!check(TokenKind::Ident)) {
+    reportError(createUnexpectedTokenError(TokenKind::Ident, "Expected type name identifier"));
+    return nullptr;
+  }
+
+  Token nameToken = current();
+  advance(); // consume identifier
+
+  // Create type declaration
+  auto *typeDecl = ast::createTypeDeclaration(startLoc, arena_);
+  auto *nameNode = ast::createIdentifier(nameToken.value.stringValue, nameToken.location, arena_);
+  typeDecl->setName(nameNode);
+
+  // Check for generic parameters
+  ArenaVector<ast::ASTNode*> genericParams{ArenaSTLAllocator<ast::ASTNode*>(arena_)};
+  bool hasGenericParams = false;
+
+  if (check(TokenKind::Less)) {
+    hasGenericParams = true;
+    genericParams = parseGenericParameters();
+    if (genericParams.empty() && !errors_.empty()) {
+      return nullptr; // Error parsing generic parameters
+    }
+  }
+
+  // Expect '=' assignment
+  if (!expect(TokenKind::Assign)) {
+    return nullptr;
+  }
+
+  // Parse the aliased type expression
+  auto *typeExpr = parseTypeExpression();
+  if (!typeExpr) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Expected type expression after '='"));
+    return nullptr;
+  }
+
+  typeDecl->setType(typeExpr);
+
+  // If has generic parameters, wrap in GenericDeclarationNode
+  if (hasGenericParams) {
+    auto *genericDecl = ast::createGenericDeclaration(startLoc, arena_);
+
+    // Add generic parameters
+    for (auto *param : genericParams) {
+      genericDecl->addParameter(param);
+    }
+
+    // Set the type declaration as the wrapped declaration
+    genericDecl->setDeclaration(typeDecl);
+
+    return genericDecl;
+  }
+
+  return typeDecl;
 }
 
 // Struct and Class Declaration Parsing

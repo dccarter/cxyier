@@ -844,6 +844,15 @@ private:
   ast::ASTNode *parseEnumOption();
 
   /**
+   * @brief Parse a type declaration (type alias).
+   *
+   * type_declaration ::= 'type' identifier genericParameters? '=' typeExpression
+   *
+   * @return Parsed type declaration AST node, or nullptr on error
+   */
+  ast::ASTNode *parseTypeDeclaration();
+
+  /**
    * @brief Parse a struct or class declaration.
    *
    * struct_declaration ::= attributeList? visibilityModifier? 'struct' identifier genericParameters? inheritance? structBody
