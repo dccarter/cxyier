@@ -44,6 +44,11 @@ public:
   Lexer(std::string_view filename, std::string_view content,
         DiagnosticLogger &logger, StringInterner &interner);
 
+  // Template context management for >> splitting
+  void enterTemplateContext();
+  void exitTemplateContext();
+  bool inTemplateContext() const;
+
 private:
   // Buffer stack for include directives
   struct LexerBuffer {
@@ -70,6 +75,9 @@ private:
   };
 
   std::vector<InterpolationContext> interpolationStack;
+
+  // Template context tracking for >> splitting in generics
+  int templateDepth;
 
   // Core lexing methods
   Token lexNextToken();

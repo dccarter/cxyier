@@ -10,7 +10,7 @@ namespace cxy {
 // Constructor
 Lexer::Lexer(std::string_view filename, std::string_view content,
              DiagnosticLogger &logger, StringInterner &interner)
-    : logger(logger), interner(interner) {
+    : logger(logger), interner(interner), templateDepth(0) {
   bufferStack.push_back({filename, content, 0, 1, 1, 0});
 }
 
@@ -179,6 +179,12 @@ Token Lexer::lexNextToken() {
       advance();
       return Token(TokenKind::GreaterEqual, makeLocation(start));
     } else if (currentChar() == '>') {
+      // In template context, split >> into two separate > tokens
+      if (inTemplateContext()) {
+        // Don't advance past the second >, return first > and let next call handle second >
+        return Token(TokenKind::Greater, makeLocation(start));
+      }
+      // Normal >> handling outside template context
       advance();
       if (currentChar() == '=') {
         advance();
@@ -228,6 +234,10 @@ Token Lexer::lexNextToken() {
     return Token(TokenKind::Comma, makeLocation(start));
   case ':':
     advance();
+    if (currentChar() == ':') {
+      advance();
+      return Token(TokenKind::ColonColon, makeLocation(start));
+    }
     return Token(TokenKind::Colon, makeLocation(start));
   case '?':
     advance();
@@ -324,6 +334,20 @@ Token Lexer::lexNextToken() {
               "Invalid character: '" + std::string(1, c) + "'");
   advance();
   return createErrorToken();
+}
+
+void Lexer::enterTemplateContext() {
+  templateDepth++;
+}
+
+void Lexer::exitTemplateContext() {
+  if (templateDepth > 0) {
+    templateDepth--;
+  }
+}
+
+bool Lexer::inTemplateContext() const {
+  return templateDepth > 0;
 }
 
 char Lexer::currentChar() const {

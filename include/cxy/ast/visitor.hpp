@@ -16,6 +16,7 @@ class NullLiteralNode;
 
 class IdentifierNode;
 class QualifiedPathNode;
+class PathSegmentNode;
 
 class ExpressionNode;
 class UnaryExpressionNode;
@@ -128,6 +129,9 @@ public:
 
   virtual bool visitQualifiedPath(QualifiedPathNode *node);
   virtual void visitQualifiedPathPost(QualifiedPathNode *node);
+
+  virtual bool visitPathSegment(PathSegmentNode *node);
+  virtual void visitPathSegmentPost(PathSegmentNode *node);
 
   virtual bool visitPrimitiveType(PrimitiveTypeNode *node);
   virtual void visitPrimitiveTypePost(PrimitiveTypeNode *node);
@@ -343,6 +347,9 @@ public:
 
   virtual bool visitQualifiedPath(const QualifiedPathNode *node);
   virtual void visitQualifiedPathPost(const QualifiedPathNode *node);
+
+  virtual bool visitPathSegment(const PathSegmentNode *node);
+  virtual void visitPathSegmentPost(const PathSegmentNode *node);
 
   virtual bool visitPrimitiveType(const PrimitiveTypeNode *node);
   virtual void visitPrimitiveTypePost(const PrimitiveTypeNode *node);

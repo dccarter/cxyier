@@ -140,8 +140,8 @@ TEST_CASE("Parser: Cast expression error cases",
     expectParseFailure(expr);
   }
 
-  SECTION("Invalid type name") {
-    auto fixture = createParserFixture("x as invalid_type");
+  SECTION("Invalid type syntax") {
+    auto fixture = createParserFixture("x as 123invalid");
     auto *expr = fixture->parseExpression();
     expectParseFailure(expr);
   }

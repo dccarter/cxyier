@@ -174,6 +174,13 @@ bool ASTPrinter::visitQualifiedPath(const QualifiedPathNode *node) {
   return true;
 }
 
+bool ASTPrinter::visitPathSegment(const PathSegmentNode *node) {
+  printNodeStartInline(node);
+  *output_ << " " << node->name.view();
+  // Generic arguments will be printed as children
+  return true;
+}
+
 bool ASTPrinter::visitUnary(const UnaryExpressionNode *node) {
   printNodeStartInline(node);
   *output_ << " " << tokenKindToString(node->op);

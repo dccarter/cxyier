@@ -99,6 +99,13 @@ public:
   }
 
   /**
+   * @brief Parse a type expression and return the result.
+   */
+  ast::ASTNode *parseTypeExpression() {
+    return parser_.parseTypeExpression();
+  }
+
+  /**
    * @brief Parse a literal expression and return the result.
    */
   ast::ASTNode *parseLiteralExpression() {

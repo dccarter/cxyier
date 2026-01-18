@@ -22,9 +22,11 @@ namespace cxy::ast {
     /* Identifiers and Paths */ \
     f(Identifier)               \
     f(QualifiedPath)            \
+    f(PathSegment)              \
                                 \
     /* Types */                 \
     f(PrimitiveType)            \
+    f(GenericInstantiation)     \
                                 \
     /* Attributes */            \
     f(Attribute)                \

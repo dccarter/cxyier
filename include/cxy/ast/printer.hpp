@@ -133,6 +133,7 @@ protected:
 
   bool visitIdentifier(const IdentifierNode *node) override;
   bool visitQualifiedPath(const QualifiedPathNode *node) override;
+  bool visitPathSegment(const PathSegmentNode *node) override;
   bool visitPrimitiveType(const PrimitiveTypeNode *node) override;
 
   bool visitUnary(const UnaryExpressionNode *node) override;

@@ -283,6 +283,37 @@ public:
   ast::ASTNode *parseTypeExpression();
 
   /**
+   * @brief Parse a qualified path (identifier with optional segments).
+   *
+   * qualified_path ::= identifier ('.' identifier)* ('<' type_list '>')?
+   *
+   * @param inExpressionContext If true, allows :: prefixed types in generic arguments
+   * @return Parsed qualified path AST node, or nullptr on error
+   */
+  ast::ASTNode *parseQualifiedPath(bool inExpressionContext = false);
+
+  /**
+   * @brief Parse generic arguments list.
+   *
+   * generic_arguments ::= '<' type_expression (',' type_expression)* '>'
+   *
+   * @param args Target vector to populate with parsed arguments
+   * @param inExpressionContext If true, allows :: prefixed types in arguments
+   * @return true if parsing succeeded, false on error
+   */
+  bool parseGenericArguments(ArenaVector<ast::ASTNode*>& args, bool inExpressionContext = false);
+
+  /**
+   * @brief Parse a qualified path in expression context (allows :: prefix).
+   *
+   * This is used when parsing qualified paths that appear in expressions
+   * where :: prefix is required for disambiguation.
+   *
+   * @return Parsed qualified path AST node, or nullptr on error
+   */
+  ast::ASTNode *parseQualifiedPathInExpressionContext();
+
+  /**
    * @brief Parse a postfix expression (postfix operators).
    *
    * postfix_expression ::=
@@ -501,7 +532,7 @@ public:
    *
    * statement ::=
    *   | break_statement
-   *   | continue_statement  
+   *   | continue_statement
    *   | expression_statement
    *
    * @return Parsed statement AST node, or nullptr on error
@@ -581,7 +612,7 @@ private:
    *
    * generic_param ::= variadic_generic_modifier? identifier generic_constraint? generic_default_value?
    * variadic_generic_modifier ::= '...'
-   * generic_constraint ::= ':' type_expression  
+   * generic_constraint ::= ':' type_expression
    * generic_default_value ::= '=' type_expression
    *
    * @return Parsed generic parameter AST node, or nullptr on error

@@ -412,8 +412,8 @@ TEST_CASE("Variable Declaration Parsing - Error Cases", "[parser][statements][va
         REQUIRE(fixture->hasErrors());
     }
 
-    SECTION("var x: InvalidType") {
-        auto fixture = createParserFixture("var x: InvalidType");
+    SECTION("var x: 123invalid") {
+        auto fixture = createParserFixture("var x: 123invalid");
         auto *stmt = fixture->parseDeclaration();
 
         REQUIRE(stmt == nullptr);

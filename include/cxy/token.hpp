@@ -60,6 +60,7 @@ enum class FloatKind : uint8_t {
   f(Question, "?")                                                             \
   f(Comma, ",")                                                                \
   f(Colon, ":")                                                                \
+  f(ColonColon, "::")                                                          \
   f(Semicolon, ";")                                                            \
   f(Assign, "=")                                                               \
   f(Equal, "==")                                                               \
@@ -99,7 +100,7 @@ enum class FloatKind : uint8_t {
   f(CallOverride, "()")                                                        \
   f(IndexOverride, "[]")                                                       \
   f(IndexAssignOvd, "[]=")                                                     \
-  f(TruthyOverload, "!!")                                                    \
+  f(TruthyOverload, "bool")                                                    \
   f(AstMacroAccess, "#.")                                                      \
   f(Define, "##")                                                              \
   f(BangColon, "!:")

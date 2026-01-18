@@ -65,6 +65,8 @@ bool ASTVisitor::dispatchVisit(ASTNode *node) {
     return visitIdentifier(static_cast<IdentifierNode *>(node));
   case astQualifiedPath:
     return visitQualifiedPath(static_cast<QualifiedPathNode *>(node));
+  case astPathSegment:
+    return visitPathSegment(static_cast<PathSegmentNode *>(node));
   case astPrimitiveType:
     return visitPrimitiveType(static_cast<PrimitiveTypeNode *>(node));
 
@@ -216,6 +218,9 @@ void ASTVisitor::dispatchVisitPost(ASTNode *node) {
     break;
   case astQualifiedPath:
     visitQualifiedPathPost(static_cast<QualifiedPathNode *>(node));
+    break;
+  case astPathSegment:
+    visitPathSegmentPost(static_cast<PathSegmentNode *>(node));
     break;
   case astPrimitiveType:
     visitPrimitiveTypePost(static_cast<PrimitiveTypeNode *>(node));
@@ -430,6 +435,8 @@ bool ConstASTVisitor::dispatchVisit(const ASTNode *node) {
     return visitIdentifier(static_cast<const IdentifierNode *>(node));
   case astQualifiedPath:
     return visitQualifiedPath(static_cast<const QualifiedPathNode *>(node));
+  case astPathSegment:
+    return visitPathSegment(static_cast<const PathSegmentNode *>(node));
   case astPrimitiveType:
     return visitPrimitiveType(static_cast<const PrimitiveTypeNode *>(node));
 
@@ -581,6 +588,9 @@ void ConstASTVisitor::dispatchVisitPost(const ASTNode *node) {
     break;
   case astQualifiedPath:
     visitQualifiedPathPost(static_cast<const QualifiedPathNode *>(node));
+    break;
+  case astPathSegment:
+    visitPathSegmentPost(static_cast<const PathSegmentNode *>(node));
     break;
   case astPrimitiveType:
     visitPrimitiveTypePost(static_cast<const PrimitiveTypeNode *>(node));
@@ -821,6 +831,14 @@ void ASTVisitor::visitQualifiedPathPost(QualifiedPathNode *node) {
   visitNodePost(static_cast<ASTNode *>(node));
 }
 
+bool ASTVisitor::visitPathSegment(PathSegmentNode *node) {
+  return visitNode(static_cast<ASTNode *>(node));
+}
+
+void ASTVisitor::visitPathSegmentPost(PathSegmentNode *node) {
+  visitNodePost(static_cast<ASTNode *>(node));
+}
+
 bool ASTVisitor::visitPrimitiveType(PrimitiveTypeNode *node) {
   return visitNode(static_cast<ASTNode *>(node));
 }
@@ -1036,6 +1054,14 @@ bool ConstASTVisitor::visitQualifiedPath(const QualifiedPathNode *node) {
 }
 
 void ConstASTVisitor::visitQualifiedPathPost(const QualifiedPathNode *node) {
+  visitNodePost(static_cast<const ASTNode *>(node));
+}
+
+bool ConstASTVisitor::visitPathSegment(const PathSegmentNode *node) {
+  return visitNode(static_cast<const ASTNode *>(node));
+}
+
+void ConstASTVisitor::visitPathSegmentPost(const PathSegmentNode *node) {
   visitNodePost(static_cast<const ASTNode *>(node));
 }
 

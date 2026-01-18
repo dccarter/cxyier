@@ -359,7 +359,7 @@ TEST_CASE("Match Statement Parsing - Error Cases", "[parser][statements][match-s
     }
 
     SECTION("Invalid type in pattern") {
-        auto fixture = createParserFixture("match value { invalid_type => handle() }");
+        auto fixture = createParserFixture("match value { 123invalid => handle() }");
         auto *stmt = fixture->parseStatement();
 
         REQUIRE(stmt == nullptr);

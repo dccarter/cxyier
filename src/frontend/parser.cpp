@@ -683,22 +683,190 @@ ast::ASTNode *Parser::parseCastExpression(bool withoutStructLiterals) {
 }
 
 ast::ASTNode *Parser::parseTypeExpression() {
-  // type_expression ::= primitive_type
+  // type_expression ::= primitive_type | qualified_path
   // primitive_type ::= 'i8' | 'i16' | 'i32' | 'i64' | 'i128'
   //                  | 'u8' | 'u16' | 'u32' | 'u64' | 'u128'
   //                  | 'f32' | 'f64' | 'bool' | 'char' | 'void'
   //                  | 'auto' | 'string'
+  // qualified_path ::= identifier ('.' identifier)* ('<' type_list '>')?
 
-  if (!isPrimitiveType(current().kind)) {
+  // Handle primitive types
+  if (isPrimitiveType(current().kind)) {
+    Token typeToken = current();
+    advance(); // consume type token
+    return ast::createPrimitiveType(typeToken.kind, typeToken.location, arena_);
+  }
+
+  // Handle identifiers and qualified paths
+  if (check(TokenKind::Ident)) {
+    // Check if it's actually a qualified path (has . or <)
+    if (lookahead(1).kind == TokenKind::Dot || lookahead(1).kind == TokenKind::Less) {
+      return parseQualifiedPath();  // True qualified path
+    } else {
+      // Simple identifier
+      Token identToken = current();
+      advance();
+      InternedString name = identToken.value.stringValue;
+      return ast::createIdentifier(name, identToken.location, arena_);
+    }
+  }
+
+  reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                         "Expected type name"));
+  return nullptr;
+}
+
+ast::ASTNode *Parser::parseQualifiedPath(bool inExpressionContext) {
+  // qualified_path ::= identifier ('.' identifier)* ('<' type_list '>')?
+  // path_segment ::= identifier ('<' type_list '>')?
+
+  if (!check(TokenKind::Ident)) {
     reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
-                           "Expected type name"));
+                           "Expected identifier"));
     return nullptr;
   }
 
-  Token typeToken = current();
-  advance(); // consume type token
+  Location startLoc = current().location;
+  auto *qualifiedPath = ast::createQualifiedPath(startLoc, arena_);
 
-  return ast::createPrimitiveType(typeToken.kind, typeToken.location, arena_);
+  // Parse first segment
+  Token identToken = current();
+  advance(); // consume identifier
+
+  InternedString segmentName = identToken.value.stringValue;
+  auto *segment = arena_.construct<ast::PathSegmentNode>(segmentName, identToken.location, arena_);
+
+  // Check for generic arguments on this segment
+  if (check(TokenKind::Less)) {
+    if (!parseGenericArguments(segment->args, inExpressionContext)) {
+      return nullptr; // Error in generic arguments
+    }
+    // Add parsed arguments as children to maintain AST relationships
+    for (auto *arg : segment->args) {
+      segment->addChild(arg);
+    }
+  }
+
+  qualifiedPath->addSegment(segment);
+
+  // Parse additional segments
+  while (check(TokenKind::Dot)) {
+    advance(); // consume '.'
+
+    if (!check(TokenKind::Ident)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Expected identifier after '.'"));
+      return nullptr;
+    }
+
+    Token segmentToken = current();
+    advance(); // consume identifier
+
+    InternedString nextSegmentName = segmentToken.value.stringValue;
+    auto *nextSegment = arena_.construct<ast::PathSegmentNode>(nextSegmentName, segmentToken.location, arena_);
+
+    // Check for generic arguments on this segment
+    if (check(TokenKind::Less)) {
+      if (!parseGenericArguments(nextSegment->args, inExpressionContext)) {
+        return nullptr; // Error in generic arguments
+      }
+      // Add parsed arguments as children to maintain AST relationships
+      for (auto *arg : nextSegment->args) {
+        nextSegment->addChild(arg);
+      }
+    }
+
+    qualifiedPath->addSegment(nextSegment);
+  }
+
+  // Always return QualifiedPathNode for consistency
+  return qualifiedPath;
+}
+
+bool Parser::parseGenericArguments(ArenaVector<ast::ASTNode*>& args, bool inExpressionContext) {
+  // generic_arguments ::= '<' type_expression (',' type_expression)* '>'
+  // In expression context, type_expression can include :: prefix
+
+  if (!expect(TokenKind::Less)) {
+    return false;
+  }
+
+  // Enter template context for >> splitting
+  lexer_.enterTemplateContext();
+
+  // Handle empty generic arguments (error case)
+  if (check(TokenKind::Greater)) {
+    reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                           "Empty generic arguments not allowed"));
+    advance(); // consume '>' to prevent infinite loops
+    lexer_.exitTemplateContext();
+    return false;
+  }
+
+  // Parse first type argument
+  ast::ASTNode *firstArg = nullptr;
+  if (inExpressionContext && check(TokenKind::ColonColon)) {
+    advance(); // consume '::'
+    if (!check(TokenKind::Ident)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Expected identifier after '::'"));
+      lexer_.exitTemplateContext();
+      return false;
+    }
+    firstArg = parseQualifiedPath();
+  } else {
+    firstArg = parseTypeExpression();
+  }
+
+  if (!firstArg) {
+    lexer_.exitTemplateContext();
+    return false; // Error already reported
+  }
+  args.push_back(firstArg);
+  // Note: Parent will handle addChild() when adding args to segment
+
+  // Parse additional type arguments
+  while (check(TokenKind::Comma)) {
+    advance(); // consume ','
+
+    // Check for trailing comma or missing argument
+    if (check(TokenKind::Greater)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Missing type argument after ','"));
+      lexer_.exitTemplateContext();
+      return false;
+    }
+
+    ast::ASTNode *arg = nullptr;
+    if (inExpressionContext && check(TokenKind::ColonColon)) {
+      advance(); // consume '::'
+      if (!check(TokenKind::Ident)) {
+        reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                               "Expected identifier after '::'"));
+        lexer_.exitTemplateContext();
+        return false;
+      }
+      arg = parseQualifiedPath();
+    } else {
+      arg = parseTypeExpression();
+    }
+
+    if (!arg) {
+      lexer_.exitTemplateContext();
+      return false; // Error already reported
+    }
+    args.push_back(arg);
+    // Note: Parent will handle addChild() when adding args to segment
+  }
+
+  if (!expect(TokenKind::Greater)) {
+    lexer_.exitTemplateContext();
+    return false;
+  }
+
+  // Exit template context
+  lexer_.exitTemplateContext();
+  return true;
 }
 
 ast::ASTNode *Parser::parsePostfixExpression(bool withoutStructLiterals) {
@@ -877,6 +1045,19 @@ ast::ASTNode *Parser::parsePrimaryExpression(bool withoutStructLiterals) {
     return parseInterpolatedString();
   }
 
+  // Check for :: prefixed qualified paths in expression context
+  if (check(TokenKind::ColonColon)) {
+    advance(); // consume '::'
+
+    if (!check(TokenKind::Ident)) {
+      reportError(ParseError(ParseErrorType::UnexpectedToken, current().location,
+                             "Expected identifier after '::'"));
+      return nullptr;
+    }
+
+    return parseQualifiedPath(true); // Expression context
+  }
+
   // Try identifier expression or macro call
   if (check(TokenKind::Ident)) {
     // Check for macro call (identifier followed by '!')
@@ -893,15 +1074,17 @@ ast::ASTNode *Parser::parsePrimaryExpression(bool withoutStructLiterals) {
       TokenKind::StringLiteral, TokenKind::LString,      TokenKind::True,
       TokenKind::False,         TokenKind::Null,         TokenKind::Ident,
       TokenKind::LParen,        TokenKind::LBracket,     TokenKind::LBrace,
-      TokenKind::Elipsis};
+      TokenKind::Elipsis,       TokenKind::ColonColon};
 
   ParseError error = createUnexpectedTokenError(
       expected, "Expected literal, identifier, parenthesized expression, "
-                "array literal, struct literal, spread expression, or "
-                "interpolated string");
+      "array literal, struct literal, spread expression, "
+      "interpolated string, or :: prefixed type");
   reportError(error);
   return nullptr;
 }
+
+
 
 ast::ASTNode *Parser::parseLiteralExpression() {
   // literal_expression ::=

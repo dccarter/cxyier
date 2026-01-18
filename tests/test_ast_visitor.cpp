@@ -68,14 +68,14 @@ TEST_CASE("AST Node Creation and Basic Properties", "[ast][visitor]") {
 
   SECTION("Qualified path creation and formatting") {
     auto *qualPath = createQualifiedPath(loc, allocator);
-    qualPath->addSegment(interner.intern("Hello"));
-    qualPath->addSegment(interner.intern("age"));
+    qualPath->addSegment(interner.intern("Hello"), loc, allocator);
+    qualPath->addSegment(interner.intern("age"), loc, allocator);
 
     REQUIRE(qualPath->kind == astQualifiedPath);
     REQUIRE(qualPath->segments.size() == 2);
-    REQUIRE(qualPath->segments[0].name.toString() == "Hello");
-    REQUIRE(qualPath->segments[1].name.toString() == "age");
-    REQUIRE(nodeToString(qualPath) == "QualifiedPath(Hello.age)");
+    REQUIRE(qualPath->segments[0]->name.toString() == "Hello");
+    REQUIRE(qualPath->segments[1]->name.toString() == "age");
+    REQUIRE(nodeToString(qualPath) == "QualifiedPath(PathSegment(Hello)).PathSegment(age)))");
   }
 }
 
