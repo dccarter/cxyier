@@ -40,8 +40,10 @@ void ConsoleDiagnosticSink::emit(const DiagnosticMessage &msg) {
   std::cout << getSeverityColor(msg.severity) << severityStr << ": "
             << getResetColor() << msg.message << "\n";
 
-  // Print location header
-  std::cout << formatLocationHeader(msg.primaryLocation) << "\n";
+  // Print location header only if location is valid
+  if (msg.primaryLocation.isValid()) {
+    std::cout << formatLocationHeader(msg.primaryLocation) << "\n";
+  }
 
   // Print source line with caret if available
   if (sourceManager && sourceManager->hasFile(msg.primaryLocation.filename)) {

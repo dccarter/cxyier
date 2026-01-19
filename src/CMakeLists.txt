@@ -1,4 +1,4 @@
-add_executable(cxyier main.cpp)
+add_executable(cxy main.cpp)
 
 # Create a library for the memory management system
 add_library(cxy_memory STATIC
@@ -14,7 +14,11 @@ add_library(cxy_memory STATIC
     frontend/parser.cpp
     types/type.cpp
     types/primitive.cpp
+    types/composite.cpp
     types/utilities.cpp
+    compiler/options.cpp
+    compiler/option_utils.cpp
+    compiler/option_parser.cpp
 )
 
 target_include_directories(cxy_memory PUBLIC
@@ -22,4 +26,4 @@ target_include_directories(cxy_memory PUBLIC
 )
 
 # Link memory library to main executable
-target_link_libraries(cxyier PRIVATE cxy_memory)
+target_link_libraries(cxy PRIVATE cxy_memory)

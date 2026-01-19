@@ -1,29 +1,17 @@
-```
-pub class Demo {
-  `Annotation = i32
-  value i32 // field declaration with type
-  value2 = T()  // field declaration with default
-  priv value3 T = T() // field declaration will access modifier
-  
-  func say() {} 
-  const func say() {}
-  priv func done() {}
-  @inline
-  func who(){}
-  func `+`(x i32) => x + 10 // Binary operator overload
-  func `()`() {} // Call operator overload
-  func `[]`(x i32) {} // Index operator overload
-  func `[]=`(key string, value i32){} // Index assignment operator overload
-  func `as i32`() {} // Cast operator overload
-  func `&.`() {} // Redirect. if it returns a.b.c to be writtern as a&.c if the overload returns b
-  func `..`() {} // range operator overload
-}
+if (options->libDir == NULL) {
+        options->libDir = makeString(strings, getenv("CXY_STDLIB_DIR"));
+    }
+    cstring cxyRoot = getenv("CXY_ROOT");
+    if (options->libDir == NULL && cxyRoot != NULL) {
+        options->libDir = makeStringConcat(strings, cxyRoot, "/lib/cxy/std");
+    }
 
-// Structs & classes can have base, semantics can be different
-@poco
-struct Hello : Base {
-}
-
-class Print<T, U: isInteger, V = i32>: Base {
-}
-```
+    if (options->pluginsDir == NULL) {
+        if (options->buildDir) {
+            options->pluginsDir =
+                makeStringConcat(strings, options->buildDir, "/plugins");
+        }
+        else {
+            options->pluginsDir = makeString(strings, "./plugins");
+        }
+    }

@@ -2,6 +2,7 @@
 
 #include "types/kind.hpp"
 #include "types/primitive.hpp"
+#include "types/composite.hpp"
 #include "types/registry.hpp"
 
 namespace cxy {

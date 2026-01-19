@@ -47,18 +47,28 @@ bool IntegerType::isAssignableFrom(const Type* other) const {
 }
 
 bool IntegerType::isImplicitlyConvertibleTo(const Type* other) const {
+    // Check for integer-to-integer conversions
     const auto* otherInt = dynamic_cast<const IntegerType*>(other);
-    if (!otherInt) return false;
+    if (otherInt) {
+        // C-style implicit conversion rules
+        size_t thisBits = getBitWidth();
+        size_t otherBits = otherInt->getBitWidth();
 
-    // C-style implicit conversion rules
-    size_t thisBits = getBitWidth();
-    size_t otherBits = otherInt->getBitWidth();
+        // Can always convert to larger type (widening)
+        if (thisBits < otherBits) return true;
 
-    // Can always convert to larger type
-    if (thisBits < otherBits) return true;
+        // Unsigned can convert to signed if target is larger
+        if (!isSigned() && otherInt->isSigned() && thisBits < otherBits) return true;
 
-    // Unsigned can convert to signed if target is larger
-    if (!isSigned() && otherInt->isSigned() && thisBits < otherBits) return true;
+        return false;
+    }
+
+    // Check for integer-to-float conversions
+    const auto* otherFloat = dynamic_cast<const FloatType*>(other);
+    if (otherFloat) {
+        // All integers can implicitly convert to floats (standard C-style behavior)
+        return true;
+    }
 
     return false;
 }
@@ -70,6 +80,37 @@ bool IntegerType::isExplicitlyConvertibleTo(const Type* other) const {
 
 bool IntegerType::isCompatibleWith(const Type* other) const {
     return isImplicitlyConvertibleTo(other) || isExplicitlyConvertibleTo(other);
+}
+
+bool IntegerType::canBeImplicitlyPassedTo(const Type* parameterType) const {
+    // Check for integer-to-integer conversions with C-style function call rules
+    const auto* paramInt = dynamic_cast<const IntegerType*>(parameterType);
+    if (paramInt) {
+        // Function calls allow more permissive conversions than assignment
+        size_t thisBits = getBitWidth();
+        size_t paramBits = paramInt->getBitWidth();
+
+        // Widening is always allowed
+        if (thisBits < paramBits) return true;
+
+        // Narrowing is allowed in function calls (with potential warning)
+        if (thisBits > paramBits) return true;
+
+        // Same-size signed/unsigned conversions are allowed
+        if (thisBits == paramBits) return true;
+
+        return false;
+    }
+
+    // Check for integer-to-float conversions
+    const auto* paramFloat = dynamic_cast<const FloatType*>(parameterType);
+    if (paramFloat) {
+        // All integers can be passed to float parameters
+        return true;
+    }
+
+    // For other types, use default behavior
+    return isImplicitlyConvertibleTo(parameterType);
 }
 
 size_t IntegerType::getStaticSize() const {

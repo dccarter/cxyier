@@ -49,6 +49,7 @@ public:
     [[nodiscard]] bool isImplicitlyConvertibleTo(const Type* other) const override;
     [[nodiscard]] bool isExplicitlyConvertibleTo(const Type* other) const override;
     [[nodiscard]] bool isCompatibleWith(const Type* other) const override;
+    [[nodiscard]] bool canBeImplicitlyPassedTo(const Type* parameterType) const override;
 
     // Size and alignment information
     [[nodiscard]] size_t getStaticSize() const override;

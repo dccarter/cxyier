@@ -10,6 +10,7 @@ add_executable(cxyier_tests
     test_diagnostics.cpp
     test_token.cpp
     test_lexer.cpp
+    test_compiler_options.cpp
     test_string_interpolation.cpp
     test_includes.cpp
     test_ast_visitor.cpp
@@ -64,6 +65,8 @@ add_executable(cxyier_tests
     parser/declarations/test_module_declarations.cpp
     types/test_type_infrastructure.cpp
     types/test_primitive_types.cpp
+    types/test_composite_types.cpp
+    types/test_array_types.cpp
     parser/types/test_qualified_paths.cpp
     parser/types/test_complex_types.cpp
     ast_printer_statements_test.cpp

@@ -65,6 +65,18 @@ public:
     [[nodiscard]] virtual bool isExplicitlyConvertibleTo(const Type* other) const = 0;
     [[nodiscard]] virtual bool isCompatibleWith(const Type* other) const = 0;
 
+    /**
+     * @brief Check if this type can be implicitly passed as a function argument.
+     * 
+     * This is more permissive than isImplicitlyConvertibleTo and follows
+     * C-style function call conversion rules which allow some narrowing
+     * conversions that are not allowed in assignment contexts.
+     * 
+     * @param parameterType The function parameter type to check against
+     * @return true if this type can be passed to a parameter of the given type
+     */
+    [[nodiscard]] virtual bool canBeImplicitlyPassedTo(const Type* parameterType) const;
+
     // Size and alignment information
     [[nodiscard]] virtual size_t getStaticSize() const = 0;
     [[nodiscard]] virtual size_t getAlignment() const = 0;

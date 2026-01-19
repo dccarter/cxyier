@@ -339,4 +339,26 @@ inline PointerTypeNode *createPointerType(Location loc, ArenaAllocator &arena) {
   return arena.construct<PointerTypeNode>(loc, arena);
 }
 
+/**
+ * @brief Type reference node for compile-time type values.
+ * 
+ * Represents a type as a compile-time value that can be returned from
+ * compile-time property queries. The actual type information is stored
+ * in the node's type field.
+ */
+class TypeReferenceNode : public ASTNode {
+public:
+  explicit TypeReferenceNode(Location loc, ArenaAllocator &arena)
+      : ASTNode(astTypeReference, loc, arena) {}
+
+  std::format_context::iterator
+  toString(std::format_context &ctx) const override {
+    if (type) {
+      return std::format_to(ctx.out(), "TypeRef(<type>)");
+    } else {
+      return std::format_to(ctx.out(), "TypeRef(unresolved)");
+    }
+  }
+};
+
 } // namespace cxy::ast

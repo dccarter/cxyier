@@ -34,6 +34,7 @@ namespace cxy::ast {
     f(OptionalType)             \
     f(ResultType)               \
     f(FunctionType)             \
+    f(TypeReference)            \
                                 \
     /* Attributes */            \
     f(Attribute)                \
