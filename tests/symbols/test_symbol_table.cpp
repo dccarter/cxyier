@@ -1,5 +1,5 @@
 #include "catch2.hpp"
-#include "cxy/symbols.hpp"
+#include "cxy/stages/symbols.hpp"
 #include "cxy/diagnostics.hpp"
 #include "cxy/memory/arena.hpp"
 #include "cxy/strings.hpp"

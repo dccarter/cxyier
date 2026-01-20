@@ -1,4 +1,4 @@
-#include "cxy/symbols.hpp"
+#include "cxy/stages/symbols.hpp"
 #include "cxy/ast/node.hpp"
 #include <algorithm>
 

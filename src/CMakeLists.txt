@@ -19,7 +19,7 @@ add_library(cxy_memory STATIC
     compiler/options.cpp
     compiler/option_utils.cpp
     compiler/option_parser.cpp
-    symbols.cpp
+    stages/symbols.cpp
 )
 
 target_include_directories(cxy_memory PUBLIC
