@@ -67,6 +67,9 @@ add_executable(cxyier_tests
     types/test_primitive_types.cpp
     types/test_composite_types.cpp
     types/test_array_types.cpp
+    types/test_struct_types.cpp
+    types/test_pointer_reference_types.cpp
+    types/test_class_types.cpp
     parser/types/test_qualified_paths.cpp
     parser/types/test_complex_types.cpp
     ast_printer_statements_test.cpp

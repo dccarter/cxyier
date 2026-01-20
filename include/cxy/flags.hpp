@@ -19,7 +19,11 @@ namespace cxy {
   fn(Const, 1) \
   fn(Variadic, 2) \
   fn(Public, 3) \
-  fn(Extern, 4)
+  fn(Extern, 4) \
+  fn(Packed, 5) \
+  fn(Virtual, 6) \
+  fn(Abstract, 7) \
+  fn(Override, 8)
 
 /**
  * @brief 64-bit flags enum for AST nodes.

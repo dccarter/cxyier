@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <functional>
+#include "cxy/flags.hpp"
 
 namespace cxy {
 
@@ -18,6 +19,8 @@ class ArenaAllocator;
     fn(Bool)         \
     fn(Char)         \
     fn(Void)         \
+    fn(Pointer)      \
+    fn(Reference)    \
     fn(Array)        \
     fn(Tuple)        \
     fn(Struct)       \
@@ -102,13 +105,19 @@ public:
         return dynamic_cast<const T*>(this) != nullptr;
     }
 
+    // Flag operations
+    [[nodiscard]] Flags getFlags() const { return flags_; }
+    [[nodiscard]] bool hasFlag(Flags flag) const { return hasAnyFlag(flags_, flag); }
+    void setFlag(Flags flag) { flags_ |= flag; }
+    void clearFlag(Flags flag) { flags_ &= ~flag; }
+
     // Arena allocation
     void* operator new(size_t size, ArenaAllocator& arena);
     void operator delete(void* ptr) {} // Empty - arena manages deallocation
 
 protected:
     // Protected constructor - only derived classes can create instances
-    explicit Type() = default;
+    explicit Type(Flags flags = flgNone) : flags_(flags) {}
 
     // Disable copying - types should be unique instances
     Type(const Type&) = delete;
@@ -117,6 +126,9 @@ protected:
     // Enable moving for efficiency
     Type(Type&&) = default;
     Type& operator=(Type&&) = default;
+
+private:
+    Flags flags_;
 };
 
 // Type comparison operators

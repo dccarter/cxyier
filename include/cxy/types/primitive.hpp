@@ -25,7 +25,7 @@ public:
     [[nodiscard]] bool isCallable() const override { return false; }
 
 protected:
-    explicit PrimitiveType() = default;
+    explicit PrimitiveType(Flags flags = flgNone) : Type(flags) {}
 };
 
 /**
@@ -37,7 +37,7 @@ private:
 
 public:
     // Constructor now public for registry access
-    explicit IntegerType(::cxy::IntegerKind kind);
+    explicit IntegerType(::cxy::IntegerKind kind, Flags flags = flgNone);
     // Type interface implementation
     [[nodiscard]] TypeKind kind() const override { return typInteger; }
     [[nodiscard]] bool equals(const Type* other) const override;
@@ -79,7 +79,7 @@ private:
 
 public:
     // Constructor now public for registry access
-    explicit FloatType(::cxy::FloatKind kind);
+    explicit FloatType(::cxy::FloatKind kind, Flags flags = flgNone);
     // Type interface implementation
     [[nodiscard]] TypeKind kind() const override { return typFloat; }
     [[nodiscard]] bool equals(const Type* other) const override;
@@ -118,7 +118,7 @@ class BoolType : public PrimitiveType {
 private:
 public:
     // Constructor now public for registry access
-    BoolType() = default;
+    explicit BoolType(Flags flags = flgNone);
     // Type interface implementation
     [[nodiscard]] TypeKind kind() const override { return typBool; }
     [[nodiscard]] bool equals(const Type* other) const override;
@@ -150,7 +150,7 @@ class CharType : public PrimitiveType {
 private:
 public:
     // Constructor now public for registry access
-    CharType() = default;
+    explicit CharType(Flags flags = flgNone);
     // Type interface implementation
     [[nodiscard]] TypeKind kind() const override { return typChar; }
     [[nodiscard]] bool equals(const Type* other) const override;
@@ -182,7 +182,7 @@ class VoidType : public PrimitiveType {
 private:
 public:
     // Constructor now public for registry access
-    VoidType() = default;
+    explicit VoidType(Flags flags = flgNone);
     // Type interface implementation
     [[nodiscard]] TypeKind kind() const override { return typVoid; }
     [[nodiscard]] bool equals(const Type* other) const override;
@@ -215,7 +215,7 @@ class AutoType : public PrimitiveType {
 private:
 public:
     // Constructor now public for registry access
-    AutoType() = default;
+    explicit AutoType(Flags flags = flgNone);
     // Type interface implementation
     [[nodiscard]] TypeKind kind() const override { return typAuto; }
     [[nodiscard]] bool equals(const Type* other) const override;

@@ -3,11 +3,18 @@
 #include "kind.hpp"
 #include "cxy/token.hpp"
 #include "cxy/arena_allocator.hpp"
+#include "cxy/arena_stl.hpp"
+#include "cxy/strings.hpp"
 #include <cstddef>
 #include <unordered_map>
+#include <unordered_set>
 
-// Forward declarations for primitive types
+// Forward declarations
 namespace cxy {
+    namespace ast {
+        class ASTNode;
+    }
+    
     class IntegerType;
     class FloatType;
     class BoolType;
@@ -18,6 +25,10 @@ namespace cxy {
     class TupleType;
     class UnionType;
     class FunctionType;
+    class StructType;
+    class PointerType;
+    class ReferenceType;
+    class ClassType;
 }
 
 namespace cxy {
@@ -56,10 +67,19 @@ public:
     const TupleType* getTupleType(const ArenaVector<const Type*>& elementTypes);
     const UnionType* getUnionType(const ArenaVector<const Type*>& variantTypes);
     const FunctionType* getFunctionType(const ArenaVector<const Type*>& parameterTypes, const Type* returnType);
-    
-    // Future composite types (implemented in later phases)
-    // const StructType* getStructType(const std::string& name, Flags flags = flgNone);
-    // const ClassType* getClassType(const std::string& name, Flags flags = flgNone);
+    const StructType* getStructType(const InternedString& name, 
+                                    ArenaVector<std::pair<InternedString, const Type*>> fields,
+                                    ArenaVector<std::tuple<InternedString, const FunctionType*, const ast::ASTNode*>> methods,
+                                    Flags flags, 
+                                    const ast::ASTNode* sourceAST);
+    const PointerType* getPointerType(const Type* pointeeType);
+    const ReferenceType* getReferenceType(const Type* referentType);
+    const ClassType* getClassType(const InternedString& name, 
+                                  ArenaVector<std::pair<InternedString, const Type*>> fields,
+                                  ArenaVector<std::tuple<InternedString, const FunctionType*, const ast::ASTNode*>> methods,
+                                  const ClassType* baseClass,
+                                  Flags flags, 
+                                  const ast::ASTNode* sourceAST);
 
     // Registry management
     void clear();
@@ -75,80 +95,44 @@ private:
     // Arena for all type allocations
     ArenaAllocator arena_;
     
-    // Cached type instances
-    std::unordered_map<::cxy::IntegerKind, const IntegerType*> integerTypes_;
-    std::unordered_map<::cxy::FloatKind, const FloatType*> floatTypes_;
+    // Type hash and equality functors for ArenaSet pattern
+    template<typename TypeT>
+    struct TypeHash {
+        size_t operator()(const TypeT* type) const { return type->hash(); }
+    };
+    
+    template<typename TypeT>
+    struct TypeEqual {
+        bool operator()(const TypeT* a, const TypeT* b) const { return a->equals(b); }
+    };
+    
+    // Arena-allocated type aliases
+    template<typename K, typename V>
+    using ArenaMap = std::unordered_map<K, V, std::hash<K>, std::equal_to<K>, 
+                                        ArenaSTLAllocator<std::pair<const K, V>>>;
+    
+    template<typename T>
+    using ArenaSet = std::unordered_set<T, TypeHash<typename std::remove_pointer<T>::type>, 
+                                        TypeEqual<typename std::remove_pointer<T>::type>,
+                                        ArenaSTLAllocator<T>>;
+    
+    // Cached primitive type instances
+    ArenaMap<::cxy::IntegerKind, const IntegerType*> integerTypes_;
+    ArenaMap<::cxy::FloatKind, const FloatType*> floatTypes_;
     const BoolType* boolType_ = nullptr;
     const CharType* charType_ = nullptr;
     const VoidType* voidType_ = nullptr;
     const AutoType* autoType_ = nullptr;
     
-    // Array type cache - key is (elementType*, size)
-    struct ArrayTypeKeyHash {
-        size_t operator()(const std::pair<const Type*, size_t>& key) const {
-            size_t h1 = std::hash<const void*>{}(key.first);
-            size_t h2 = std::hash<size_t>{}(key.second);
-            return h1 ^ (h2 << 1);
-        }
-    };
-    
-    std::unordered_map<std::pair<const Type*, size_t>, const ArrayType*, ArrayTypeKeyHash> arrayTypes_;
-    
-    // Tuple type cache - key is vector of element types
-    struct TupleTypeKeyHash {
-        size_t operator()(const ArenaVector<const Type*>& key) const {
-            size_t hash = 0;
-            for (const Type* type : key) {
-                hash ^= std::hash<const void*>{}(type) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-            }
-            return hash;
-        }
-    };
-    
-    struct TupleTypeKeyEqual {
-        bool operator()(const ArenaVector<const Type*>& a, const ArenaVector<const Type*>& b) const {
-            if (a.size() != b.size()) return false;
-            for (size_t i = 0; i < a.size(); ++i) {
-                if (a[i] != b[i]) return false;
-            }
-            return true;
-        }
-    };
-    
-    std::unordered_map<ArenaVector<const Type*>, const TupleType*, TupleTypeKeyHash, TupleTypeKeyEqual> tupleTypes_;
-    
-    // Union type cache - key is vector of variant types (reusing TupleType's hash and equal functions)
-    std::unordered_map<ArenaVector<const Type*>, const UnionType*, TupleTypeKeyHash, TupleTypeKeyEqual> unionTypes_;
-    
-    // Function type cache - key is (parameter types, return type)
-    struct FunctionTypeKey {
-        ArenaVector<const Type*> parameterTypes;
-        const Type* returnType;
-        
-        explicit FunctionTypeKey(ArenaAllocator& arena) 
-            : parameterTypes(ArenaSTLAllocator<const Type*>(arena)), returnType(nullptr) {}
-        
-        bool operator==(const FunctionTypeKey& other) const {
-            if (returnType != other.returnType) return false;
-            if (parameterTypes.size() != other.parameterTypes.size()) return false;
-            for (size_t i = 0; i < parameterTypes.size(); ++i) {
-                if (parameterTypes[i] != other.parameterTypes[i]) return false;
-            }
-            return true;
-        }
-    };
-    
-    struct FunctionTypeKeyHash {
-        size_t operator()(const FunctionTypeKey& key) const {
-            size_t hash = std::hash<const void*>{}(key.returnType);
-            for (const Type* type : key.parameterTypes) {
-                hash ^= std::hash<const void*>{}(type) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-            }
-            return hash;
-        }
-    };
-    
-    std::unordered_map<FunctionTypeKey, const FunctionType*, FunctionTypeKeyHash> functionTypes_;
+    // Composite type caches using ArenaSet pattern
+    ArenaSet<const ArrayType*> arrayTypes_;
+    ArenaSet<const TupleType*> tupleTypes_;
+    ArenaSet<const UnionType*> unionTypes_;
+    ArenaSet<const FunctionType*> functionTypes_;
+    ArenaSet<const StructType*> structTypes_;
+    ArenaSet<const PointerType*> pointerTypes_;
+    ArenaSet<const ReferenceType*> referenceTypes_;
+    ArenaSet<const ClassType*> classTypes_;
 };
 
 } // namespace cxy

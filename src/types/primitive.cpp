@@ -12,7 +12,7 @@ namespace cxy {
 // IntegerType Implementation
 // =============================================================================
 
-IntegerType::IntegerType(::cxy::IntegerKind kind) : integerKind_(kind) {}
+IntegerType::IntegerType(::cxy::IntegerKind kind, Flags flags) : PrimitiveType(flags), integerKind_(kind) {}
 
 bool IntegerType::equals(const Type* other) const {
     if (!other) return false;
@@ -191,7 +191,7 @@ __uint128_t IntegerType::getMaxValue() const {
 // FloatType Implementation
 // =============================================================================
 
-FloatType::FloatType(::cxy::FloatKind kind) : floatKind_(kind) {}
+FloatType::FloatType(::cxy::FloatKind kind, Flags flags) : PrimitiveType(flags), floatKind_(kind) {}
 
 bool FloatType::equals(const Type* other) const {
     if (!other) return false;
@@ -282,6 +282,8 @@ double FloatType::getEpsilon() const {
 // BoolType Implementation
 // =============================================================================
 
+BoolType::BoolType(Flags flags) : PrimitiveType(flags) {}
+
 bool BoolType::equals(const Type* other) const {
     return dynamic_cast<const BoolType*>(other) != nullptr;
 }
@@ -325,6 +327,8 @@ size_t BoolType::getAlignment() const {
 // =============================================================================
 // CharType Implementation
 // =============================================================================
+
+CharType::CharType(Flags flags) : PrimitiveType(flags) {}
 
 bool CharType::equals(const Type* other) const {
     return dynamic_cast<const CharType*>(other) != nullptr;
@@ -370,6 +374,8 @@ size_t CharType::getAlignment() const {
 // VoidType Implementation
 // =============================================================================
 
+VoidType::VoidType(Flags flags) : PrimitiveType(flags) {}
+
 bool VoidType::equals(const Type* other) const {
     return dynamic_cast<const VoidType*>(other) != nullptr;
 }
@@ -411,6 +417,8 @@ size_t VoidType::getAlignment() const {
 // =============================================================================
 // AutoType Implementation
 // =============================================================================
+
+AutoType::AutoType(Flags flags) : PrimitiveType(flags) {}
 
 bool AutoType::equals(const Type* other) const {
     return dynamic_cast<const AutoType*>(other) != nullptr;

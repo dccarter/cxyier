@@ -4,6 +4,7 @@
 #include "cxy/ast/node.hpp"
 #include "cxy/flags.hpp"
 #include "cxy/arena_stl.hpp"
+#include "cxy/strings.hpp"
 #include <string>
 
 namespace cxy {
@@ -32,7 +33,7 @@ public:
      * @param flags Type flags (default: flgNone)
      */
     explicit CompositeType(const ast::ASTNode* ast, Flags flags = flgNone)
-        : sourceAST_(ast), flags_(flags) {}
+        : Type(flags), sourceAST_(ast), flags_(flags) {}
 
     /**
      * @brief Virtual destructor for proper inheritance.
@@ -74,7 +75,7 @@ protected:
      * This constructor is used by derived classes that need to perform
      * additional initialization before setting the AST reference.
      */
-    CompositeType() : sourceAST_(nullptr), flags_(flgNone) {}
+    CompositeType() : Type(flgNone), sourceAST_(nullptr), flags_(flgNone) {}
 
     /**
      * @brief Set the source AST reference.
@@ -106,6 +107,132 @@ public:
     // Arena allocation support
     void* operator new(size_t size, ArenaAllocator& arena);
     void operator delete(void* ptr); // Empty - arena manages deallocation
+};
+
+/**
+ * @brief Pointer type implementation for pointer types.
+ * 
+ * Represents pointer types (*T) that can be null and are reassignable.
+ * Pointers require explicit dereferencing and can point to any type.
+ */
+class PointerType : public CompositeType {
+private:
+    const Type* pointeeType_;  ///< Type being pointed to
+
+public:
+    /**
+     * @brief Construct a pointer type.
+     * 
+     * @param pointeeType Type being pointed to
+     * @param flags Type flags (default: flgNone)
+     */
+    PointerType(const Type* pointeeType, Flags flags = flgNone);
+
+    /**
+     * @brief Virtual destructor.
+     */
+    virtual ~PointerType() = default;
+
+    /**
+     * @brief Get the pointee type.
+     * 
+     * @return Pointer to the type being pointed to
+     */
+    [[nodiscard]] const Type* getPointeeType() const { return pointeeType_; }
+
+    // Type interface implementation
+    [[nodiscard]] TypeKind kind() const override { return typPointer; }
+    [[nodiscard]] bool equals(const Type* other) const override;
+    [[nodiscard]] std::string toString() const override;
+    [[nodiscard]] size_t hash() const override;
+
+    // Type relationship queries
+    [[nodiscard]] bool isAssignableFrom(const Type* other) const override;
+    [[nodiscard]] bool isImplicitlyConvertibleTo(const Type* other) const override;
+    [[nodiscard]] bool isExplicitlyConvertibleTo(const Type* other) const override;
+    [[nodiscard]] bool isCompatibleWith(const Type* other) const override;
+
+    // Size and alignment information
+    [[nodiscard]] size_t getStaticSize() const override;
+    [[nodiscard]] size_t getAlignment() const override;
+    [[nodiscard]] bool hasStaticSize() const override { return true; }
+    [[nodiscard]] bool isDynamicallySized() const override { return false; }
+
+    // Type classification helpers
+    [[nodiscard]] bool isCallable() const override { return false; }
+    [[nodiscard]] bool isNumeric() const override { return false; }
+    [[nodiscard]] bool isIntegral() const override { return false; }
+    [[nodiscard]] bool isFloatingPoint() const override { return false; }
+
+private:
+    // Disable copying and moving - pointer types should be unique instances
+    PointerType(const PointerType&) = delete;
+    PointerType& operator=(const PointerType&) = delete;
+    PointerType(PointerType&&) = delete;
+    PointerType& operator=(PointerType&&) = delete;
+};
+
+/**
+ * @brief Reference type implementation for reference types.
+ * 
+ * Represents reference types (&T) that cannot be null and are not reassignable
+ * after initialization. References provide automatic dereferencing.
+ */
+class ReferenceType : public CompositeType {
+private:
+    const Type* referentType_;  ///< Type being referenced
+
+public:
+    /**
+     * @brief Construct a reference type.
+     * 
+     * @param referentType Type being referenced
+     * @param flags Type flags (default: flgNone)
+     */
+    ReferenceType(const Type* referentType, Flags flags = flgNone);
+
+    /**
+     * @brief Virtual destructor.
+     */
+    virtual ~ReferenceType() = default;
+
+    /**
+     * @brief Get the referent type.
+     * 
+     * @return Pointer to the type being referenced
+     */
+    [[nodiscard]] const Type* getReferentType() const { return referentType_; }
+
+    // Type interface implementation
+    [[nodiscard]] TypeKind kind() const override { return typReference; }
+    [[nodiscard]] bool equals(const Type* other) const override;
+    [[nodiscard]] std::string toString() const override;
+    [[nodiscard]] size_t hash() const override;
+
+    // Type relationship queries
+    [[nodiscard]] bool isAssignableFrom(const Type* other) const override;
+    [[nodiscard]] bool isImplicitlyConvertibleTo(const Type* other) const override;
+    [[nodiscard]] bool isExplicitlyConvertibleTo(const Type* other) const override;
+    [[nodiscard]] bool isCompatibleWith(const Type* other) const override;
+
+    // Size and alignment information
+    [[nodiscard]] size_t getStaticSize() const override;
+    [[nodiscard]] size_t getAlignment() const override;
+    [[nodiscard]] bool hasStaticSize() const override { return true; }
+    [[nodiscard]] bool isDynamicallySized() const override { return false; }
+
+    // Type classification helpers
+    [[nodiscard]] bool isCallable() const override { return false; }
+    [[nodiscard]] bool isNumeric() const override { return false; }
+    [[nodiscard]] bool isIntegral() const override { return false; }
+    [[nodiscard]] bool isFloatingPoint() const override { return false; }
+
+private:
+    // Disable copying and moving - reference types should be unique instances
+    ReferenceType(const ReferenceType&) = delete;
+    ReferenceType& operator=(const ReferenceType&) = delete;
+    ReferenceType(ReferenceType&&) = delete;
+    ReferenceType& operator=(ReferenceType&&) = delete;
 };
 
 /**
@@ -485,6 +612,287 @@ private:
     FunctionType& operator=(const FunctionType&) = delete;
     FunctionType(FunctionType&&) = delete;
     FunctionType& operator=(FunctionType&&) = delete;
+};
+
+/**
+ * @brief Base class for types with fields and methods (structs and classes).
+ * 
+ * Provides common functionality for named types that contain fields and methods.
+ * Handles layout, method resolution, and basic type operations.
+ */
+class RecordType : public CompositeType {
+public:
+    /**
+     * @brief Represents a named field in a record type.
+     */
+    struct FieldType {
+        InternedString name;  ///< Field name (interned)
+        const Type* type;     ///< Field type (non-null)
+        
+        FieldType(const InternedString& fieldName, const Type* fieldType)
+            : name(fieldName), type(fieldType) {}
+    };
+
+    /**
+     * @brief Represents a method in a record type.
+     * 
+     * Methods are functions with a receiver type as the first parameter.
+     * Method qualifiers (const, static) are encoded in the function type flags.
+     */
+    struct MethodType {
+        InternedString name;                      ///< Method name (interned)
+        const FunctionType* signature;           ///< Function signature (receiver + params -> return)
+        const ast::ASTNode* declaration;         ///< AST node for method implementation
+        
+        MethodType(const InternedString& methodName, const FunctionType* methodSignature, const ast::ASTNode* methodDecl)
+            : name(methodName), signature(methodSignature), declaration(methodDecl) {}
+    };
+
+protected:
+    InternedString name_;                   ///< Record name (empty for anonymous)
+    ArenaVector<FieldType> fields_;         ///< Field list (declaration order preserved)
+    ArenaVector<MethodType> methods_;       ///< Method list (declaration order preserved)
+    ArenaAllocator& arena_;                 ///< Arena allocator reference for method lookups
+
+    /**
+     * @brief Protected constructor for record types.
+     * 
+     * @param name Record name (can be empty for anonymous records)
+     * @param fields Vector of field definitions (moved into record)
+     * @param methods Vector of method definitions (moved into record)
+     * @param flags Type flags
+     * @param sourceAST AST node that declares this record (optional)
+     * @param arena Arena allocator for memory management
+     */
+    RecordType(InternedString name,
+               ArenaVector<FieldType> fields,
+               ArenaVector<MethodType> methods,
+               Flags flags,
+               const ast::ASTNode* sourceAST,
+               ArenaAllocator& arena);
+
+public:
+    /**
+     * @brief Virtual destructor for proper inheritance.
+     */
+    virtual ~RecordType() = default;
+
+    // Basic properties
+    [[nodiscard]] const InternedString& getName() const { return name_; }
+    [[nodiscard]] bool isAnonymous() const { return name_.empty(); }
+
+    // Field access (preserving declaration order)
+    [[nodiscard]] const ArenaVector<FieldType>& getFields() const { return fields_; }
+    [[nodiscard]] size_t getFieldCount() const { return fields_.size(); }
+
+    // Method access (preserving declaration order)
+    [[nodiscard]] const ArenaVector<MethodType>& getMethods() const { return methods_; }
+    [[nodiscard]] size_t getMethodCount() const { return methods_.size(); }
+
+    // Field lookup methods
+    [[nodiscard]] virtual const Type* getFieldType(const InternedString& name) const;
+    [[nodiscard]] virtual bool hasField(const InternedString& name) const;
+    [[nodiscard]] virtual size_t getFieldIndex(const InternedString& name) const; // SIZE_MAX if not found
+
+    // Method lookup methods
+    [[nodiscard]] ArenaVector<const MethodType*> getMethodsByName(const InternedString& name) const;
+    [[nodiscard]] const MethodType* getMethod(const InternedString& name, const FunctionType* signature) const;
+    [[nodiscard]] bool hasMethod(const InternedString& name) const;
+    [[nodiscard]] size_t getMethodIndex(const InternedString& name, const FunctionType* signature) const; // SIZE_MAX if not found
+
+    // Layout calculation methods (virtual for type-specific behavior)
+    [[nodiscard]] virtual size_t getFieldOffset(size_t index) const;
+    [[nodiscard]] size_t getFieldOffset(const InternedString& name) const;
+    [[nodiscard]] size_t calculateNaturalSize() const;
+    
+    // Virtual methods for type-specific behavior
+    [[nodiscard]] virtual bool isValueType() const = 0;        // struct=true, class=false  
+    [[nodiscard]] virtual bool supportsInheritance() const = 0; // struct=false, class=true
+    [[nodiscard]] virtual std::string getTypeKeyword() const = 0; // "struct" vs "class"
+
+    // Type interface implementation (shared base implementations)
+    [[nodiscard]] bool equals(const Type* other) const override;
+    [[nodiscard]] virtual std::string toString() const override;
+    [[nodiscard]] size_t hash() const override;
+
+    // Type relationship queries (shared implementations)
+    [[nodiscard]] bool isAssignableFrom(const Type* other) const override;
+    [[nodiscard]] bool isImplicitlyConvertibleTo(const Type* other) const override;
+    [[nodiscard]] bool isExplicitlyConvertibleTo(const Type* other) const override;
+    [[nodiscard]] bool isCompatibleWith(const Type* other) const override;
+
+    // Size and alignment information (delegated to derived types)
+    [[nodiscard]] size_t getStaticSize() const override = 0;
+    [[nodiscard]] size_t getAlignment() const override = 0;
+    [[nodiscard]] bool hasStaticSize() const override;
+    [[nodiscard]] bool isDynamicallySized() const override;
+
+    // Type classification helpers (shared)
+    [[nodiscard]] bool isCallable() const override { return false; }
+    [[nodiscard]] bool isNumeric() const override { return false; }
+    [[nodiscard]] bool isIntegral() const override { return false; }
+    [[nodiscard]] bool isFloatingPoint() const override { return false; }
+
+protected:
+    // Helper methods for layout calculations (protected so derived classes can use)
+    [[nodiscard]] size_t alignUp(size_t size, size_t alignment) const;
+
+private:
+    // Disable copying and moving - record types should be unique instances
+    RecordType(const RecordType&) = delete;
+    RecordType& operator=(const RecordType&) = delete;
+    RecordType(RecordType&&) = delete;
+    RecordType& operator=(RecordType&&) = delete;
+};
+
+/**
+ * @brief Struct type implementation with named fields and layout control.
+ * 
+ * Represents struct types with value semantics, named fields, and support
+ * for both natural and packed memory layouts. Structs preserve field
+ * declaration order for C/C++ compatibility.
+ */
+class StructType : public RecordType {
+public:
+    /**
+     * @brief Construct a struct type with specified fields and flags.
+     * 
+     * @param name Struct name (can be empty for anonymous structs)
+     * @param fields Vector of field definitions (moved into struct)
+     * @param methods Vector of method definitions (moved into struct)
+     * @param flags Type flags (flgPacked for packed layout, etc.)
+     * @param sourceAST AST node that declares this struct (optional)
+     * @param arena Arena allocator for memory management
+     */
+    StructType(InternedString name,
+               ArenaVector<FieldType> fields,
+               ArenaVector<MethodType> methods,
+               Flags flags,
+               const ast::ASTNode* sourceAST,
+               ArenaAllocator& arena);
+
+    /**
+     * @brief Virtual destructor for proper inheritance.
+     */
+    virtual ~StructType() = default;
+
+    // Struct-specific properties
+    [[nodiscard]] bool isPacked() const { return hasFlag(flgPacked); }
+    [[nodiscard]] size_t calculatePackedSize() const;
+
+    // Type interface implementation
+    [[nodiscard]] TypeKind kind() const override { return typStruct; }
+
+    // Virtual methods from RecordType  
+    [[nodiscard]] bool isValueType() const override { return true; }
+    [[nodiscard]] bool supportsInheritance() const override { return false; }
+    [[nodiscard]] std::string getTypeKeyword() const override { return "struct"; }
+
+    // Override field offset calculation for packed layout support
+    [[nodiscard]] size_t getFieldOffset(size_t index) const override;
+    
+    // Bring base class name-based getFieldOffset into scope
+    using RecordType::getFieldOffset;
+    
+    // Override toString to add struct-specific formatting
+    [[nodiscard]] std::string toString() const override;
+    
+    // Size and alignment information (struct-specific)
+    [[nodiscard]] size_t getStaticSize() const override;
+    [[nodiscard]] size_t getAlignment() const override;
+
+private:
+    // Disable copying and moving - struct types should be unique instances
+    StructType(const StructType&) = delete;
+    StructType& operator=(const StructType&) = delete;
+    StructType(StructType&&) = delete;
+    StructType& operator=(StructType&&) = delete;
+};
+
+/**
+ * @brief Class type implementation with inheritance and virtual methods.
+ * 
+ * Represents class types with reference semantics, inheritance support,
+ * and virtual method dispatch. Classes can have base classes and support
+ * polymorphism through virtual methods.
+ */
+class ClassType : public RecordType {
+private:
+    const ClassType* baseClass_;    ///< Single base class (nullptr if no inheritance)
+    
+public:
+    /**
+     * @brief Construct a class type with specified fields, methods, and base class.
+     * 
+     * @param name Class name (can be empty for anonymous classes)
+     * @param fields Vector of field definitions (moved into class)
+     * @param methods Vector of method definitions (moved into class)
+     * @param baseClass Single base class type for inheritance (nullptr if none)
+     * @param flags Type flags (virtual, abstract, etc.)
+     * @param sourceAST AST node that declares this class (optional)
+     * @param arena Arena allocator for memory management
+     */
+    ClassType(InternedString name,
+              ArenaVector<FieldType> fields,
+              ArenaVector<MethodType> methods,
+              const ClassType* baseClass,
+              Flags flags,
+              const ast::ASTNode* sourceAST,
+              ArenaAllocator& arena);
+
+    /**
+     * @brief Virtual destructor for proper inheritance.
+     */
+    virtual ~ClassType() = default;
+
+    // Class-specific properties
+    [[nodiscard]] const ClassType* getBaseClass() const { return baseClass_; }
+    [[nodiscard]] bool hasBaseClass() const { return baseClass_ != nullptr; }
+    
+    // Inheritance queries
+    [[nodiscard]] bool isBaseOf(const ClassType* derived) const;
+    [[nodiscard]] bool isDerivedFrom(const ClassType* base) const;
+    [[nodiscard]] const ClassType* findCommonBase(const ClassType* other) const;
+
+    // Virtual method support
+    [[nodiscard]] bool hasVirtualMethods() const;
+    [[nodiscard]] bool isAbstract() const;  // Has pure virtual methods
+    [[nodiscard]] const MethodType* resolveVirtualMethod(const InternedString& name, const FunctionType* signature) const;
+
+    // Type interface implementation
+    [[nodiscard]] TypeKind kind() const override { return typClass; }
+
+    // Virtual methods from RecordType  
+    [[nodiscard]] bool isValueType() const override { return false; }
+    [[nodiscard]] bool supportsInheritance() const override { return true; }
+    [[nodiscard]] std::string getTypeKeyword() const override { return "class"; }
+
+    // Field access overrides for inheritance support
+    [[nodiscard]] virtual const Type* getFieldType(const InternedString& name) const override;
+    [[nodiscard]] virtual bool hasField(const InternedString& name) const override;
+    [[nodiscard]] virtual size_t getFieldIndex(const InternedString& name) const override;
+
+    // Flattened field layout helpers for code generation
+    [[nodiscard]] size_t getFlattenedFieldCount() const;
+    [[nodiscard]] size_t getFlattenedFieldIndex(const InternedString& name) const;
+    [[nodiscard]] size_t getFlattenedFieldOffset(const InternedString& name) const;
+    [[nodiscard]] size_t getFlattenedFieldOffset(size_t flattenedIndex) const;
+
+    // Size and alignment information (class-specific - reference semantics)
+    [[nodiscard]] size_t getStaticSize() const override;
+    [[nodiscard]] size_t getAlignment() const override;
+
+    // Type relationship queries (inheritance-aware overrides)
+    [[nodiscard]] bool isAssignableFrom(const Type* other) const override;
+    [[nodiscard]] bool isImplicitlyConvertibleTo(const Type* other) const override;
+    [[nodiscard]] bool isExplicitlyConvertibleTo(const Type* other) const override;
+
+private:
+    // Disable copying and moving - class types should be unique instances
+    ClassType(const ClassType&) = delete;
+    ClassType& operator=(const ClassType&) = delete;
+    ClassType(ClassType&&) = delete;
+    ClassType& operator=(ClassType&&) = delete;
 };
 
 } // namespace cxy
