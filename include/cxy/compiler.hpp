@@ -10,16 +10,22 @@
 #include "compiler/options_types.hpp"
 #include "compiler/options.hpp"
 #include "compiler/option_parser.hpp"
+#include "compiler/compilation_result.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/module_cache.hpp"
 
 /// @namespace cxy::compiler
-/// @brief Namespace containing all compiler option system components
+/// @brief Namespace containing all compiler system components
 ///
 /// This namespace provides:
-/// - CompilerOptions: Main options class with all configuration
+/// - Compiler: Main compiler orchestration class
+/// - CompilerOptions: Configuration and behavior settings
+/// - CompilationResult: Compilation outcome and diagnostic information
 /// - OptionParser: Command-line and configuration file parsing
+/// - ModuleCache: Module import caching and cycle detection
 /// - Various enums and option structures for type-safe configuration
 ///
-/// @example Basic usage:
+/// @example Basic compilation:
 /// ```cpp
 /// #include <cxy/compiler.hpp>
 /// 
@@ -28,9 +34,13 @@
 ///     cxy::compiler::OptionParser parser(diagnostics);
 ///     cxy::compiler::CompilerOptions options;
 ///     
-///     auto result = parser.parseCommandLine(argc, argv, options);
-///     if (result == cxy::compiler::ParseResult::Success) {
-///         // Use options for compilation
+///     auto parseResult = parser.parseCommandLine(argc, argv, options);
+///     if (parseResult == cxy::compiler::ParseResult::Success) {
+///         cxy::compiler::Compiler compiler(std::move(options));
+///         auto result = compiler.compileFile("main.cxy");
+///         if (result.isSuccess()) {
+///             // Compilation successful
+///         }
 ///     }
 ///     return 0;
 /// }

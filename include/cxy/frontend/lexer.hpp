@@ -3,6 +3,7 @@
 #include "cxy/diagnostics.hpp"
 #include "cxy/token.hpp"
 
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -39,6 +40,9 @@ public:
   bool isAtEnd() const;
   Location getCurrentLocation() const;
   Location makeLocation(const Position &start) const; // Create range location
+
+  // Debug functionality
+  void printAllTokens(std::ostream &out = std::cout) const;
 
   // Constructor
   Lexer(std::string_view filename, std::string_view content,

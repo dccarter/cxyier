@@ -71,6 +71,8 @@ add_executable(cxyier_tests
     types/test_pointer_reference_types.cpp
     types/test_class_types.cpp
     symbols/test_symbol_table.cpp
+    compiler/test_module_cache.cpp
+    compiler/test_compiler.cpp
     parser/types/test_qualified_paths.cpp
     parser/types/test_complex_types.cpp
     ast_printer_statements_test.cpp

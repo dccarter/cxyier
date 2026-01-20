@@ -748,6 +748,21 @@ bool ASTPrinter::visitMethodDeclaration(const MethodDeclarationNode *node) {
   return true;
 }
 
+bool ASTPrinter::visitFieldDeclaration(const FieldDeclarationNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitStructDeclaration(const StructDeclarationNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
+bool ASTPrinter::visitClassDeclaration(const ClassDeclarationNode *node) {
+  printNodeStartInline(node);
+  return true;
+}
+
 bool ASTPrinter::visitAnnotation(const AnnotationNode *node) {
   printNodeStartInline(node);
   *output_ << " " << node->name.view();

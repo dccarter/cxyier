@@ -489,7 +489,7 @@ Token Lexer::lexNumber() {
       }
       // This is a floating point number
       return lexFloat(start, base, value, hasDigits);
-    } else if (c == 'e' || c == 'E' || (base == 16 && (c == 'p' || c == 'P'))) {
+    } else if ((base == 10 && (c == 'e' || c == 'E')) || (base == 16 && (c == 'p' || c == 'P'))) {
       // This is a floating point number
       return lexFloat(start, base, value, hasDigits);
     }
@@ -1667,6 +1667,72 @@ size_t Lexer::processEscapeSequences(const char *source, size_t sourceLength,
   }
 
   return writePos;
+}
+
+void Lexer::printAllTokens(std::ostream &out) const {
+  // Create a temporary lexer to tokenize the entire input
+  Lexer tempLexer(bufferStack[0].filename, bufferStack[0].content, 
+                  const_cast<DiagnosticLogger&>(logger), 
+                  const_cast<StringInterner&>(interner));
+  
+  out << "=== Token Stream ===" << std::endl;
+  out << "Filename: " << bufferStack[0].filename << std::endl;
+  out << std::endl;
+  
+  Token token;
+  int tokenCount = 0;
+  
+  do {
+    token = tempLexer.nextToken();
+    tokenCount++;
+    
+    // Format: [line:col] KIND "text" value
+    out << std::format("[{}:{}] {:12} \"{}\"", 
+                       token.location.start.row,
+                       token.location.start.column,
+                       tokenKindToString(token.kind),
+                       tokenKindToString(token.kind));
+    
+    // Print value if the token has one
+    if (token.hasValue) {
+      out << " = ";
+      switch (token.kind) {
+        case TokenKind::IntLiteral:
+          out << static_cast<uint64_t>(token.value.intValue.value);
+          if (token.value.intValue.type != IntegerKind::Auto) {
+            out << " (" << static_cast<int>(token.value.intValue.type) << ")";
+          }
+          break;
+        case TokenKind::FloatLiteral:
+          out << token.value.floatValue.value;
+          if (token.value.floatValue.type != FloatKind::Auto) {
+            out << " (" << static_cast<int>(token.value.floatValue.type) << ")";
+          }
+          break;
+        case TokenKind::True:
+        case TokenKind::False:
+          out << (token.value.boolValue ? "true" : "false");
+          break;
+        case TokenKind::CharLiteral:
+          out << "U+" << std::hex << token.value.charValue << std::dec;
+          break;
+        case TokenKind::StringLiteral:
+        case TokenKind::Ident:
+          out << "\"" << token.value.stringValue.view() << "\"";
+          break;
+        default:
+          out << "<value>";
+          break;
+      }
+    }
+    
+    out << std::endl;
+    
+  } while (token.kind != TokenKind::EoF && token.kind != TokenKind::Error);
+  
+  out << std::endl;
+  out << "Total tokens: " << tokenCount << std::endl;
+  out << "===================" << std::endl;
 }
 
 } // namespace cxy

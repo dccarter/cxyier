@@ -13,12 +13,6 @@ OptionParser::OptionParser(DiagnosticLogger& diagnostics)
 }
 
 ParseResult OptionParser::parseCommandLine(int& argc, char** argv, CompilerOptions& options) {
-    if (argc < 2) {
-        auto diag = makeDiagnosticExtensions(diagnostics_);
-        diag.error("No command specified. Use 'cxy help' for usage information.");
-        return ParseResult::Error;
-    }
-
     std::vector<std::string> args;
     for (int i = 1; i < argc; ++i) {
         args.emplace_back(argv[i]);
@@ -33,37 +27,45 @@ ParseResult OptionParser::parseCommandLine(int& argc, char** argv, CompilerOptio
         return ParseResult::HelpRequested;
     }
 
-    // First argument should be the command
-    auto cmd = stringToCommand(args[0]);
-    if (!cmd) {
-        auto diag = makeDiagnosticExtensions(diagnostics_);
-        diag.error("Unknown command: '{}'. Use 'cxy help' for available commands.", args[0]);
-        return ParseResult::Error;
+    // Determine command - default to build if no command specified or first arg is not a command
+    Command command = Command::Build;  // Default command
+    size_t argStartIndex = 0;  // Index where non-command arguments start
+    
+    if (!args.empty()) {
+        auto cmd = stringToCommand(args[0]);
+        if (cmd) {
+            // First argument is a valid command
+            command = *cmd;
+            argStartIndex = 1;  // Skip the command when parsing remaining args
+        }
+        // If first argument is not a command, treat it as a file and use default build command
     }
 
-    // Set command first
-    options.setCommand(*cmd);
+    // Set command
+    options.setCommand(command);
 
     // Handle special commands immediately
-    if (*cmd == Command::Help) {
+    if (command == Command::Help) {
         return ParseResult::HelpRequested;
     }
-    if (*cmd == Command::Version) {
+    if (command == Command::Version) {
         return ParseResult::VersionRequested;
     }
 
+    // Parse remaining arguments for the command
+    std::vector<std::string> remainingArgs(args.begin() + argStartIndex, args.end());
     // Parse remaining arguments, checking for help and version first
     bool helpRequested = false;
-    for (std::size_t i = 1; i < args.size(); ++i) {
+    for (std::size_t i = 0; i < remainingArgs.size(); ++i) {
         // Check for help or version option before other parsing
-        if (args[i] == "--help" || args[i] == "-h") {
+        if (remainingArgs[i] == "--help" || remainingArgs[i] == "-h") {
             helpRequested = true;
             break;
         }
-        if (args[i] == "--version" || args[i] == "-V") {
+        if (remainingArgs[i] == "--version" || remainingArgs[i] == "-V") {
             return ParseResult::VersionRequested;
         }
-        if (!parseArgument(args[i], args, i, options)) {
+        if (!parseArgument(remainingArgs[i], remainingArgs, i, options)) {
             return ParseResult::Error;
         }
     }

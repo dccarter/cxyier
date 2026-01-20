@@ -216,7 +216,8 @@ TEST_CASE("SymbolTable basic operations", "[symbols][symbol-table]") {
         Location defLocation("test.cxy", Position(1, 1, 0));
         Location lookupLocation("test.cxy", Position(2, 5, 0));
         
-        fixture.symbolTable.defineSymbol(symbolName, declNode.get(), defLocation);
+        bool result = fixture.symbolTable.defineSymbol(symbolName, declNode.get(), defLocation);
+        REQUIRE(result == true);
         
         const ast::ASTNode* found = fixture.symbolTable.lookupSymbol(symbolName, lookupLocation);
         
@@ -282,11 +283,13 @@ TEST_CASE("Scope management", "[symbols][symbol-table][scopes]") {
         Location location("test.cxy", Position(1, 1, 0));
         
         // Define in global scope
-        fixture.symbolTable.defineSymbol(symbolName, globalDecl.get(), location);
+        bool globalResult = fixture.symbolTable.defineSymbol(symbolName, globalDecl.get(), location);
+        REQUIRE(globalResult == true);
         
         // Push local scope and define same name
         fixture.symbolTable.pushScope(functionNode.get(), location);
-        fixture.symbolTable.defineSymbol(symbolName, localDecl.get(), location);
+        bool localResult = fixture.symbolTable.defineSymbol(symbolName, localDecl.get(), location);
+        REQUIRE(localResult == true);
         
         // Lookup should find local symbol (shadowing)
         const ast::ASTNode* found = fixture.symbolTable.lookupSymbol(symbolName, location);
@@ -339,7 +342,8 @@ TEST_CASE("Symbol reference tracking", "[symbols][symbol-table][references]") {
         Location refLocation("test.cxy", Position(2, 5, 0));
         
         // Define symbol
-        fixture.symbolTable.defineSymbol(symbolName, declNode.get(), defLocation);
+        bool defResult = fixture.symbolTable.defineSymbol(symbolName, declNode.get(), defLocation);
+        REQUIRE(defResult == true);
         
         // Update reference
         fixture.symbolTable.updateSymbolReference(symbolName, refNode.get(), refLocation);
@@ -361,8 +365,10 @@ TEST_CASE("Symbol iteration", "[symbols][symbol-table][iteration]") {
         Location location("test.cxy", Position(1, 1, 0));
         
         // Define symbols
-        fixture.symbolTable.defineSymbol(name1, decl1.get(), location);
-        fixture.symbolTable.defineSymbol(name2, decl2.get(), location);
+        bool result1 = fixture.symbolTable.defineSymbol(name1, decl1.get(), location);
+        bool result2 = fixture.symbolTable.defineSymbol(name2, decl2.get(), location);
+        REQUIRE(result1 == true);
+        REQUIRE(result2 == true);
         
         // Collect symbols through iteration
         std::vector<const ast::ASTNode*> collected;

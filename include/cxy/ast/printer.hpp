@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cxy/ast/declarations.hpp"
 #include "cxy/ast/visitor.hpp"
 #include "cxy/memory.hpp"
 #include <functional>
@@ -178,6 +179,9 @@ protected:
   bool visitFuncDeclaration(const FuncDeclarationNode *node) override;
   bool visitFuncParamDeclaration(const FuncParamDeclarationNode *node) override;
   bool visitMethodDeclaration(const MethodDeclarationNode *node) override;
+  bool visitFieldDeclaration(const FieldDeclarationNode *node) override;
+  bool visitStructDeclaration(const StructDeclarationNode *node) override;
+  bool visitClassDeclaration(const ClassDeclarationNode *node) override;
 
   // Annotation node visitor
   bool visitAnnotation(const AnnotationNode *node) override;

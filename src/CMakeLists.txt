@@ -19,6 +19,8 @@ add_library(cxy_memory STATIC
     compiler/options.cpp
     compiler/option_utils.cpp
     compiler/option_parser.cpp
+    compiler/module_cache.cpp
+    compiler/compiler.cpp
     stages/symbols.cpp
 )
 
