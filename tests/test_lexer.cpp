@@ -1,6 +1,6 @@
 #include "catch2.hpp"
 #include "cxy/diagnostics.hpp"
-#include "cxy/lexer.hpp"
+#include "cxy/frontend/lexer.hpp"
 #include "lexer_test_helper.hpp"
 
 #include <iostream>

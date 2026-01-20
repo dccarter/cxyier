@@ -1,4 +1,4 @@
-#include "cxy/lexer.hpp"
+#include "cxy/frontend/lexer.hpp"
 #include "cxy/diagnostics.hpp"
 
 #include <cctype>

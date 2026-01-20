@@ -4,7 +4,7 @@
 #include "cxy/ast/attributes.hpp"
 #include "cxy/ast/node.hpp"
 #include "cxy/diagnostics.hpp"
-#include "cxy/lexer.hpp"
+#include "cxy/frontend/lexer.hpp"
 #include "cxy/token.hpp"
 #include "cxy/types/registry.hpp"
 

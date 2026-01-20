@@ -1,7 +1,7 @@
 #include "catch2.hpp"
 #include "cxy/memory/arena.hpp"
 #include "cxy/diagnostics.hpp"
-#include "cxy/lexer.hpp"
+#include "cxy/frontend/lexer.hpp"
 #include "cxy/strings.hpp"
 #include "cxy/token.hpp"
 #include "lexer_test_helper.hpp"

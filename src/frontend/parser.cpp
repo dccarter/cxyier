@@ -1,4 +1,4 @@
-#include "cxy/parser.hpp"
+#include "cxy/frontend/parser.hpp"
 #include "cxy/ast/annotations.hpp"
 #include "cxy/ast/attributes.hpp"
 #include "cxy/ast/declarations.hpp"
