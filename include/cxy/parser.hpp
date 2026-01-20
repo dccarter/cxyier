@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cxy/arena_allocator.hpp"
+#include "cxy/memory/arena.hpp"
 #include "cxy/ast/attributes.hpp"
 #include "cxy/ast/node.hpp"
 #include "cxy/diagnostics.hpp"

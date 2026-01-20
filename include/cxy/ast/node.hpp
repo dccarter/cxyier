@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cxy/arena_stl.hpp"
+#include "cxy/memory/arena_stl.hpp"
 #include "cxy/ast/kind.hpp"
 #include "cxy/diagnostics.hpp"
 #include "cxy/flags.hpp"

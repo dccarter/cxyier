@@ -3,7 +3,7 @@
 #include "kind.hpp"
 #include "cxy/ast/node.hpp"
 #include "cxy/flags.hpp"
-#include "cxy/arena_stl.hpp"
+#include "cxy/memory/arena_stl.hpp"
 #include "cxy/strings.hpp"
 #include <string>
 

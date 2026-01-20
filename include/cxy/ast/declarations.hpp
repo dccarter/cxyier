@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cxy/ast/node.hpp"
-#include "cxy/arena_allocator.hpp"
+#include "cxy/memory/arena.hpp"
 #include "cxy/flags.hpp"
 #include "cxy/token.hpp"
 #include <format>

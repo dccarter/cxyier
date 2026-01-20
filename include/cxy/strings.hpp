@@ -8,8 +8,8 @@
 #include <string_view>
 #include <unordered_map>
 
-#include <cxy/arena_allocator.hpp>
-#include <cxy/arena_stl.hpp>
+#include <cxy/memory/arena.hpp>
+#include <cxy/memory/arena_stl.hpp>
 
 // Define builtin names that need to be interned
 #define CXY_BUILTIN_NAMES(f, ff)    \

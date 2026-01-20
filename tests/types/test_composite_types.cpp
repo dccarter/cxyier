@@ -3,8 +3,8 @@
 #include <cxy/ast/node.hpp>
 #include <cxy/ast/literals.hpp>
 
-#include <cxy/arena_allocator.hpp>
-#include <cxy/arena_stl.hpp>
+#include <cxy/memory/arena.hpp>
+#include <cxy/memory/arena_stl.hpp>
 #include <cxy/strings.hpp>
 
 using namespace cxy;

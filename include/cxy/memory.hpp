@@ -2,10 +2,9 @@
 
 // Convenience header that includes all arena memory management components
 
-#include <cxy/arena_allocator.hpp>
-#include <cxy/arena_ptr.hpp>
-#include <cxy/arena_stl.hpp>
-#include <cxy/stack_arena.hpp>
+#include <cxy/memory/arena.hpp>
+#include <cxy/memory/arena_ptr.hpp>
+#include <cxy/memory/arena_stl.hpp>
 #include <cxy/strings.hpp>
 
 namespace cxy {

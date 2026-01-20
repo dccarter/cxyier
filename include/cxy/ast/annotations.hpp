@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cxy/arena_stl.hpp"
+#include "cxy/memory/arena_stl.hpp"
 #include "cxy/ast/node.hpp"
 #include "cxy/strings.hpp"
 #include <format>

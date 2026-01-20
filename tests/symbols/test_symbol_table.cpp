@@ -1,7 +1,7 @@
 #include "catch2.hpp"
 #include "cxy/symbols.hpp"
 #include "cxy/diagnostics.hpp"
-#include "cxy/arena_allocator.hpp"
+#include "cxy/memory/arena.hpp"
 #include "cxy/strings.hpp"
 #include "cxy/ast/node.hpp"
 

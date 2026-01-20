@@ -2,7 +2,7 @@
 #include "cxy/ast/statements.hpp"
 #include "cxy/ast/literals.hpp"
 #include "cxy/ast/identifiers.hpp"
-#include "cxy/arena_allocator.hpp"
+#include "cxy/memory/arena.hpp"
 #include "cxy/flags.hpp"
 #include "cxy/strings.hpp"
 #include "catch2.hpp"

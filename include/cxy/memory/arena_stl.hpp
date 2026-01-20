@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cxy/arena_allocator.hpp>
+#include <cxy/memory/arena.hpp>
 #include <limits>
 #include <list>
 #include <map>

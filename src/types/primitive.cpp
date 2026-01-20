@@ -1,5 +1,5 @@
 #include "cxy/types/primitive.hpp"
-#include "cxy/arena_allocator.hpp"
+#include "cxy/memory/arena.hpp"
 
 #include <array>
 #include <limits>

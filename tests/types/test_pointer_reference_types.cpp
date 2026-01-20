@@ -2,8 +2,8 @@
 #include "cxy/types/registry.hpp"
 #include "cxy/types/primitive.hpp"
 #include "cxy/types/composite.hpp"
-#include "cxy/arena_allocator.hpp"
-#include "cxy/arena_stl.hpp"
+#include "cxy/memory/arena.hpp"
+#include "cxy/memory/arena_stl.hpp"
 
 using namespace cxy;
 

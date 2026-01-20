@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <cxy/stack_arena.hpp>
+#include <cxy/memory/arena.hpp>
 
 namespace cxy {
 

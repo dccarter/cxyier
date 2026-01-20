@@ -1,7 +1,7 @@
 #pragma once
 
 #include <concepts>
-#include <cxy/arena_allocator.hpp>
+#include <cxy/memory/arena.hpp>
 #include <memory>
 #include <type_traits>
 

@@ -2,8 +2,8 @@
 
 #include "kind.hpp"
 #include "cxy/token.hpp"
-#include "cxy/arena_allocator.hpp"
-#include "cxy/arena_stl.hpp"
+#include "cxy/memory/arena.hpp"
+#include "cxy/memory/arena_stl.hpp"
 #include "cxy/strings.hpp"
 #include <cstddef>
 #include <unordered_map>

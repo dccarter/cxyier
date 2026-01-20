@@ -1,5 +1,5 @@
 #include "catch2.hpp"
-#include "cxy/arena_allocator.hpp"
+#include "cxy/memory/arena.hpp"
 #include "cxy/diagnostics.hpp"
 #include "cxy/lexer.hpp"
 #include "cxy/strings.hpp"

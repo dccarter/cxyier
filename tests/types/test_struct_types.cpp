@@ -1,6 +1,6 @@
 #include "cxy/types.hpp"
 #include "cxy/types/registry.hpp"
-#include "cxy/arena_allocator.hpp"
+#include "cxy/memory/arena.hpp"
 #include "cxy/ast/types.hpp"
 #include "cxy/token.hpp"
 #include "cxy/strings.hpp"

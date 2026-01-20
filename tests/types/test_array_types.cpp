@@ -1,6 +1,6 @@
 #include "catch2.hpp"
 #include <cxy/types.hpp>
-#include <cxy/arena_allocator.hpp>
+#include <cxy/memory/arena.hpp>
 #include <cxy/ast/literals.hpp>
 #include <cxy/ast/literals.hpp>
 

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
-#include <cxy/arena_allocator.hpp>
+#include <cxy/memory/arena.hpp>
 #include <stdexcept>
 
 namespace cxy {

@@ -1,11 +1,11 @@
 #include "catch2.hpp"
-#include "cxy/arena_allocator.hpp"
+#include "cxy/memory/arena.hpp"
 #include "cxy/ast/expressions.hpp"
 #include "cxy/ast/identifiers.hpp"
 #include "cxy/ast/kind.hpp"
 #include "cxy/ast/literals.hpp"
 #include "cxy/ast/visitor.hpp"
-#include "cxy/stack_arena.hpp"
+#include "cxy/memory/arena.hpp"
 #include "cxy/strings.hpp"
 #include "cxy/token.hpp"
 #include <vector>

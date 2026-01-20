@@ -1,7 +1,7 @@
 #pragma once
 
-#include "cxy/arena_allocator.hpp"
-#include "cxy/arena_stl.hpp"
+#include "cxy/memory/arena.hpp"
+#include "cxy/memory/arena_stl.hpp"
 #include "cxy/diagnostics.hpp"
 #include "cxy/strings.hpp"
 #include <unordered_map>
